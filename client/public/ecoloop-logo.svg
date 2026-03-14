@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 40" fill="none" width="160" height="40">
+  <!-- Circular loop icon -->
+  <!-- Outer arc (top-left to bottom-right, clockwise) -->
+  <path
+    d="M 8 20 A 12 12 0 1 1 20 32"
+    stroke="url(#loopGrad)"
+    stroke-width="3"
+    stroke-linecap="round"
+    fill="none"
+  />
+  <!-- Arrow head at end of arc -->
+  <polyline
+    points="16,29 20,32 17,36"
+    stroke="url(#loopGrad)"
+    stroke-width="3"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+  <!-- Leaf shape inside loop -->
+  <path
+    d="M 20 14 C 20 14 26 16 26 22 C 26 22 20 22 20 14 Z"
+    fill="#15803D"
+    opacity="0.85"
+  />
+  <path
+    d="M 20 14 C 20 14 14 16 14 22 C 14 22 20 22 20 14 Z"
+    fill="#22C55E"
+    opacity="0.7"
+  />
+  <!-- Center vein -->
+  <line x1="20" y1="14" x2="20" y2="22" stroke="#15803D" stroke-width="1" stroke-linecap="round"/>
+
+  <!-- Wordmark -->
+  <text
+    x="38"
+    y="26"
+    font-family="'Inter', 'Segoe UI', Arial, sans-serif"
+    font-size="18"
+    font-weight="700"
+    letter-spacing="-0.3"
+  >
+    <tspan fill="#15803D">Eco</tspan><tspan fill="#22C55E">Loop</tspan>
+  </text>
+
+  <!-- Gradient definition -->
+  <defs>
+    <linearGradient id="loopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#15803D"/>
+      <stop offset="100%" stop-color="#22C55E"/>
+    </linearGradient>
+  </defs>
+</svg>

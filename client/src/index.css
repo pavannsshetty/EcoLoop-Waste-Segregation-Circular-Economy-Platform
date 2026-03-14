@@ -8,3 +8,14 @@
     font-family: 'Inter', sans-serif;
   }
 }
+
+@keyframes shrinkWidth {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+@layer utilities {
+  .animate-shrink {
+    animation: shrinkWidth 4.5s linear forwards;
+  }
+}
