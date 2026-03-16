@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   HiX, HiUser, HiMail, HiPhone, HiLockClosed,
   HiLocationMarker, HiIdentification,
@@ -74,6 +75,7 @@ const InputField = ({ id, label, type = 'text', placeholder, icon: Icon, value =
           onChange={onChange}
           onBlur={onBlur}
           maxLength={maxLength}
+          autoComplete={isPassword ? 'new-password' : 'one-time-code'}
           className={[
             'w-full rounded-lg border py-3 text-sm shadow-sm transition focus:outline-none focus:ring-2',
             dark
@@ -144,6 +146,7 @@ const initTouched = () => Object.fromEntries(Object.keys(initFields()).map(k => 
 
 // ─── AuthModal ────────────────────────────────────────────────────────────────
 const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
+  const navigate = useNavigate();
   const [screen,     setScreen]     = useState('role-select');
   const [userRole,   setUserRole]   = useState(null);
   const [fields,     setFields]     = useState(initFields());
@@ -207,7 +210,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
           data = await res.json();
         } catch {
           toast.success(`Welcome, ${fields.fullName}! Registration successful.`);
-          setTimeout(() => { reset('role-select', null); onClose(); }, 300);
+          setTimeout(() => { reset('role-select', null); onClose(); navigate('/dashboard'); }, 300);
           return;
         }
         if (!res.ok) {
@@ -216,8 +219,9 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
           return;
         }
         localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
         toast.success(`Welcome, ${data.user.name}! Registration successful.`);
-        setTimeout(() => { reset('role-select', null); onClose(); }, 300);
+        setTimeout(() => { reset('role-select', null); onClose(); navigate('/dashboard'); }, 300);
 
       } else if (screen === 'login') {
         const body = {
@@ -231,13 +235,14 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
           data = await res.json();
         } catch {
           toast.success(`Welcome back! Signed in as ${userRole}.`);
-          setTimeout(() => { reset('role-select', null); onClose(); }, 300);
+          setTimeout(() => { reset('role-select', null); onClose(); navigate('/dashboard'); }, 300);
           return;
         }
         if (!res.ok) { toast.error(data.message || 'Login failed. Check your credentials.'); return; }
         localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
         toast.success(`Welcome back, ${data.user.name}!`);
-        setTimeout(() => { reset('role-select', null); onClose(); }, 300);
+        setTimeout(() => { reset('role-select', null); onClose(); navigate('/dashboard'); }, 300);
       }
     } catch { toast.error('Something went wrong. Please try again.');
     } finally { setLoading(false); }
@@ -316,7 +321,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
                   <button type="button" onClick={() => reset('login')} className="text-sm font-medium text-green-500 hover:underline">Go to Sign in</button>
                 </div>
               ) : (
-                <form noValidate className="space-y-4" onSubmit={e => {
+                <form noValidate autoComplete="off" className="space-y-4" onSubmit={e => {
                   e.preventDefault();
                   setTouched(t => ({ ...t, email: true, password: true }));
                   if (!validators.email(fields.email) && fields.password && pwdRules.every(r => r.test(fields.password))) {
@@ -380,7 +385,10 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} noValidate className="space-y-4">
+              <form onSubmit={handleSubmit} noValidate autoComplete="off" className="space-y-4">
+                {/* Dummy fields to prevent browser autofill */}
+                <input type="text" style={{ display: 'none' }} autoComplete="username" readOnly />
+                <input type="password" style={{ display: 'none' }} autoComplete="new-password" readOnly />
                 {screen === 'register' && userRole === 'Citizen' && (<>
                   <InputField id="fullName" label="Full Name" placeholder="John Doe" icon={HiUser} {...fp('fullName')} />
                   <InputField id="email" label="Email" type="email" placeholder="name@company.com" icon={HiMail} {...fp('email')} />
