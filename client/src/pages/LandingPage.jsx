@@ -22,12 +22,10 @@ const LandingPage = () => {
       }}
     >
 
-      {/* ── Hero ── */}
       <div className="min-h-screen w-full relative overflow-hidden">
         <div className="absolute inset-0 z-0" />
 
         <div className={`relative z-10 transition-all duration-300 ${isAuthModalOpen ? 'blur-sm brightness-75 pointer-events-none select-none' : ''}`}>
-          {/* Navbar */}
           <nav className="w-full flex items-center justify-between px-6 sm:px-12 py-4">
             <div className="pl-4 sm:pl-8">
               <EcoLoopLogo height={44} dark={dark} />
@@ -41,7 +39,6 @@ const LandingPage = () => {
             </button>
           </nav>
 
-          {/* Hero content */}
           <div className="flex min-h-[calc(100vh-72px)] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
             <div className="w-full max-w-4xl mx-auto text-center space-y-6 sm:space-y-8">
               <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-medium ${dark ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-700'}`}>
@@ -76,7 +73,6 @@ const LandingPage = () => {
         </div>
       </div>
 
-      {/* ── How EcoLoop Works ── */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
@@ -104,7 +100,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* ── Waste Categories ── */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10">

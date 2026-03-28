@@ -14,6 +14,7 @@ const validators = {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Enter a valid email address';
     return '';
   },
+  identifier: v => (!v ? 'Email or phone number is required' : ''),
   mobile: v => {
     if (!v) return 'Mobile number is required';
     if (!/^\d+$/.test(v)) return 'Only numbers allowed';
@@ -50,7 +51,6 @@ const getStrength = v => {
   return       { label: 'Strong',  color: 'bg-green-500',  width: 'w-full' };
 };
 
-// ─── InputField ───────────────────────────────────────────────────────────────
 const InputField = ({ id, label, type = 'text', placeholder, icon: Icon, value = '', onChange, onBlur, error, touched, maxLength, dark }) => {
   const [show, setShow] = useState(false);
   const isPassword = type === 'password';
@@ -105,7 +105,6 @@ const InputField = ({ id, label, type = 'text', placeholder, icon: Icon, value =
   );
 };
 
-// ─── PasswordStrength ─────────────────────────────────────────────────────────
 const PasswordStrength = ({ value, dark }) => {
   if (!value) return null;
   const s = getStrength(value);
@@ -141,10 +140,9 @@ const ROLES = [
 ];
 
 const MOCK_REGISTERED = ['test@example.com', 'user@gmail.com'];
-const initFields  = () => ({ fullName: '', email: '', mobile: '', collectorId: '', password: '', confirmPassword: '', address: '', assignedArea: '', areaLocality: '' });
+const initFields  = () => ({ fullName: '', email: '', identifier: '', mobile: '', collectorId: '', password: '', confirmPassword: '', address: '', assignedArea: '', areaLocality: '' });
 const initTouched = () => Object.fromEntries(Object.keys(initFields()).map(k => [k, false]));
 
-// ─── AuthModal ────────────────────────────────────────────────────────────────
 const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
   const navigate = useNavigate();
   const [screen,     setScreen]     = useState('role-select');
@@ -157,6 +155,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
   const getErrors = useCallback(() => ({
     fullName:        validators.fullName(fields.fullName),
     email:           validators.email(fields.email) || (MOCK_REGISTERED.includes(fields.email) ? 'Email already registered' : ''),
+    identifier:      validators.identifier(fields.identifier),
     mobile:          validators.mobile(fields.mobile),
     collectorId:     validators.collectorId(fields.collectorId),
     password:        validators.password(fields.password) || (fields.password && !pwdRules.every(r => r.test(fields.password)) ? 'Password does not meet all requirements' : ''),
@@ -175,11 +174,19 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
   const handleClose = () => { reset('role-select', null); onClose(); };
   const selectRole  = role => reset('login', role);
 
+  const getRolePath = (role) => {
+    if (role === 'Citizen')       return '/citizen';
+    if (role === 'Collector')     return '/collector-dashboard';
+    if (role === 'GreenChampion') return '/green-dashboard';
+    return '/dashboard';
+  };
+
   const handleSubmit = async e => {
     e.preventDefault();
     const currentErrors = {
       fullName:        validators.fullName(fields.fullName),
       email:           validators.email(fields.email),
+      identifier:      validators.identifier(fields.identifier),
       mobile:          validators.mobile(fields.mobile),
       collectorId:     validators.collectorId(fields.collectorId),
       password:        validators.password(fields.password) || (fields.password && !pwdRules.every(r => r.test(fields.password)) ? 'Password does not meet all requirements' : ''),
@@ -189,11 +196,15 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
     setTouched(Object.fromEntries(Object.keys(initFields()).map(k => [k, true])));
 
     const relevantErrors = screen === 'register'
-      ? Object.entries(currentErrors).filter(([k]) => k !== 'collectorId' && !(k === 'address' && userRole !== 'Citizen')).map(([, v]) => v)
+      ? Object.entries(currentErrors).filter(([k]) => k !== 'collectorId' && k !== 'identifier' && !(k === 'address' && userRole !== 'Citizen')).map(([, v]) => v)
       : screen === 'login'
-        ? [userRole === 'Collector' ? currentErrors.collectorId : currentErrors.email, currentErrors.password]
+        ? [userRole === 'Collector' ? currentErrors.collectorId : currentErrors.identifier, currentErrors.password]
         : [];
-    if (relevantErrors.some(Boolean)) return;
+
+    if (relevantErrors.some(Boolean)) {
+      toast.error('Please fill all required fields.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -221,13 +232,15 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         toast.success(`Welcome, ${data.user.name}! Registration successful.`);
-        setTimeout(() => { reset('role-select', null); onClose(); navigate('/dashboard'); }, 300);
+        const path = getRolePath(data.user.role);
+        setTimeout(() => { reset('role-select', null); onClose(); navigate(path); }, 300);
 
       } else if (screen === 'login') {
+        const apiRole = userRole === 'Green Champion' ? 'GreenChampion' : userRole;
         const body = {
-          role: userRole === 'Green Champion' ? 'GreenChampion' : userRole,
+          role: apiRole,
           password: fields.password,
-          ...(userRole === 'Collector' ? { collectorId: fields.collectorId } : { email: fields.email }),
+          ...(userRole === 'Collector' ? { collectorId: fields.collectorId } : { identifier: fields.identifier }),
         };
         let res, data;
         try {
@@ -235,14 +248,16 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
           data = await res.json();
         } catch {
           toast.success(`Welcome back! Signed in as ${userRole}.`);
-          setTimeout(() => { reset('role-select', null); onClose(); navigate('/dashboard'); }, 300);
+          const fallbackPath = getRolePath(apiRole);
+          setTimeout(() => { reset('role-select', null); onClose(); navigate(fallbackPath); }, 300);
           return;
         }
-        if (!res.ok) { toast.error(data.message || 'Login failed. Check your credentials.'); return; }
+        if (!res.ok) { toast.error('Invalid credentials.'); return; }
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         toast.success(`Welcome back, ${data.user.name}!`);
-        setTimeout(() => { reset('role-select', null); onClose(); navigate('/dashboard'); }, 300);
+        const path = getRolePath(data.user.role);
+        setTimeout(() => { reset('role-select', null); onClose(); navigate(path); }, 300);
       }
     } catch { toast.error('Something went wrong. Please try again.');
     } finally { setLoading(false); }
@@ -252,7 +267,6 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
 
   const headerTitle = { 'role-select': 'Get Started', register: `Register as ${userRole}`, login: `Sign in — ${userRole}`, forgot: 'Reset Password' }[screen];
 
-  // ── theme shortcuts ──
   const dlg  = dark ? 'bg-slate-900 text-slate-100' : 'bg-white text-slate-900';
   const hdr  = dark ? 'border-slate-700' : 'border-slate-100';
   const muted= dark ? 'text-slate-400' : 'text-slate-500';
@@ -266,7 +280,6 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
 
       <div className={`relative z-10 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl ${dlg}`}>
 
-        {/* Header */}
         <div className={`flex items-center justify-between border-b px-4 sm:px-6 py-3.5 sm:py-4 ${hdr}`}>
           <div className="flex items-center gap-2">
             <span className="text-lg sm:text-xl">🌱</span>
@@ -278,10 +291,8 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
           </button>
         </div>
 
-        {/* Body */}
         <div className="max-h-[82vh] sm:max-h-[80vh] overflow-y-auto px-4 sm:px-7 py-4 sm:py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 
-          {/* ── ROLE SELECTION ── */}
           {screen === 'role-select' && (
             <div className="space-y-5">
               <p className={`text-sm ${muted}`}>Select your role to continue.</p>
@@ -306,7 +317,6 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
             </div>
           )}
 
-          {/* ── FORGOT PASSWORD ── */}
           {screen === 'forgot' && (
             <div className="space-y-4">
               <button type="button" onClick={() => reset('login')}
@@ -349,7 +359,6 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
             </div>
           )}
 
-          {/* ── REGISTER / LOGIN ── */}
           {(screen === 'register' || screen === 'login') && (
             <div className="space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -368,14 +377,12 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
                 )}
               </div>
 
-              {/* Role badge */}
               <div className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 ${dark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                 {(() => { const r = ROLES.find(r => r.key === userRole); const Icon = r?.icon; return Icon ? <Icon className="h-4 w-4 text-green-500" /> : null; })()}
                 <span className={`text-sm font-medium ${dark ? 'text-slate-200' : 'text-slate-700'}`}>{userRole}</span>
                 <span className={`ml-auto text-xs ${muted}`}>{screen === 'login' ? 'Login' : 'Registration'}</span>
               </div>
 
-              {/* Collector banner */}
               {userRole === 'Collector' && (
                 <div className={`flex items-start gap-2.5 rounded-xl border px-4 py-3 ${dark ? 'bg-blue-900/30 border-blue-700' : 'bg-blue-50 border-blue-200'}`}>
                   <HiInformationCircle className={`h-5 w-5 shrink-0 mt-0.5 ${dark ? 'text-blue-400' : 'text-blue-500'}`} />
@@ -386,7 +393,6 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
               )}
 
               <form onSubmit={handleSubmit} noValidate autoComplete="off" className="space-y-4">
-                {/* Dummy fields to prevent browser autofill */}
                 <input type="text" style={{ display: 'none' }} autoComplete="username" readOnly />
                 <input type="password" style={{ display: 'none' }} autoComplete="new-password" readOnly />
                 {screen === 'register' && userRole === 'Citizen' && (<>
@@ -413,13 +419,17 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
                 </>)}
 
                 {screen === 'login' && userRole === 'Citizen' && (<>
-                  <InputField id="loginEmail" label="Email / Mobile" placeholder="Email or 10-digit mobile" icon={HiMail} {...fp('email')} />
-                  <InputField id="loginPassword" label="Password" type="password" icon={HiLockClosed} {...fp('password')} />
+                  <InputField id="loginIdentifier" label="Email or Phone Number" type="text" placeholder="Enter email or phone number" icon={HiMail} dark={dark}
+                    value={fields.identifier} onChange={handleChange('identifier')} onBlur={handleBlur('identifier')} error={null} touched={false} />
+                  <InputField id="loginPassword" label="Password" type="password" icon={HiLockClosed} dark={dark}
+                    value={fields.password} onChange={handleChange('password')} onBlur={handleBlur('password')} error={null} touched={false} />
                 </>)}
 
                 {screen === 'login' && userRole === 'Green Champion' && (<>
-                  <InputField id="gcEmail" label="Email / Mobile" placeholder="Email or 10-digit mobile" icon={HiMail} {...fp('email')} />
-                  <InputField id="gcPassword" label="Password" type="password" icon={HiLockClosed} {...fp('password')} />
+                  <InputField id="gcIdentifier" label="Email or Phone Number" type="text" placeholder="Enter email or phone number" icon={HiMail} dark={dark}
+                    value={fields.identifier} onChange={handleChange('identifier')} onBlur={handleBlur('identifier')} error={null} touched={false} />
+                  <InputField id="gcPassword" label="Password" type="password" icon={HiLockClosed} dark={dark}
+                    value={fields.password} onChange={handleChange('password')} onBlur={handleBlur('password')} error={null} touched={false} />
                 </>)}
 
                 {screen === 'login' && userRole === 'Collector' && (<>

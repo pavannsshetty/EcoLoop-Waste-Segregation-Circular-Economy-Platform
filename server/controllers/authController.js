@@ -9,7 +9,6 @@ const register = async (req, res) => {
   try {
     const { name, email, password, phone, address, role, collectorId, locality } = req.body;
 
-    // Collectors are admin-created only
     if (role === 'Collector') {
       return res.status(403).json({ message: 'Collector accounts are issued by the administrator.' });
     }
@@ -39,7 +38,7 @@ const register = async (req, res) => {
 // POST /api/auth/login
 const login = async (req, res) => {
   try {
-    const { email, collectorId, password, role } = req.body;
+    const { identifier, collectorId, password, role } = req.body;
 
     let user;
 
@@ -47,8 +46,11 @@ const login = async (req, res) => {
       if (!collectorId) return res.status(400).json({ message: 'Collector ID is required.' });
       user = await User.findOne({ collectorId, role: 'Collector' }).select('+password');
     } else {
-      if (!email) return res.status(400).json({ message: 'Email is required.' });
-      user = await User.findOne({ email, role }).select('+password');
+      if (!identifier) return res.status(400).json({ message: 'Email or phone is required.' });
+      user = await User.findOne({
+        $or: [{ email: identifier }, { phone: identifier }],
+        role,
+      }).select('+password');
     }
 
     if (!user || !(await user.matchPassword(password))) {
@@ -58,7 +60,6 @@ const login = async (req, res) => {
     const token = signToken(user._id);
     res.json({ token, user });
   } catch (err) {
-    console.error('[login]', err.message);
     res.status(400).json({ message: err.message });
   }
 };
