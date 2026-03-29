@@ -4,23 +4,23 @@ import { MdWaterDrop, MdRecycling, MdDevices, MdWarning } from 'react-icons/md';
 import AuthModal from '../components/AuthModal';
 import { ToastContainer, useToast } from '../components/Toast';
 import EcoLoopLogo from '../components/EcoLoopLogo';
+import DarkBg from '../components/DarkBg';
+import { useTheme } from '../context/ThemeContext';
 
 const LandingPage = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [dark, setDark] = useState(false);
+  const { dark, toggleDark } = useTheme();
   const { toasts, toast, remove } = useToast();
 
   return (
     <div
       className="w-full min-h-screen relative"
-      style={{
-        background: dark
-          ? 'radial-gradient(125% 125% at 50% 90%, #000000 40%, #072607 100%)'
-          : 'radial-gradient(125% 125% at 50% 10%, #ffffff 40%, #10b981 100%)',
-        backgroundAttachment: 'fixed',
-        backgroundSize: '100% 100%',
-      }}
+      style={dark
+        ? { background: '#000000' }
+        : { background: 'radial-gradient(125% 125% at 50% 10%, #ffffff 40%, #10b981 100%)', backgroundAttachment: 'fixed', backgroundSize: '100% 100%' }
+      }
     >
+      {dark && <DarkBg />}
 
       <div className="min-h-screen w-full relative overflow-hidden">
         <div className="absolute inset-0 z-0" />
@@ -31,7 +31,7 @@ const LandingPage = () => {
               <EcoLoopLogo height={44} dark={dark} />
             </div>
             <button
-              onClick={() => setDark(d => !d)}
+              onClick={() => toggleDark()}
               aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
               className={`rounded-lg p-2 transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-green-500 ${dark ? 'text-green-300 hover:bg-white/10' : 'text-slate-600 hover:bg-slate-100'}`}
             >

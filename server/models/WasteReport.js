@@ -30,7 +30,9 @@ const wasteReportSchema = new mongoose.Schema({
   status:        { type: String, enum: ['Submitted', 'In Progress', 'Resolved'], default: 'Submitted' },
   upvotes:       [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   expectedCleanupHours: { type: Number, default: null },
-  resolvedAt:    { type: Date, default: null },
+  deadline:    { type: Date, default: null },
+  resolvedAt:  { type: Date, default: null },
+  isEdited:    { type: Boolean, default: false },
 }, { timestamps: true });
 
 wasteReportSchema.index({ location: '2dsphere' });

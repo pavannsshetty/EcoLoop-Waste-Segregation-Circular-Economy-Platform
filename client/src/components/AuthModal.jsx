@@ -175,10 +175,10 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
   const selectRole  = role => reset('login', role);
 
   const getRolePath = (role) => {
-    if (role === 'Citizen')       return '/citizen';
+    if (role === 'Citizen')       return '/citizen/dashboard';
     if (role === 'Collector')     return '/collector-dashboard';
     if (role === 'GreenChampion') return '/green-dashboard';
-    return '/dashboard';
+    return '/citizen/dashboard';
   };
 
   const handleSubmit = async e => {
@@ -221,7 +221,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
           data = await res.json();
         } catch {
           toast.success(`Welcome, ${fields.fullName}! Registration successful.`);
-          setTimeout(() => { reset('role-select', null); onClose(); navigate('/dashboard'); }, 300);
+          setTimeout(() => { reset('role-select', null); onClose(); navigate('/citizen/dashboard'); }, 300);
           return;
         }
         if (!res.ok) {

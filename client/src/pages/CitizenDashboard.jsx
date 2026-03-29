@@ -1,28 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HiLogout, HiMenu, HiX, HiChevronRight, HiBell, HiCog, HiQuestionMarkCircle, HiUser } from 'react-icons/hi';
+import { HiChevronRight, HiPencil, HiTrash, HiEye } from 'react-icons/hi';
 import { MdOutlineReportProblem } from 'react-icons/md';
-import EcoLoopLogo from '../components/EcoLoopLogo';
 import ReportWasteModal from '../components/ReportWasteModal';
+import EditReportModal from '../components/EditReportModal';
+import CleanupTimeBadge from '../components/CleanupTimeBadge';
 import { ToastContainer, useToast } from '../components/Toast';
+import { useTheme } from '../context/ThemeContext';
 
-const IconDashboard = () => (
-  <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth={1.8}>
-    <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
-    <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
-  </svg>
-);
-const IconReports = () => (
-  <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth={1.8}>
-    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
-    <rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/>
-  </svg>
-);
-const IconRewards = () => (
-  <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth={1.8}>
-    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-  </svg>
-);
 
 const IllustrationHero = () => (
   <svg viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
@@ -80,21 +65,6 @@ const IllustrationRewards = () => (
   </svg>
 );
 
-const NAV_MAIN = [
-  { id: 'home',    Icon: IconDashboard, label: 'Dashboard'    },
-  { id: 'report',  Icon: () => <MdOutlineReportProblem className="h-5 w-5" />, label: 'Report Waste' },
-  { id: 'reports', Icon: IconReports,   label: 'My Reports'   },
-  { id: 'rewards', Icon: IconRewards,   label: 'My Rewards'   },
-];
-const NAV_ACTIVITY = [
-  { id: 'notifications', Icon: () => <HiBell className="h-5 w-5" />,               label: 'Notifications' },
-];
-const NAV_USER = [
-  { id: 'profile',  Icon: () => <HiUser className="h-5 w-5" />,                    label: 'Profile'       },
-  { id: 'settings', Icon: () => <HiCog className="h-5 w-5" />,                     label: 'Settings'      },
-  { id: 'help',     Icon: () => <HiQuestionMarkCircle className="h-5 w-5" />,       label: 'Help & Support'},
-];
-
 const ACTION_CARDS = [
   { id: 'report',  Illustration: IllustrationReport,    title: 'Report Waste',  sub: 'Submit a new waste report',  bg: 'from-orange-50 to-amber-50',   border: 'border-orange-100', hover: 'hover:border-orange-300 hover:shadow-orange-100' },
   { id: 'reports', Illustration: IllustrationMyReports, title: 'My Reports',    sub: 'Track your submissions',     bg: 'from-blue-50 to-sky-50',        border: 'border-blue-100',   hover: 'hover:border-blue-300 hover:shadow-blue-100'   },
@@ -104,127 +74,67 @@ const ACTION_CARDS = [
 const CitizenDashboard = () => {
   const navigate = useNavigate();
   const { toasts, toast, remove } = useToast();
+  const { dark } = useTheme();
+  const dk = (d, l) => dark ? d : l;
   const user     = JSON.parse(localStorage.getItem('user') || '{}');
   const [tab,           setTab]           = useState('home');
-  const [mobileOpen,    setMobileOpen]    = useState(false);
-  const [collapsed,     setCollapsed]     = useState(false);
   const [reportOpen,    setReportOpen]    = useState(false);
+  const [editReport,    setEditReport]    = useState(null);
   const [recentReports, setRecentReports] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(false);
 
-  const logout = () => { localStorage.removeItem('token'); localStorage.removeItem('user'); navigate('/'); };
+  const fetchReports = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    setLoadingReports(true);
+    try {
+      const res  = await fetch('/api/waste/my-reports', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) setRecentReports(await res.json());
+    } catch { }
+    finally { setLoadingReports(false); }
+  }, []);
+
+  useEffect(() => { fetchReports(); }, [fetchReports]);
 
   const handleReportSuccess = (report) => {
-    setRecentReports(r => [report, ...r]);
+    setRecentReports(rs => [report, ...rs]);
     toast.success('Waste report submitted successfully!');
+    fetchReports();
+  };
+
+  const handleReportUpdated = (updated) => {
+    setRecentReports(rs => rs.map(r => r._id === updated._id ? updated : r));
+    toast.success('Report updated successfully!');
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this report?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res   = await fetch(`/api/waste/report/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        setRecentReports(rs => rs.filter(r => r._id !== id));
+        toast.success('Report deleted.');
+      } else {
+        const d = await res.json();
+        toast.error(d.message || 'Could not delete report.');
+      }
+    } catch { toast.error('Network error.'); }
   };
 
   const handleCardClick = (id) => {
     if (id === 'report')  { setReportOpen(true); return; }
     if (id === 'reports') { setTab('reports'); return; }
-    if (id === 'rewards') { setTab('rewards'); return; }
+    if (id === 'rewards') { navigate('/citizen/my-rewards'); return; }
   };
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  const sideW = collapsed ? 'lg:w-20' : 'lg:w-64';
-  const mainML = collapsed ? 'lg:ml-20' : 'lg:ml-64';
-
   return (
-    <div className="min-h-screen bg-[#F4FBF6]" style={{ backgroundImage: 'radial-gradient(circle, #d1fae5 1px, transparent 1px)', backgroundSize: '28px 28px' }}>
-
-      {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} />
-      )}
-
-      <aside className={`
-        fixed top-0 left-0 h-full z-50 flex flex-col bg-white border-r border-gray-100 shadow-lg
-        transition-all duration-300 ease-in-out
-        ${mobileOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64'}
-        lg:translate-x-0 ${sideW}
-      `}>
-        <div className={`h-16 flex items-center border-b border-gray-100 shrink-0 px-4 ${collapsed ? 'justify-center' : 'justify-between'}`}>
-          <div className={`flex items-center gap-2 overflow-hidden transition-all duration-300 ${collapsed ? 'w-0 opacity-0 lg:w-auto lg:opacity-100' : ''}`}>
-            <EcoLoopLogo height={38} />
-          </div>
-          <button onClick={() => setCollapsed(c => !c)}
-            className="hidden lg:flex items-center justify-center h-8 w-8 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition shrink-0">
-            <HiMenu className="h-5 w-5" />
-          </button>
-        </div>
-
-        <nav className="flex-1 py-4 px-3 space-y-1 overflow-hidden overflow-y-auto">
-          <p className={`text-xs font-semibold text-slate-400 px-3 mb-1 uppercase tracking-wider transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>Main</p>
-          {NAV_MAIN.map(({ id, Icon, label }) => (
-            <button key={id} onClick={() => { if (id === 'report') { setReportOpen(true); setMobileOpen(false); } else { setTab(id); setMobileOpen(false); } }}
-              title={collapsed ? label : undefined}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
-                tab === id ? 'bg-green-50 text-green-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}>
-              <span className={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${tab === id ? 'text-green-600' : ''}`}><Icon /></span>
-              <span className={`whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>{label}</span>
-              {tab === id && !collapsed && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" />}
-            </button>
-          ))}
-
-          <div className={`pt-3 transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>
-            <p className="text-xs font-semibold text-slate-400 px-3 mb-1 uppercase tracking-wider">Activity</p>
-          </div>
-          {NAV_ACTIVITY.map(({ id, Icon, label }) => (
-            <button key={id} onClick={() => { setTab(id); setMobileOpen(false); }}
-              title={collapsed ? label : undefined}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
-                tab === id ? 'bg-green-50 text-green-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}>
-              <span className={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${tab === id ? 'text-green-600' : ''}`}><Icon /></span>
-              <span className={`whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>{label}</span>
-            </button>
-          ))}
-
-          <div className={`pt-3 transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>
-            <p className="text-xs font-semibold text-slate-400 px-3 mb-1 uppercase tracking-wider">Account</p>
-          </div>
-          {NAV_USER.map(({ id, Icon, label }) => (
-            <button key={id}
-              onClick={() => { if (id === 'profile') { navigate('/citizen/profile'); } else { setTab(id); setMobileOpen(false); } }}
-              title={collapsed ? label : undefined}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
-                tab === id ? 'bg-green-50 text-green-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}>
-              <span className={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${tab === id ? 'text-green-600' : ''}`}><Icon /></span>
-              <span className={`whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>{label}</span>
-            </button>
-          ))}
-        </nav>
-
-        <div className="p-3 border-t border-gray-100 shrink-0">
-          <button onClick={logout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-500 transition group"
-            title={collapsed ? 'Sign Out' : undefined}>
-            <HiLogout className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110" />
-            <span className={`whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>Sign Out</span>
-          </button>
-        </div>
-      </aside>
-
-      <div className={`transition-all duration-300 ease-in-out ${mainML} flex flex-col min-h-screen`}>
-        <header className="h-16 bg-white/90 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-30 flex items-center px-4 sm:px-6 gap-4 shadow-sm">
-          <button onClick={() => setMobileOpen(o => !o)}
-            className="flex items-center justify-center h-9 w-9 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-green-600 transition lg:hidden">
-            {mobileOpen ? <HiX className="h-5 w-5" /> : <HiMenu className="h-5 w-5" />}
-          </button>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-800 truncate">{greeting}, {user.name || 'Citizen'}</p>
-            <p className="text-xs text-slate-400">Citizen Dashboard</p>
-          </div>
-          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
-            {(user.name || 'C')[0].toUpperCase()}
-          </div>
-        </header>
-
-        <main className="flex-1 p-4 sm:p-6 space-y-6 overflow-y-auto">
-
-          {tab === 'home' && (
+    <>
+      <div className="p-4 sm:p-6 space-y-6">
+        {tab === 'home' && (
             <>
               <div className="relative rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-green-600 via-green-500 to-emerald-400 min-h-[160px] sm:min-h-[200px]">
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
@@ -245,10 +155,24 @@ const CitizenDashboard = () => {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: 'Reports Submitted', value: recentReports.length,       color: 'text-green-600'  },
+                  { label: 'Resolved',           value: recentReports.filter(r => r.status === 'Resolved').length, color: 'text-blue-600' },
+                  { label: 'EcoPoints',          value: recentReports.length * 10, color: 'text-yellow-600' },
+                  { label: 'Streak (days)',      value: 1,                          color: 'text-purple-600' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className={`rounded-2xl border shadow-sm p-4 text-center hover:shadow-md transition ${dk('bg-white/5 border-gray-700','bg-white border-slate-100')}`}>
+                    <p className={`text-2xl font-extrabold ${color}`}>{value}</p>
+                    <p className={`text-xs mt-0.5 ${dk('text-slate-400','text-slate-500')}`}>{label}</p>
+                  </div>
+                ))}
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {ACTION_CARDS.map(({ id, Illustration, title, sub, bg, border, hover }) => (
                   <button key={id} onClick={() => handleCardClick(id)}
-                    className={`group relative flex items-center gap-4 rounded-2xl border bg-gradient-to-br ${bg} ${border} p-4 sm:p-5 text-left shadow-sm hover:shadow-lg ${hover} transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]`}>
+                    className={`group relative flex items-center gap-4 rounded-2xl border bg-gradient-to-br ${bg} ${border} p-4 sm:p-5 text-left shadow-sm hover:shadow-lg ${hover} transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] ${dk('opacity-90','')}`}>
                     <div className="shrink-0 transition-transform duration-200 group-hover:scale-110">
                       <Illustration />
                     </div>
@@ -261,42 +185,60 @@ const CitizenDashboard = () => {
                 ))}
               </div>
 
-              {recentReports.length > 0 && (
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 sm:p-5">
+              {loadingReports ? (
+                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex items-center justify-center">
+                  <div className="h-7 w-7 rounded-full border-[3px] border-green-500 border-t-transparent animate-spin" />
+                </div>
+              ) : recentReports.length > 0 && (
+                <div className={`rounded-2xl border shadow-sm p-4 sm:p-5 ${dk('bg-white/5 border-gray-700','bg-white border-slate-100')}`}>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold text-slate-800">Recent Reports</h3>
-                    <button onClick={() => navigate('/my-reports')} className="text-xs text-green-600 hover:underline font-medium">View all →</button>
+                    <h3 className={`text-sm font-semibold ${dk('text-slate-200','text-slate-800')}`}>Recent Reports</h3>
+                    <button onClick={() => navigate('/citizen/my-reports')} className="text-xs text-green-600 hover:underline font-medium">View all →</button>
                   </div>
                   <div className="space-y-3">
-                    {recentReports.slice(0, 3).map((r, i) => (
-                      <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-green-50 transition">
-                        <div className="h-9 w-9 shrink-0 rounded-xl bg-orange-100 flex items-center justify-center">
-                          <IllustrationReport />
+                    {recentReports.slice(0, 3).map((r) => {
+                      const statusCls = r.status === 'Resolved' ? 'bg-green-100 text-green-700' : r.status === 'In Progress' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700';
+                      const canEdit   = r.status === 'Submitted';
+                      const fmtDate   = r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '';
+                      return (
+                        <div key={r._id || r.wasteType} className={`rounded-xl border p-3 space-y-2 transition ${dk('bg-white/5 border-gray-700 hover:bg-white/10','bg-slate-50 border-slate-100 hover:bg-green-50')}`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className={`text-sm font-semibold ${dk('text-slate-200','text-slate-800')}`}>{r.wasteType}</p>
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusCls}`}>{r.status}</span>
+                                {r.severity && <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">{r.severity}</span>}
+                                {r.isEdited && <span className="text-xs text-blue-500">• Edited</span>}
+                              </div>
+                              <p className="text-xs text-slate-400 mt-0.5 truncate">{r.location?.displayAddress || r.location?.address || 'Location not set'}</p>
+                              {fmtDate && <p className="text-xs text-slate-400">{fmtDate}</p>}
+                              <CleanupTimeBadge report={r} showCountdown={false} />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button onClick={() => setEditReport(r)} disabled={!canEdit}
+                              className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border transition ${
+                                canEdit ? 'border-green-200 text-green-700 bg-green-50 hover:bg-green-100' : 'border-slate-200 text-slate-400 cursor-not-allowed opacity-50'
+                              }`}>
+                              <HiPencil className="h-3 w-3" /> Edit
+                            </button>
+                            <button onClick={() => navigate('/citizen/my-reports')}
+                              className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition">
+                              <HiEye className="h-3 w-3" /> View
+                            </button>
+                            <button onClick={() => handleDelete(r._id)} disabled={!canEdit}
+                              className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border transition ${
+                                canEdit ? 'border-red-200 text-red-600 bg-red-50 hover:bg-red-100' : 'border-slate-200 text-slate-400 cursor-not-allowed opacity-50'
+                              }`}>
+                              <HiTrash className="h-3 w-3" /> Delete
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-800 truncate">{r.wasteType}</p>
-                          <p className="text-xs text-slate-400 truncate">{r.location?.displayAddress || r.location?.address}</p>
-                        </div>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 shrink-0 font-medium">Submitted</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                  { label: 'Reports Submitted', value: recentReports.length, color: 'text-green-600' },
-                  { label: 'Resolved',           value: 0,                   color: 'text-blue-600'  },
-                  { label: 'EcoPoints',          value: recentReports.length * 10, color: 'text-yellow-600' },
-                  { label: 'Streak (days)',      value: 1,                   color: 'text-purple-600' },
-                ].map(({ label, value, color }) => (
-                  <div key={label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center hover:shadow-md transition">
-                    <p className={`text-2xl font-extrabold ${color}`}>{value}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{label}</p>
-                  </div>
-                ))}
-              </div>
             </>
           )}
 
@@ -304,35 +246,69 @@ const CitizenDashboard = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-semibold text-slate-800">My Reports</h2>
-                <button onClick={() => navigate('/my-reports')} className="text-sm text-green-600 hover:underline font-medium">Full page →</button>
+                <div className="flex items-center gap-3">
+                  <button onClick={fetchReports} className="text-xs text-slate-400 hover:text-green-600 transition">↻ Refresh</button>
+                  <button onClick={() => navigate('/citizen/my-reports')} className="text-sm text-green-600 hover:underline font-medium">Full page →</button>
+                </div>
               </div>
               <button onClick={() => setReportOpen(true)}
                 className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-green-600 to-emerald-500 px-4 py-3.5 text-sm font-semibold text-white hover:shadow-lg hover:shadow-green-200 transition active:scale-[0.98]">
                 <IllustrationReport />
                 Report New Waste
               </button>
-              {recentReports.length === 0
-                ? <div className="text-center py-12 text-slate-400 text-sm">No reports yet. Submit your first report above.</div>
-                : recentReports.map((r, i) => (
-                    <div key={i} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-start gap-3 hover:shadow-md transition">
-                      <div className="h-10 w-10 shrink-0 rounded-xl bg-orange-50 flex items-center justify-center">
-                        <IllustrationReport />
+              {loadingReports ? (
+                <div className="flex items-center justify-center py-10">
+                  <div className="h-7 w-7 rounded-full border-[3px] border-green-500 border-t-transparent animate-spin" />
+                </div>
+              ) : recentReports.length === 0 ? (
+                <div className="text-center py-12 text-slate-400 text-sm">No reports yet. Submit your first report above.</div>
+              ) : (
+                recentReports.map((r) => {
+                  const statusCls = r.status === 'Resolved' ? 'bg-green-100 text-green-700' : r.status === 'In Progress' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700';
+                  const canEdit   = r.status === 'Submitted';
+                  return (
+                    <div key={r._id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-2 hover:shadow-md transition">
+                      <div className="flex items-start gap-3">
+                        <div className="h-10 w-10 shrink-0 rounded-xl bg-orange-50 flex items-center justify-center">
+                          <IllustrationReport />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-semibold text-slate-900">{r.wasteType}</p>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusCls}`}>{r.status}</span>
+                            {r.severity && <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{r.severity}</span>}
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{r.description}</p>
+                          <p className="text-xs text-slate-400 mt-0.5 truncate">{r.location?.displayAddress || r.location?.address}</p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-900">{r.wasteType}</p>
-                        <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{r.description}</p>
-                        <p className="text-xs text-slate-400 mt-1 truncate">{r.location?.displayAddress || r.location?.address}</p>
+                      <div className="flex items-center gap-2 flex-wrap pl-1">
+                        <button onClick={() => setEditReport(r)} disabled={!canEdit}
+                          className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border transition ${canEdit ? 'border-green-200 text-green-700 bg-green-50 hover:bg-green-100' : 'border-slate-200 text-slate-400 cursor-not-allowed opacity-50'}`}>
+                          <HiPencil className="h-3 w-3" /> Edit
+                        </button>
+                        <button onClick={() => navigate('/citizen/my-reports')}
+                          className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition">
+                          <HiEye className="h-3 w-3" /> View
+                        </button>
+                        <button onClick={() => handleDelete(r._id)} disabled={!canEdit}
+                          className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border transition ${canEdit ? 'border-red-200 text-red-600 bg-red-50 hover:bg-red-100' : 'border-slate-200 text-slate-400 cursor-not-allowed opacity-50'}`}>
+                          <HiTrash className="h-3 w-3" /> Delete
+                        </button>
                       </div>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 shrink-0 font-medium">Submitted</span>
                     </div>
-                  ))
-              }
+                  );
+                })
+              )}
             </div>
           )}
 
           {tab === 'rewards' && (
             <div className="space-y-4">
-              <h2 className="text-base font-semibold text-slate-800">My Rewards</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-semibold text-slate-800">My Rewards</h2>
+                <button onClick={() => navigate('/citizen/my-rewards')} className="text-sm text-green-600 hover:underline font-medium">Full page →</button>
+              </div>
               <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-yellow-400 to-orange-400 p-6 text-white shadow-lg">
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
                 <div className="relative">
@@ -357,12 +333,12 @@ const CitizenDashboard = () => {
             </div>
           )}
 
-        </main>
       </div>
 
       <ReportWasteModal isOpen={reportOpen} onClose={() => setReportOpen(false)} onSuccess={handleReportSuccess} />
+      <EditReportModal isOpen={!!editReport} report={editReport} onClose={() => setEditReport(null)} onUpdated={handleReportUpdated} />
       <ToastContainer toasts={toasts} onRemove={remove} />
-    </div>
+    </>
   );
 };
 

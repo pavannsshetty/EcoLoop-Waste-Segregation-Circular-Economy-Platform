@@ -241,7 +241,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   }`;
   const lbl    = `text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-700'}`;
   const errCls = 'text-xs text-red-400 mt-0.5';
-  const card   = `rounded-xl border p-4 space-y-3 ${dark ? 'bg-slate-800/60 border-slate-700' : 'bg-slate-50 border-slate-200'}`;
+  const card   = `rounded-xl border p-4 space-y-3 ${dark ? 'bg-white/5 border-gray-700' : 'bg-slate-50 border-slate-200'}`;
 
   return (
     <>
@@ -249,7 +249,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
 
       <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
-        <div className={`relative z-10 w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] ${dark ? 'bg-slate-900' : 'bg-white'}`}>
+        <div className={`relative z-10 w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] ${dark ? 'bg-black/90 border border-gray-800' : 'bg-white'}`}>
 
           <div className={`flex items-center justify-between px-4 sm:px-6 py-3.5 border-b shrink-0 ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
             <div className="flex items-center gap-2">

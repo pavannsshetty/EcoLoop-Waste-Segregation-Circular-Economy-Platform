@@ -1,4 +1,6 @@
 const WasteReport = require('../models/WasteReport');
+const { createNotification } = require('./notificationController');
+const { awardPoints }        = require('./rewardsController');
 
 const DAILY_REPORT_LIMIT = 5;
 
@@ -10,7 +12,7 @@ const haversineMeters = (lat1, lng1, lat2, lng2) => {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-const expectedHours = (severity) => ({ Low: 72, Medium: 48, High: 24 }[severity] || 48);
+const expectedHours = (severity) => ({ Low: 48, Medium: 24, High: 8 }[severity] || 24);
 
 const createReport = async (req, res) => {
   try {
@@ -50,9 +52,12 @@ const createReport = async (req, res) => {
       pickupTime,
       status: 'Submitted',
       expectedCleanupHours: expectedHours(severity || 'Medium'),
+      deadline: new Date(Date.now() + expectedHours(severity || 'Medium') * 60 * 60 * 1000),
     });
 
     res.status(201).json({ message: 'Report submitted successfully.', report });
+    createNotification(userId, 'Report Submitted', `Your ${wasteType} waste report has been submitted. Expected cleanup: ${expectedHours(severity || 'Medium')}h.`, 'report', report._id);
+    awardPoints(userId, 5, 'Report Submitted', report._id);
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }
@@ -85,8 +90,77 @@ const upvoteReport = async (req, res) => {
     } else {
       report.upvotes.push(userId);
     }
+    const count = report.upvotes.length;
+    if (count >= 10)     report.severity = 'High';
+    else if (count >= 4) report.severity = 'Medium';
+    else                 report.severity = 'Low';
     await report.save();
-    res.json({ upvotes: report.upvotes.length, upvoted: !alreadyUpvoted });
+    res.json({ upvotes: count, upvoted: !alreadyUpvoted, severity: report.severity });
+    if (!alreadyUpvoted) awardPoints(userId, 2, 'Supported a Report', id);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+const updateReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const report = await WasteReport.findById(id);
+    if (!report) return res.status(404).json({ message: 'Report not found.' });
+    if (report.userId.toString() !== userId) return res.status(403).json({ message: 'Not authorized.' });
+    if (report.status !== 'Submitted') return res.status(400).json({ message: 'Report cannot be edited after processing started.' });
+
+    const { wasteType, severity, description, landmark, landmarkType, pickupTime, location, image } = req.body;
+    if (wasteType)              report.wasteType    = wasteType;
+    if (severity)               report.severity     = severity;
+    if (description)            report.description  = description;
+    if (landmark !== undefined) report.landmark     = landmark;
+    if (landmarkType !== undefined) report.landmarkType = landmarkType;
+    if (pickupTime)             report.pickupTime   = new Date(pickupTime);
+    if (image !== undefined)    report.image        = image;
+    if (location?.lat) {
+      report.location = { ...report.location, ...location, type: 'Point', coordinates: [location.lng, location.lat] };
+    }
+    report.isEdited  = true;
+    report.updatedAt = new Date();
+    await report.save();
+    res.json({ message: 'Report updated successfully.', report });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+const deleteReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const report = await WasteReport.findById(id);
+    if (!report) return res.status(404).json({ message: 'Report not found.' });
+    if (report.userId.toString() !== userId) return res.status(403).json({ message: 'Not authorized.' });
+    if (report.status !== 'Submitted') return res.status(400).json({ message: 'Cannot delete a report that is already being processed.' });
+    await report.deleteOne();
+    res.json({ message: 'Report deleted.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+const getNearbyReports = async (req, res) => {
+  try {
+    const { lat, lng, radius = 3, severity, status } = req.query;
+    if (!lat || !lng) return res.status(400).json({ message: 'lat and lng required.' });
+
+    const radiusMeters = parseFloat(radius) * 1000;
+    const query = { 'location.lat': { $exists: true }, 'location.lng': { $exists: true } };
+    if (severity && severity !== 'all') query.severity = severity;
+    if (status   && status   !== 'all') query.status   = status;
+
+    const all = await WasteReport.find(query).sort({ createdAt: -1 }).limit(200).lean();
+    const parsedLat = parseFloat(lat), parsedLng = parseFloat(lng);
+    const nearby = all.filter(r => haversineMeters(parsedLat, parsedLng, r.location.lat, r.location.lng) <= radiusMeters);
+
+    res.json(nearby);
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }
@@ -101,4 +175,4 @@ const getMyReports = async (req, res) => {
   }
 };
 
-module.exports = { createReport, checkDuplicate, upvoteReport, getMyReports };
+module.exports = { createReport, checkDuplicate, upvoteReport, updateReport, deleteReport, getNearbyReports, getMyReports };
