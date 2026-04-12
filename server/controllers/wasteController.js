@@ -77,6 +77,11 @@ const createReport = async (req, res) => {
 
     res.status(201).json({ message: 'Report submitted successfully.', report });
     createNotification(userId, 'Report Submitted', `Your ${wasteType} waste report has been submitted. Expected cleanup: ${expectedHours(severity || 'Medium')}h.`, 'report', report._id);
+    
+    // Emit to agents/collectors that a new report is available
+    const { emitToAll } = require('../socket');
+    emitToAll('report_created', report);
+
     awardPoints(userId, 5, 'Report Submitted', report._id);
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
@@ -116,7 +121,12 @@ const upvoteReport = async (req, res) => {
     else                 report.severity = 'Low';
     await report.save();
     res.json({ upvotes: count, upvoted: !alreadyUpvoted, severity: report.severity });
-    if (!alreadyUpvoted) awardPoints(userId, 2, 'Supported a Report', id);
+    if (!alreadyUpvoted) {
+      awardPoints(userId, 2, 'Supported a Report', id);
+      if (report.userId.toString() !== userId) {
+        createNotification(report.userId, 'Report Supported', `Someone supported your ${report.wasteType} waste report!`, 'support', report._id);
+      }
+    }
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }

@@ -3,7 +3,11 @@ const express   = require('express');
 const cors      = require('cors');
 const connectDB = require('./config/db');
 
+const http   = require('http');
+const socket = require('./socket');
+
 const app  = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
 connectDB();
@@ -22,4 +26,6 @@ app.use('/api/collector',     require('./routes/collectorRoutes'));
 
 app.get('/', (req, res) => res.send('EcoLoop API is running...'));
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+socket.init(server);
+
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

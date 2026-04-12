@@ -4,8 +4,11 @@
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900;
+    @apply bg-slate-50 text-slate-900 antialiased;
     font-family: 'Inter', sans-serif;
+  }
+  html.dark body {
+    @apply bg-black text-slate-100;
   }
 }
 

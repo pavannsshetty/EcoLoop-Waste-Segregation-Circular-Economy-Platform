@@ -15,11 +15,26 @@ const collectorAuth = async (req, res, next) => {
 router.get('/reports', protect, collectorAuth, async (req, res) => {
   try {
     const { filter, sort } = req.query;
-    const query = { assignedCollector: req.user.id };
-    if (filter && filter !== 'all') {
-      if (['High', 'Medium', 'Low'].includes(filter)) query.severity = filter;
-      else query.status = filter;
+    const cid = req.user.id;
+    const mine = { assignedCollector: cid };
+    const citizenQueue = { status: 'Submitted', assignedCollector: null };
+
+    let query;
+    if (!filter || filter === 'all') {
+      query = { $or: [mine, citizenQueue] };
+    } else if (['High', 'Medium', 'Low'].includes(filter)) {
+      query = {
+        $or: [
+          { ...mine, severity: filter },
+          { ...citizenQueue, severity: filter },
+        ],
+      };
+    } else if (filter === 'Assigned' || filter === 'In Progress' || filter === 'Resolved' || filter === 'Delayed') {
+      query = { assignedCollector: cid, status: filter };
+    } else {
+      query = { ...mine, status: filter };
     }
+
     let reports = await WasteReport.find(query).sort({ createdAt: -1 }).lean();
     if (sort === 'priority') {
       const order = { High: 0, Medium: 1, Low: 2 };
@@ -48,7 +63,13 @@ router.put('/report/:id/status', protect, collectorAuth, async (req, res) => {
     }
 
     report.status = status;
-    if (status === 'Assigned') report.assignedCollector = req.user.id;
+    if (status === 'Assigned') {
+      report.assignedCollector = req.user.id;
+      if (report.userId) createNotification(report.userId, 'Report Assigned', `A collector has been assigned to your ${report.wasteType} waste report.`, 'status', report._id);
+    }
+    if (status === 'In Progress') {
+      if (report.userId) createNotification(report.userId, 'Work Started', `Collector has started working on your ${report.wasteType} waste report.`, 'status', report._id);
+    }
     if (status === 'Resolved') {
       report.completionPhoto = completionPhoto || '';
       report.completionNotes = completionNotes || '';
@@ -59,6 +80,7 @@ router.put('/report/:id/status', protect, collectorAuth, async (req, res) => {
     if (status === 'Delayed') {
       report.delayReason = delayReason || '';
       report.delayTime   = new Date();
+      if (report.userId) createNotification(report.userId, 'Report Delayed', `Your ${report.wasteType} waste report is delayed: ${delayReason}`, 'delay', report._id);
     }
     await report.save();
     res.json({ message: 'Status updated.', report });
@@ -76,14 +98,16 @@ router.put('/availability', protect, collectorAuth, async (req, res) => {
 router.get('/stats', protect, collectorAuth, async (req, res) => {
   try {
     const today = new Date(); today.setHours(0, 0, 0, 0);
-    const [assigned, inProgress, completedToday, total] = await Promise.all([
-      WasteReport.countDocuments({ assignedCollector: req.user.id, status: 'Assigned' }),
-      WasteReport.countDocuments({ assignedCollector: req.user.id, status: 'In Progress' }),
-      WasteReport.countDocuments({ assignedCollector: req.user.id, status: 'Resolved', completedAt: { $gte: today } }),
-      WasteReport.countDocuments({ assignedCollector: req.user.id }),
+    const cid = req.user.id;
+    const [pendingSubmitted, assigned, inProgress, completedToday, total] = await Promise.all([
+      WasteReport.countDocuments({ status: 'Submitted', assignedCollector: null }),
+      WasteReport.countDocuments({ assignedCollector: cid, status: 'Assigned' }),
+      WasteReport.countDocuments({ assignedCollector: cid, status: 'In Progress' }),
+      WasteReport.countDocuments({ assignedCollector: cid, status: 'Resolved', completedAt: { $gte: today } }),
+      WasteReport.countDocuments({ assignedCollector: cid }),
     ]);
     const collector = await Collector.findById(req.user.id).select('name collectorId city area availability completedTasks');
-    res.json({ assigned, inProgress, completedToday, total, collector });
+    res.json({ pendingSubmitted, assigned, inProgress, completedToday, total, collector });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 

@@ -1,9 +1,13 @@
-const Notification = require('../models/Notification');
+const { emitToUser } = require('../socket');
 
 const createNotification = async (userId, title, message, type = 'report', reportId = null) => {
   try {
-    await Notification.create({ userId, title, message, type, reportId });
-  } catch { }
+    const notification = await Notification.create({ userId, title, message, type, reportId });
+    // Emit real-time event
+    emitToUser(userId.toString(), 'notification', notification);
+  } catch (err) {
+    console.error('Error creating notification:', err);
+  }
 };
 
 const getNotifications = async (req, res) => {
