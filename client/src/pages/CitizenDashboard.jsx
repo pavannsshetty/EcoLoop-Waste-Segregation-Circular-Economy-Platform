@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HiChevronRight, HiPencil, HiTrash, HiEye } from 'react-icons/hi';
-import { MdOutlineReportProblem } from 'react-icons/md';
+import { HiChevronRight, HiPencil, HiTrash, HiEye, HiExclamation, HiClipboardList, HiStar, HiChartBar, HiCheckCircle, HiClock, HiRefresh } from 'react-icons/hi';
 import ReportWasteModal from '../components/ReportWasteModal';
 import EditReportModal from '../components/EditReportModal';
 import CleanupTimeBadge from '../components/CleanupTimeBadge';
 import { ToastContainer, useToast } from '../components/Toast';
 import { useTheme } from '../context/ThemeContext';
+import { useUser } from '../context/UserContext';
 
 
 const IllustrationHero = () => (
@@ -39,30 +39,21 @@ const IllustrationHero = () => (
 );
 
 const IllustrationReport = () => (
-  <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-8 w-8">
-    <circle cx="24" cy="24" r="20" fill="#FEF3C7"/>
-    <path d="M24 14v10M24 30v2" stroke="#D97706" strokeWidth="2.5" strokeLinecap="round"/>
-    <path d="M16 36h16M18 20l-4 4 4 4M30 20l4 4-4 4" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
+  <div className="h-8 w-8 flex items-center justify-center rounded-xl bg-orange-100">
+    <HiExclamation className="h-5 w-5 text-orange-500" />
+  </div>
 );
 
 const IllustrationMyReports = () => (
-  <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-8 w-8">
-    <circle cx="24" cy="24" r="20" fill="#DBEAFE"/>
-    <rect x="14" y="13" width="20" height="24" rx="3" fill="white" stroke="#3B82F6" strokeWidth="1.5"/>
-    <path d="M18 20h12M18 25h8M18 30h10" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round"/>
-    <circle cx="32" cy="32" r="6" fill="#3B82F6"/>
-    <path d="M30 32l1.5 1.5L34 30" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
+  <div className="h-8 w-8 flex items-center justify-center rounded-xl bg-blue-100">
+    <HiClipboardList className="h-5 w-5 text-blue-500" />
+  </div>
 );
 
 const IllustrationRewards = () => (
-  <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-8 w-8">
-    <circle cx="24" cy="24" r="20" fill="#FEF9C3"/>
-    <path d="M24 14l2.47 5.01L32 20.18l-4 3.9.94 5.5L24 27l-4.94 2.58.94-5.5-4-3.9 5.53-.17L24 14z" fill="#EAB308" stroke="#CA8A04" strokeWidth="1"/>
-    <path d="M18 36h12" stroke="#CA8A04" strokeWidth="1.5" strokeLinecap="round"/>
-    <path d="M21 33v3M27 33v3" stroke="#CA8A04" strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
+  <div className="h-8 w-8 flex items-center justify-center rounded-xl bg-yellow-100">
+    <HiStar className="h-5 w-5 text-yellow-500" />
+  </div>
 );
 
 const ACTION_CARDS = [
@@ -75,8 +66,9 @@ const CitizenDashboard = () => {
   const navigate = useNavigate();
   const { toasts, toast, remove } = useToast();
   const { dark } = useTheme();
+  const { user: ctxUser, refreshUser } = useUser();
   const dk = (d, l) => dark ? d : l;
-  const user     = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = ctxUser || JSON.parse(localStorage.getItem('user') || '{}');
   const [tab,           setTab]           = useState('home');
   const [reportOpen,    setReportOpen]    = useState(false);
   const [editReport,    setEditReport]    = useState(null);
@@ -100,6 +92,7 @@ const CitizenDashboard = () => {
     setRecentReports(rs => [report, ...rs]);
     toast.success('Waste report submitted successfully!');
     fetchReports();
+    refreshUser();
   };
 
   const handleReportUpdated = (updated) => {
@@ -157,12 +150,13 @@ const CitizenDashboard = () => {
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { label: 'Reports Submitted', value: recentReports.length,       color: 'text-green-600'  },
-                  { label: 'Resolved',           value: recentReports.filter(r => r.status === 'Resolved').length, color: 'text-blue-600' },
-                  { label: 'EcoPoints',          value: recentReports.length * 10, color: 'text-yellow-600' },
-                  { label: 'Streak (days)',      value: 1,                          color: 'text-purple-600' },
-                ].map(({ label, value, color }) => (
+                  { label: 'Reports Submitted', value: user.reportsCount  ?? recentReports.length,       color: 'text-green-600',  Icon: HiChartBar    },
+                  { label: 'Resolved',           value: user.resolvedCount ?? recentReports.filter(r => r.status === 'Resolved').length, color: 'text-blue-600', Icon: HiCheckCircle },
+                  { label: 'EcoPoints',          value: user.ecoPoints     ?? recentReports.length * 10, color: 'text-yellow-600', Icon: HiStar        },
+                  { label: 'Streak (days)', value: ctxUser?.streakCount ?? 1, color: 'text-purple-600', Icon: HiClock },
+                ].map(({ label, value, color, Icon }) => (
                   <div key={label} className={`rounded-2xl border shadow-sm p-4 text-center hover:shadow-md transition ${dk('bg-white/5 border-gray-700','bg-white border-slate-100')}`}>
+                    <Icon className={`h-5 w-5 mx-auto mb-1 ${color}`} />
                     <p className={`text-2xl font-extrabold ${color}`}>{value}</p>
                     <p className={`text-xs mt-0.5 ${dk('text-slate-400','text-slate-500')}`}>{label}</p>
                   </div>
@@ -247,13 +241,15 @@ const CitizenDashboard = () => {
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-semibold text-slate-800">My Reports</h2>
                 <div className="flex items-center gap-3">
-                  <button onClick={fetchReports} className="text-xs text-slate-400 hover:text-green-600 transition">↻ Refresh</button>
+                  <button onClick={fetchReports} className="text-xs text-slate-400 hover:text-green-600 transition flex items-center gap-1">
+                    <HiRefresh className="h-3.5 w-3.5" /> Refresh
+                  </button>
                   <button onClick={() => navigate('/citizen/my-reports')} className="text-sm text-green-600 hover:underline font-medium">Full page →</button>
                 </div>
               </div>
               <button onClick={() => setReportOpen(true)}
                 className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-green-600 to-emerald-500 px-4 py-3.5 text-sm font-semibold text-white hover:shadow-lg hover:shadow-green-200 transition active:scale-[0.98]">
-                <IllustrationReport />
+                <HiExclamation className="h-5 w-5" />
                 Report New Waste
               </button>
               {loadingReports ? (
@@ -270,7 +266,7 @@ const CitizenDashboard = () => {
                     <div key={r._id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-2 hover:shadow-md transition">
                       <div className="flex items-start gap-3">
                         <div className="h-10 w-10 shrink-0 rounded-xl bg-orange-50 flex items-center justify-center">
-                          <IllustrationReport />
+                          <HiExclamation className="h-5 w-5 text-orange-500" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">

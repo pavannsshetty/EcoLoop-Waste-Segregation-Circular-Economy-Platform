@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '../context/UserContext';
 import {
   HiX, HiUser, HiMail, HiPhone, HiLockClosed,
   HiLocationMarker, HiIdentification,
@@ -145,6 +146,7 @@ const initTouched = () => Object.fromEntries(Object.keys(initFields()).map(k => 
 
 const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
   const navigate = useNavigate();
+  const { refreshUser } = useUser();
   const [screen,     setScreen]     = useState('role-select');
   const [userRole,   setUserRole]   = useState(null);
   const [fields,     setFields]     = useState(initFields());
@@ -158,7 +160,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
     identifier:      validators.identifier(fields.identifier),
     mobile:          validators.mobile(fields.mobile),
     collectorId:     validators.collectorId(fields.collectorId),
-    password:        validators.password(fields.password) || (fields.password && !pwdRules.every(r => r.test(fields.password)) ? 'Password does not meet all requirements' : ''),
+    password:        validators.password(fields.password) || (fields.password && screen === 'register' && !pwdRules.every(r => r.test(fields.password)) ? 'Password does not meet all requirements' : ''),
     confirmPassword: validators.confirmPassword(fields.confirmPassword, fields.password),
     address:         validators.address(fields.address),
   }), [fields]);
@@ -176,7 +178,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
 
   const getRolePath = (role) => {
     if (role === 'Citizen')       return '/citizen/dashboard';
-    if (role === 'Collector')     return '/collector-dashboard';
+    if (role === 'Collector')     return '/collector/dashboard';
     if (role === 'GreenChampion') return '/green-dashboard';
     return '/citizen/dashboard';
   };
@@ -189,7 +191,10 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
       identifier:      validators.identifier(fields.identifier),
       mobile:          validators.mobile(fields.mobile),
       collectorId:     validators.collectorId(fields.collectorId),
-      password:        validators.password(fields.password) || (fields.password && !pwdRules.every(r => r.test(fields.password)) ? 'Password does not meet all requirements' : ''),
+      password:        validators.password(fields.password) || (
+        fields.password && screen === 'register' && !pwdRules.every(r => r.test(fields.password))
+          ? 'Password does not meet all requirements' : ''
+      ),
       confirmPassword: validators.confirmPassword(fields.confirmPassword, fields.password),
       address:         validators.address(fields.address),
     };
@@ -233,7 +238,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
         localStorage.setItem('user', JSON.stringify(data.user));
         toast.success(`Welcome, ${data.user.name}! Registration successful.`);
         const path = getRolePath(data.user.role);
-        setTimeout(() => { reset('role-select', null); onClose(); navigate(path); }, 300);
+        setTimeout(() => { reset('role-select', null); onClose(); refreshUser(); navigate(path); }, 300);
 
       } else if (screen === 'login') {
         const apiRole = userRole === 'Green Champion' ? 'GreenChampion' : userRole;
@@ -257,7 +262,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
         localStorage.setItem('user', JSON.stringify(data.user));
         toast.success(`Welcome back, ${data.user.name}!`);
         const path = getRolePath(data.user.role);
-        setTimeout(() => { reset('role-select', null); onClose(); navigate(path); }, 300);
+        setTimeout(() => { reset('role-select', null); onClose(); refreshUser(); navigate(path); }, 300);
       }
     } catch { toast.error('Something went wrong. Please try again.');
     } finally { setLoading(false); }

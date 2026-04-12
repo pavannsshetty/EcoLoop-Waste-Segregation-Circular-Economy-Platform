@@ -24,6 +24,26 @@ const createReport = async (req, res) => {
       return res.status(400).json({ message: 'All required fields must be provided.' });
     }
 
+    const locState   = (location.state   || '').toLowerCase();
+    const locDistrict = (location.district || location.city || '').toLowerCase();
+    const locAddr    = (location.address  || '').toLowerCase();
+    const inKarnataka = locState.includes('karnataka') || locAddr.includes('karnataka');
+    const inUdupi     = locDistrict.includes('udupi') || locAddr.includes('udupi') || locAddr.includes('kundapura');
+    if (!inKarnataka || !inUdupi) {
+      return res.status(400).json({ message: 'Reports allowed only in Kundapura Taluk, Udupi, Karnataka.' });
+    }
+
+    const taluk   = (location.taluk    || location.district || '').toLowerCase();
+    const district = (location.district || '').toLowerCase();
+    const state    = (location.state    || '').toLowerCase();
+    const addr     = (location.address  || '').toLowerCase();
+    const inKundapura = (taluk.includes('kundapura') || addr.includes('kundapura')) &&
+                        (district.includes('udupi')   || addr.includes('udupi'))    &&
+                        (state.includes('karnataka')  || addr.includes('karnataka'));
+    if (!inKundapura) {
+      return res.status(403).json({ message: 'Reports allowed only in Kundapura Taluk, Udupi, Karnataka.' });
+    }
+
     const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
     const todayCount = await WasteReport.countDocuments({ userId, createdAt: { $gte: dayStart } });
     if (todayCount >= DAILY_REPORT_LIMIT) {

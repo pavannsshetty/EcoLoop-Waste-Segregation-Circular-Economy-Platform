@@ -15,7 +15,8 @@ const DashboardPlaceholder = () => {
   const label = ROLE_LABELS[user.role] || 'Dashboard';
 
   useEffect(() => {
-    if (user.role === 'Citizen') navigate('/citizen/dashboard', { replace: true });
+    if (user.role === 'Citizen')   navigate('/citizen/dashboard', { replace: true });
+    if (user.role === 'Collector') navigate('/collector/dashboard', { replace: true });
   }, []);
 
   const logout = () => {

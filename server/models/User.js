@@ -79,8 +79,11 @@ const userSchema = new mongoose.Schema(
       points: { type: Number, default: 0 },
       badges: [{ type: String }],
     },
-    ecoPoints: { type: Number, default: 0 },
-    badges:    [{ type: String }],
+    ecoPoints:      { type: Number, default: 0 },
+    badges:         [{ type: String }],
+    profilePhoto:   { type: String, default: '' },
+    streakCount:    { type: Number, default: 0 },
+    lastActiveDate: { type: Date,   default: null },
   },
   {
     timestamps: true, // createdAt, updatedAt

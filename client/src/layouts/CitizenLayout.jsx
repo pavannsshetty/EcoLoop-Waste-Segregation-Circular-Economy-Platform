@@ -8,6 +8,7 @@ import ReportWasteModal from '../components/ReportWasteModal';
 import DarkBg from '../components/DarkBg';
 import { ToastContainer, useToast } from '../components/Toast';
 import { useTheme } from '../context/ThemeContext';
+import { useUser } from '../context/UserContext';
 
 const IconDashboard = () => (
   <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth={1.8}>
@@ -68,7 +69,8 @@ const CitizenLayout = () => {
   const navigate = useNavigate();
   const { toasts, toast, remove } = useToast();
   const { dark, toggleDark } = useTheme();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const { user: ctxUser, clearUser } = useUser();
+  const user = ctxUser || JSON.parse(localStorage.getItem('user') || '{}');
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed,  setCollapsed]  = useState(false);
@@ -79,7 +81,7 @@ const CitizenLayout = () => {
   const sideW    = collapsed ? 'lg:w-20' : 'lg:w-64';
   const mainML   = collapsed ? 'lg:ml-20' : 'lg:ml-64';
 
-  const logout = () => { localStorage.removeItem('token'); localStorage.removeItem('user'); navigate('/'); };
+  const logout = () => { clearUser(); navigate('/'); };
 
   const handleNav = (path) => {
     if (path === 'report') { setReportOpen(true); setMobileOpen(false); return; }
@@ -149,8 +151,11 @@ const CitizenLayout = () => {
             className={`flex items-center justify-center h-9 w-9 rounded-xl transition ${dark ? 'text-yellow-400 hover:bg-white/10' : 'text-slate-500 hover:bg-slate-100'}`}>
             {dark ? <HiSun className="h-5 w-5" /> : <HiMoon className="h-5 w-5" />}
           </button>
-          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
-            {(user.name || 'C')[0].toUpperCase()}
+          <div className="h-9 w-9 rounded-full overflow-hidden bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
+            {user.profilePhoto
+              ? <img src={user.profilePhoto} alt="avatar" className="h-full w-full object-cover" />
+              : (user.name || 'C')[0].toUpperCase()
+            }
           </div>
           <NotificationBell />
         </header>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HiPencil, HiSave, HiLogout, HiLockClosed, HiShieldCheck, HiCheckCircle } from 'react-icons/hi';
 import { useTheme } from '../context/ThemeContext';
+import { useUser } from '../context/UserContext';
 
 import Female1 from '../assets/Avatar/Female1.png';
 import Female2 from '../assets/Avatar/Female2.png';
@@ -23,12 +24,13 @@ const Toggle = ({ checked, onChange }) => (
 const CitizenProfile = () => {
   const navigate = useNavigate();
   const { dark } = useTheme();
+  const { user: ctxUser, refreshUser, updateUser } = useUser();
   const dk = (d, l) => dark ? d : l;
-  const stored   = JSON.parse(localStorage.getItem('user') || '{}');
+  const stored = ctxUser || JSON.parse(localStorage.getItem('user') || '{}');
 
   const [editing,          setEditing]          = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  const [avatar,           setAvatar]           = useState(stored.avatar || null);
+  const [avatar, setAvatar] = useState(stored.profilePhoto || stored.avatar || null);
   const [saveMsg,          setSaveMsg]          = useState('');
   const [form, setForm] = useState({
     name:     stored.name     || '',
@@ -59,9 +61,9 @@ const CitizenProfile = () => {
     fetchReports();
   }, []);
 
-  const totalReports    = reports.length;
-  const resolvedReports = reports.filter(r => r.status === 'Resolved').length;
-  const ecoPoints       = totalReports * 10 + resolvedReports * 15;
+  const totalReports    = ctxUser?.reportsCount  ?? reports.length;
+  const resolvedReports = ctxUser?.resolvedCount ?? reports.filter(r => r.status === 'Resolved').length;
+  const ecoPoints       = ctxUser?.ecoPoints     ?? (totalReports * 10 + resolvedReports * 15);
   const streakDays      = 1;
 
   const BADGES = [
@@ -73,26 +75,50 @@ const CitizenProfile = () => {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const pickAvatar = (src) => {
+  const pickAvatar = async (src) => {
     setAvatar(src);
-    const updated = { ...JSON.parse(localStorage.getItem('user') || '{}'), avatar: src };
-    localStorage.setItem('user', JSON.stringify(updated));
     setShowAvatarPicker(false);
+    try {
+      const token = localStorage.getItem('token');
+      await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ profilePhoto: src }),
+      });
+      updateUser({ profilePhoto: src });
+    } catch { }
   };
 
-  const removeAvatar = () => {
+  const removeAvatar = async () => {
     setAvatar(null);
-    const updated = { ...JSON.parse(localStorage.getItem('user') || '{}'), avatar: null };
-    localStorage.setItem('user', JSON.stringify(updated));
     setShowAvatarPicker(false);
+    try {
+      const token = localStorage.getItem('token');
+      await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ profilePhoto: '' }),
+      });
+      updateUser({ profilePhoto: '' });
+    } catch { }
   };
 
-  const saveProfile = () => {
-    const updated = { ...JSON.parse(localStorage.getItem('user') || '{}'), ...form, avatar };
-    localStorage.setItem('user', JSON.stringify(updated));
-    setEditing(false);
-    setSaveMsg('Profile saved!');
-    setTimeout(() => setSaveMsg(''), 3000);
+  const saveProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ...form, profilePhoto: avatar }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        updateUser(data.user);
+        setEditing(false);
+        setSaveMsg('Profile saved!');
+        setTimeout(() => setSaveMsg(''), 3000);
+      }
+    } catch { setSaveMsg('Save failed.'); }
   };
 
   const changePassword = (e) => {

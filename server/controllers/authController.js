@@ -1,5 +1,7 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const jwt       = require('jsonwebtoken');
+const User      = require('../models/User');
+const Collector = require('../models/Collector');
+const bcrypt    = require('bcryptjs');
 
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -44,14 +46,21 @@ const login = async (req, res) => {
 
     if (role === 'Collector') {
       if (!collectorId) return res.status(400).json({ message: 'Collector ID is required.' });
-      user = await User.findOne({ collectorId, role: 'Collector' }).select('+password');
-    } else {
-      if (!identifier) return res.status(400).json({ message: 'Email or phone is required.' });
-      user = await User.findOne({
-        $or: [{ email: identifier }, { phone: identifier }],
-        role,
-      }).select('+password');
+      const collector = await Collector.findOne({ collectorId }).select('+password');
+      if (!collector) return res.status(401).json({ message: 'Collector not found.' });
+      const match = await bcrypt.compare(password, collector.password);
+      if (!match) return res.status(401).json({ message: 'Invalid Collector ID or Password.' });
+      if (collector.status === 'Inactive') return res.status(403).json({ message: 'Your account is inactive. Contact admin.' });
+      const token = signToken(collector._id);
+      const safeCollector = { _id: collector._id, name: collector.name, collectorId: collector.collectorId, role: 'Collector', city: collector.city, area: collector.area };
+      return res.json({ token, user: safeCollector });
     }
+
+    if (!identifier) return res.status(400).json({ message: 'Email or phone is required.' });
+    user = await User.findOne({
+      $or: [{ email: identifier }, { phone: identifier }],
+      role,
+    }).select('+password');
 
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({ message: 'Invalid credentials.' });

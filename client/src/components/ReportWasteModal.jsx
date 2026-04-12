@@ -5,7 +5,7 @@ import {
   HiThumbUp, HiEye, HiEyeOff,
 } from 'react-icons/hi';
 import { MdMyLocation } from 'react-icons/md';
-import GoogleMapPicker from './GoogleMapPicker';
+import MapPicker from './MapPicker';
 
 const WASTE_TYPES = ['Wet Waste', 'Dry Waste', 'E-Waste', 'Plastic Waste', 'Mixed Waste'];
 const LANDMARKS   = ['School', 'Temple', 'Bus Stop', 'Hospital', 'Market', 'Park', 'Roadside', 'Residential Area', 'Other'];
@@ -133,6 +133,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   const [anonymous,    setAnonymous]    = useState(false);
   const [locMethod,    setLocMethod]    = useState('map');
   const [location,     setLocation]     = useState(null);
+  const [regionValid,  setRegionValid]  = useState(null);
   const [accuracy,     setAccuracy]     = useState(null);
   const [imageFile,    setImageFile]    = useState(null);
   const [preview,      setPreview]      = useState('');
@@ -147,7 +148,9 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: '' })); };
 
   const handleLocationSelect = (loc) => {
-    setLocation(loc); setErrors(e => ({ ...e, location: '' }));
+    setLocation(loc);
+    setRegionValid(loc.regionValid !== false ? (loc.regionValid ?? null) : false);
+    setErrors(e => ({ ...e, location: '' }));
     if (photoLoc && loc) setPhotoWarning(haversineMeters(photoLoc.lat, photoLoc.lng, loc.lat, loc.lng) > 200);
   };
 
@@ -377,7 +380,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
                   </button>
                 ))}
               </div>
-              {locMethod === 'map' && <GoogleMapPicker onLocationSelect={handleLocationSelect} dark={dark} />}
+              {locMethod === 'map' && <MapPicker onLocationSelect={handleLocationSelect} dark={dark} />}
               {locMethod === 'manual' && (
                 <div className="space-y-2">
                   <input type="text" value={form.manualAddress} onChange={e => set('manualAddress', e.target.value)}
@@ -444,9 +447,9 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
                 }`}>
                 Cancel
               </button>
-              <button type="submit" disabled={loading}
+              <button type="submit" disabled={loading || regionValid === false}
                 className="w-full sm:w-auto flex-1 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-500 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed">
-                {loading ? 'Submitting...' : 'Submit Report'}
+                {loading ? 'Submitting...' : regionValid === false ? 'Outside Service Area' : 'Submit Report'}
               </button>
             </div>
           </form>
