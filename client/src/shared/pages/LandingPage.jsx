@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { HiArrowRight, HiMoon, HiSun, HiCollection, HiCalendar, HiTruck, HiRefresh } from 'react-icons/hi';
+import { HiArrowRight, HiMoon, HiSun, HiCollection, HiCalendar, HiTruck, HiRefresh, HiSparkles } from 'react-icons/hi';
 import { MdWaterDrop, MdRecycling, MdDevices, MdWarning } from 'react-icons/md';
 import AuthModal from '../components/AuthModal';
 import { ToastContainer, useToast } from '../components/Toast';
@@ -42,7 +42,7 @@ const LandingPage = () => {
           <div className="flex min-h-[calc(100vh-72px)] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
             <div className="w-full max-w-4xl mx-auto text-center space-y-6 sm:space-y-8">
               <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-medium ${dark ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-700'}`}>
-                <span>🌱</span><span>Join the Circular Economy Revolution</span>
+                <HiSparkles className="h-4 w-4" /><span>Join the Circular Economy Revolution</span>
               </div>
               <h1 className="font-extrabold tracking-tight text-4xl sm:text-5xl md:text-6xl lg:text-7xl">
                 <span className={`block mb-1 sm:mb-2 ${dark ? 'text-white' : 'text-slate-900'}`}>Close the Loop.</span>

@@ -66,7 +66,7 @@ const EditReportModal = ({ isOpen, onClose, report, onUpdated, dark = false }) =
   if (!isOpen || !report) return null;
 
   const canEdit = report.status === 'Submitted';
-  const inp = `w-full rounded-xl border py-2.5 px-3.5 text-sm shadow-sm transition focus:outline-none focus:ring-2 focus:ring-green-500 ${
+  const inp = `w-full rounded-none border py-2.5 px-3.5 text-sm shadow-sm transition focus:outline-none focus:ring-2 focus:ring-green-500 ${
     dark ? 'bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400'
   }`;
   const lbl = `text-xs font-medium mb-1 block ${dark ? 'text-slate-400' : 'text-slate-500'}`;
@@ -74,7 +74,7 @@ const EditReportModal = ({ isOpen, onClose, report, onUpdated, dark = false }) =
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative z-10 w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] ${dark ? 'bg-slate-900' : 'bg-white'}`}>
+      <div className={`relative z-10 w-full sm:max-w-2xl rounded-none sm:rounded-none shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] ${dark ? 'bg-slate-900' : 'bg-white'}`}>
 
         <div className={`flex items-center justify-between px-4 sm:px-6 py-3.5 border-b shrink-0 ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
           <div className="flex items-center gap-2">
@@ -97,7 +97,7 @@ const EditReportModal = ({ isOpen, onClose, report, onUpdated, dark = false }) =
               <p className={`text-xs max-w-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
                 Report cannot be edited after processing started. Current status: <span className="font-semibold">{report.status}</span>
               </p>
-              <button onClick={onClose} className="mt-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold px-5 py-2 hover:bg-slate-200 transition">Close</button>
+              <button onClick={onClose} className="mt-2 rounded-none bg-slate-100 text-slate-700 text-sm font-semibold px-5 py-2 hover:bg-slate-200 transition">Close</button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
@@ -115,7 +115,7 @@ const EditReportModal = ({ isOpen, onClose, report, onUpdated, dark = false }) =
                 <div className="flex gap-2 mt-1">
                   {SEVERITY.map(s => (
                     <button key={s.value} type="button" onClick={() => set('severity', s.value)}
-                      className={`flex-1 rounded-xl border py-2 text-xs font-semibold transition ${form.severity === s.value ? s.active : s.base}`}>
+                      className={`flex-1 rounded-none border py-2 text-xs font-semibold transition ${form.severity === s.value ? s.active : s.base}`}>
                       {s.value}
                     </button>
                   ))}
@@ -161,16 +161,16 @@ const EditReportModal = ({ isOpen, onClose, report, onUpdated, dark = false }) =
               </div>
 
               {error && (
-                <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-600">{error}</div>
+                <div className="rounded-none bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-600">{error}</div>
               )}
 
               <div className="flex flex-col sm:flex-row gap-3 pt-1 pb-2">
                 <button type="button" onClick={onClose}
-                  className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${dark ? 'border-slate-600 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                  className={`flex-1 rounded-none border px-4 py-2.5 text-sm font-semibold transition ${dark ? 'border-slate-600 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
                   Cancel
                 </button>
                 <button type="submit" disabled={loading}
-                  className="flex-1 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-500 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed">
+                  className="flex-1 rounded-none bg-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-500 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed">
                   {loading ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>

@@ -28,16 +28,17 @@ const userSchema = new mongoose.Schema(
       trim: true,
       match: [/^\d{10}$/, 'Phone must be exactly 10 digits'],
     },
-    address: {
-      type: String,
-      trim: true,
-    },
+
     role: {
       type: String,
       enum: ['Citizen', 'Collector', 'GreenChampion'],
       required: [true, 'Role is required'],
     },
     isActive: {
+      type: Boolean,
+      default: true,
+    },
+    isVerified: {
       type: Boolean,
       default: true,
     },

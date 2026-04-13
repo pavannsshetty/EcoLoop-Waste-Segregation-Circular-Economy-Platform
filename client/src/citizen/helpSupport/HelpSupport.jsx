@@ -14,7 +14,7 @@ const FAQ_ITEMS = [
 
 const FAQItem = ({ q, a, dark }) => {
   const [open, setOpen] = useState(false);
-  const border  = dark ? 'border-gray-700' : 'border-slate-100';
+  const border  = dark ? 'border-slate-700' : 'border-slate-100';
   const qColor  = dark ? 'text-slate-200' : 'text-slate-800';
   const aColor  = dark ? 'text-slate-400' : 'text-slate-500';
   const iconCls = dark ? 'text-slate-500' : 'text-slate-400';
@@ -35,20 +35,20 @@ const HelpSupport = () => {
   const [feedback, setFeedback] = useState('');
   const [sent,     setSent]     = useState(false);
 
-  const card    = dark ? 'bg-white/5 border-gray-700' : 'bg-white border-slate-100';
+  const card    = dark ? 'bg-white/5 border-gray-700' : 'bg-white border-slate-200';
   const title   = dark ? 'text-slate-200' : 'text-slate-800';
   const sub     = dark ? 'text-slate-400' : 'text-slate-500';
-  const divider = dark ? 'border-gray-800' : 'border-slate-100';
-  const inp     = `w-full rounded-xl border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition ${dark ? 'bg-gray-800 border-gray-600 text-slate-100 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-800 placeholder-slate-400'}`;
+  const divider = dark ? 'border-slate-700' : 'border-slate-100';
+  const inp     = `w-full rounded-sm border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors duration-200 ${dark ? 'bg-slate-900 border-slate-700 text-slate-100 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-800 placeholder-slate-400'}`;
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-2xl mx-auto">
       <div>
-        <h1 className={`text-xl font-extrabold ${title}`}>Help & Support</h1>
+        <h1 className={`text-base font-medium ${title}`}>Help & Support</h1>
         <p className={`text-sm mt-0.5 ${sub}`}>Find answers and get in touch</p>
       </div>
 
-      <div className={`rounded-2xl border shadow-sm overflow-hidden ${card}`}>
+      <div className={`rounded-sm border overflow-hidden transition-colors duration-200 ${card}`}>
         <div className={`px-5 py-3 border-b ${divider}`}>
           <p className={`text-xs font-semibold uppercase tracking-wider ${sub}`}>Frequently Asked Questions</p>
         </div>
@@ -62,8 +62,8 @@ const HelpSupport = () => {
           { icon: HiChat,  label: 'Live Chat',       desc: 'Chat with our support team',     color: dark ? 'bg-green-900/40 text-green-400' : 'bg-green-50 text-green-600' },
         ].map(({ icon: Icon, label, desc, color }) => (
           <button key={label}
-            className={`flex flex-col items-center gap-2 rounded-2xl border p-5 text-center transition hover:shadow-md ${card}`}>
-            <div className={`h-11 w-11 rounded-xl flex items-center justify-center ${color}`}>
+            className={`flex flex-col items-center gap-2 rounded-sm border p-5 text-center transition-colors duration-200 hover:shadow-sm ${card}`}>
+            <div className={`h-11 w-11 rounded-sm flex items-center justify-center ${color}`}>
               <Icon className="h-5 w-5" />
             </div>
             <p className={`text-sm font-semibold ${title}`}>{label}</p>
@@ -72,14 +72,14 @@ const HelpSupport = () => {
         ))}
       </div>
 
-      <div className={`rounded-2xl border shadow-sm p-5 space-y-4 ${card}`}>
+      <div className={`rounded-sm border p-5 space-y-4 transition-colors duration-200 ${card}`}>
         <div>
           <p className={`text-sm font-semibold ${title}`}>Send Feedback</p>
           <p className={`text-xs mt-0.5 ${sub}`}>Help us improve EcoLoop</p>
         </div>
         {sent ? (
-          <div className={`rounded-xl px-4 py-3 text-sm font-medium ${dark ? 'bg-green-900/40 text-green-400' : 'bg-green-50 text-green-700'}`}>
-            ✅ Thank you for your feedback!
+          <div className={`rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2 ${dark ? 'bg-green-900/40 text-green-400' : 'bg-green-50 text-green-700'}`}>
+            <HiCheckCircle className="h-5 w-5" /> Thank you for your feedback!
           </div>
         ) : (
           <>

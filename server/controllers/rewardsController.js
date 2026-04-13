@@ -35,7 +35,7 @@ const updateStreak = async (userId) => {
   }
 };
 
-const awardPoints = async (userId, points, reason, reportId = null) => {
+const awardPoints = async (userId, points, reason, refId = null) => {
   try {
     const user = await User.findByIdAndUpdate(
       userId,
@@ -45,7 +45,12 @@ const awardPoints = async (userId, points, reason, reportId = null) => {
     if (!user) return;
     const newBadges = computeBadges(user.ecoPoints);
     await User.findByIdAndUpdate(userId, { badges: newBadges });
-    await EcoPointHistory.create({ userId, points, reason, reportId });
+    
+    const historyData = { userId, points, reason };
+    if (reason.includes('Scrap')) historyData.scrapId = refId;
+    else historyData.reportId = refId;
+
+    await EcoPointHistory.create(historyData);
     if (reason === 'Report Submitted') await updateStreak(userId);
   } catch (err) {
     console.error('[awardPoints]', err.message);

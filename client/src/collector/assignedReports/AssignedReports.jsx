@@ -16,11 +16,13 @@ const sevCls = (sev, dk) => {
 
 const staCls = (st, dk) => {
   const map = {
-    Submitted: dk('bg-slate-700 text-slate-300', 'bg-yellow-100 text-yellow-800'),
-    Assigned: dk('bg-blue-900/40 text-blue-400', 'bg-blue-100 text-blue-700'),
+    Submitted:   dk('bg-slate-700 text-slate-300', 'bg-yellow-100 text-yellow-800'),
+    Requested:   dk('bg-slate-700 text-slate-300', 'bg-yellow-100 text-yellow-800'),
+    Assigned:    dk('bg-blue-900/40 text-blue-400', 'bg-blue-100 text-blue-700'),
     'In Progress': dk('bg-yellow-900/40 text-yellow-400', 'bg-amber-100 text-amber-800'),
-    Resolved: dk('bg-green-900/40 text-green-400', 'bg-green-100 text-green-700'),
-    Delayed: dk('bg-red-900/40 text-red-400', 'bg-red-100 text-red-700'),
+    Resolved:    dk('bg-green-900/40 text-green-400', 'bg-green-100 text-green-700'),
+    Collected:   dk('bg-green-900/40 text-green-400', 'bg-green-100 text-green-700'),
+    Delayed:     dk('bg-red-900/40 text-red-400', 'bg-red-100 text-red-700'),
   };
   return map[st] || map.Submitted;
 };
@@ -48,17 +50,25 @@ const CompleteModal = ({ report, onClose, onDone, dk }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/collector/report/${report._id}/status`, {
+      const api = report.taskType === 'scrap' 
+        ? `/api/scrap/update-status/${report._id}`
+        : `/api/collector/report/${report._id}/status`;
+      
+      const payload = report.taskType === 'scrap'
+        ? { status: 'Collected' }
+        : { status: 'Resolved', completionPhoto: photo, completionNotes: notes };
+
+      const res = await fetch(api, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status: 'Resolved', completionPhoto: photo, completionNotes: notes }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.message);
         return;
       }
-      onDone(data.report);
+      onDone(data.request || data.report);
       onClose();
     } catch {
       setError('Network error.');
@@ -217,10 +227,26 @@ const AssignedReports = () => {
   const fetchReports = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/collector/reports?filter=${filter}&sort=${sort}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) setReports(await res.json());
+      const [wasteRes, scrapRes] = await Promise.all([
+        fetch(`/api/collector/reports?filter=${filter}&sort=${sort}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`/api/scrap/collector?status=${filter === 'all' ? '' : filter}`, { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+
+      let wasteData = [];
+      let scrapData = [];
+
+      if (wasteRes.ok) wasteData = await wasteRes.json();
+      if (scrapRes.ok) scrapData = await scrapRes.json();
+
+      const combined = [
+        ...wasteData.map(r => ({ ...r, taskType: 'waste' })),
+        ...scrapData.map(r => ({ ...r, taskType: 'scrap' }))
+      ];
+
+      // Re-apply sorting if necessary
+      if (sort === 'date') combined.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      setReports(combined);
     } catch {
       /* ignore */
     } finally {
@@ -233,15 +259,22 @@ const AssignedReports = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch when filter/sort changes
   }, [filter, sort]);
 
-  const updateStatus = async (id, status) => {
+  const updateStatus = async (item, status) => {
     try {
-      const res = await fetch(`/api/collector/report/${id}/status`, {
+      const api = item.taskType === 'scrap'
+        ? (status === 'Assigned' ? `/api/scrap/assign/${item._id}` : `/api/scrap/update-status/${item._id}`)
+        : `/api/collector/report/${item._id}/status`;
+
+      const res = await fetch(api, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
       });
       const data = await res.json();
-      if (res.ok) setReports((rs) => rs.map((r) => (r._id === id ? data.report : r)));
+      if (res.ok) {
+        const updated = data.request || data.report;
+        setReports((rs) => rs.map((r) => (r._id === item._id ? { ...updated, taskType: item.taskType } : r)));
+      }
     } catch {
       /* ignore */
     }
@@ -303,7 +336,10 @@ const AssignedReports = () => {
             <div className="flex items-start justify-between gap-2 flex-wrap">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className={`text-sm font-semibold ${dk('text-slate-100', 'text-slate-900')}`}>{r.wasteType}</p>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${r.taskType === 'scrap' ? 'bg-purple-600 text-white' : 'bg-blue-600 text-white'}`}>
+                    {r.taskType === 'scrap' ? 'Scrap Pickup' : 'Waste Cleaning'}
+                  </span>
+                  <p className={`text-sm font-semibold ${dk('text-slate-100', 'text-slate-900')}`}>{r.taskType === 'scrap' ? r.scrapType : r.wasteType}</p>
                   {r.severity && (
                     <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${sevCls(r.severity, dk)}`}>{r.severity}</span>
                   )}
@@ -316,18 +352,21 @@ const AssignedReports = () => {
                 <p className={`text-xs flex items-center gap-1 mt-0.5 ${dk('text-slate-500', 'text-slate-400')}`}>
                   <HiClock className="h-3 w-3 shrink-0" /> {fmt(r.createdAt)}
                 </p>
+                {r.quantity && (
+                  <p className={`text-xs font-medium mt-1 ${dk('text-slate-300', 'text-slate-700')}`}>Quantity: {r.quantity}</p>
+                )}
                 {r.description && (
                   <p className={`text-xs mt-1 line-clamp-2 ${dk('text-slate-400', 'text-slate-600')}`}>{r.description}</p>
                 )}
-                <CleanupTimeBadge report={r} />
+                {r.taskType === 'waste' && <CleanupTimeBadge report={r} />}
               </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {r.status === 'Submitted' && (
+              {(r.status === 'Submitted' || r.status === 'Requested') && (
                 <button
                   type="button"
-                  onClick={() => updateStatus(r._id, 'Assigned')}
+                  onClick={() => updateStatus(r, 'Assigned')}
                   className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition"
                 >
                   Accept Task
@@ -336,7 +375,7 @@ const AssignedReports = () => {
               {r.status === 'Assigned' && (
                 <button
                   type="button"
-                  onClick={() => updateStatus(r._id, 'In Progress')}
+                  onClick={() => updateStatus(r, 'In Progress')}
                   className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-yellow-600 text-white hover:bg-yellow-500 transition"
                 >
                   Start Work
@@ -349,20 +388,22 @@ const AssignedReports = () => {
                     onClick={() => setComplete(r)}
                     className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-500 transition"
                   >
-                    Mark Completed
+                    Mark {r.taskType === 'scrap' ? 'Collected' : 'Completed'}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setDelay(r)}
-                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-orange-600 text-white hover:bg-orange-500 transition flex items-center gap-1"
-                  >
-                    <HiExclamation className="h-3.5 w-3.5" /> Report Delay
-                  </button>
+                  {r.taskType === 'waste' && (
+                    <button
+                      type="button"
+                      onClick={() => setDelay(r)}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-orange-600 text-white hover:bg-orange-500 transition flex items-center gap-1"
+                    >
+                      <HiExclamation className="h-3.5 w-3.5" /> Report Delay
+                    </button>
+                  )}
                 </>
               )}
-              {r.status === 'Resolved' && (
+              {(r.status === 'Resolved' || r.status === 'Collected') && (
                 <span className={`text-xs font-medium flex items-center gap-1 ${dk('text-green-400', 'text-green-700')}`}>
-                  ✓ Completed {fmt(r.completedAt)}
+                  <HiCheckCircle className="h-3.5 w-3.5" /> {r.status === 'Collected' ? 'Collected' : 'Completed'} {fmt(r.completedAt || r.updatedAt)}
                 </span>
               )}
             </div>

@@ -5,6 +5,7 @@ const ecoPointHistorySchema = new mongoose.Schema({
   points:   { type: Number, required: true },
   reason:   { type: String, required: true },
   reportId: { type: mongoose.Schema.Types.ObjectId, ref: 'WasteReport', default: null },
+  scrapId:  { type: mongoose.Schema.Types.ObjectId, ref: 'ScrapRequest', default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model('EcoPointHistory', ecoPointHistorySchema);

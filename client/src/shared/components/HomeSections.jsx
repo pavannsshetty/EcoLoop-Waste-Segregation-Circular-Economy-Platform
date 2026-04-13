@@ -1,4 +1,15 @@
-// HomeSections.jsx — all landing page sections below the hero
+import { 
+  HiClipboardList, HiCalendar, HiTruck, HiRefresh,
+  HiLocationMarker, HiClock, HiCheckCircle, HiStar,
+  HiUsers, HiLibrary, HiPhotograph, HiMail,
+  HiMap, HiExclamation, HiSparkles
+} from 'react-icons/hi';
+import { 
+  MdWaterDrop, MdRecycling, MdDevices, MdWarning, 
+  MdEmojiEvents, MdCamera, MdEmail, MdShare
+} from 'react-icons/md';
+import { FaTwitter, FaInstagram, FaLinkedin, FaGlobeAmericas } from 'react-icons/fa';
+import { SiX } from 'react-icons/si';
 
 const Section = ({ id, className = '', children }) => (
   <section id={id} className={`py-16 px-4 sm:px-6 lg:px-8 ${className}`}>{children}</section>
@@ -14,10 +25,10 @@ const SectionHeader = ({ tag, title, sub }) => (
 
 // ── 1. How It Works ──────────────────────────────────────────────────────────
 const STEPS = [
-  { icon: '🗂️', step: '01', title: 'Segregate Waste',   desc: 'Sort your waste into wet, dry, e-waste, and hazardous categories at home.' },
-  { icon: '📅', step: '02', title: 'Schedule Pickup',    desc: 'Request a pickup through EcoLoop and choose a convenient time slot.' },
-  { icon: '🚛', step: '03', title: 'Collector Arrives',  desc: 'A verified collector arrives at your door and collects the segregated waste.' },
-  { icon: '♻️', step: '04', title: 'Waste Recycled',     desc: 'Waste is sent to the right facility — recycled, composted, or safely disposed.' },
+  { Icon: HiClipboardList, step: '01', title: 'Segregate Waste',   desc: 'Sort your waste into wet, dry, e-waste, and hazardous categories at home.' },
+  { Icon: HiCalendar,      step: '02', title: 'Schedule Pickup',    desc: 'Request a pickup through EcoLoop and choose a convenient time slot.' },
+  { Icon: HiTruck,         step: '03', title: 'Collector Arrives',  desc: 'A verified collector arrives at your door and collects the segregated waste.' },
+  { Icon: HiRefresh,       step: '04', title: 'Waste Recycled',     desc: 'Waste is sent to the right facility — recycled, composted, or safely disposed.' },
 ];
 
 export const HowItWorks = () => (
@@ -25,10 +36,10 @@ export const HowItWorks = () => (
     <div className="max-w-5xl mx-auto">
       <SectionHeader tag="Simple Process" title="How EcoLoop Works" sub="Four easy steps to responsible waste management." />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {STEPS.map(({ icon, step, title, desc }) => (
+        {STEPS.map(({ Icon, step, title, desc }) => (
           <div key={step} className="relative flex flex-col items-center text-center p-6 rounded-2xl border border-slate-100 bg-[#F7FDF8] hover:shadow-md transition">
             <span className="absolute -top-3 left-4 text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">{step}</span>
-            <span className="text-4xl mb-4">{icon}</span>
+            <Icon className="h-10 w-10 text-green-600 mb-4" />
             <h3 className="text-base font-bold text-slate-900 mb-2">{title}</h3>
             <p className="text-sm text-slate-500 leading-relaxed">{desc}</p>
           </div>
@@ -40,10 +51,10 @@ export const HowItWorks = () => (
 
 // ── 2. Waste Categories ──────────────────────────────────────────────────────
 const CATEGORIES = [
-  { icon: '🥦', color: 'bg-green-50 border-green-200',  badge: 'bg-green-100 text-green-700',  title: 'Wet Waste',       desc: 'Food scraps, vegetable peels, tea leaves. Compostable and biodegradable.' },
-  { icon: '📦', color: 'bg-blue-50 border-blue-200',    badge: 'bg-blue-100 text-blue-700',    title: 'Dry Waste',       desc: 'Paper, cardboard, plastic bottles, glass. Recyclable materials.' },
-  { icon: '💻', color: 'bg-purple-50 border-purple-200',badge: 'bg-purple-100 text-purple-700',title: 'E-Waste',         desc: 'Old phones, laptops, chargers. Requires certified e-waste recycling.' },
-  { icon: '⚠️', color: 'bg-red-50 border-red-200',      badge: 'bg-red-100 text-red-700',      title: 'Hazardous Waste', desc: 'Batteries, medicines, paint. Must be disposed at designated facilities.' },
+  { Icon: MdWaterDrop, color: 'bg-green-50 border-green-200',  badge: 'bg-green-100 text-green-700',  title: 'Wet Waste',       desc: 'Food scraps, vegetable peels, tea leaves. Compostable and biodegradable.' },
+  { Icon: MdRecycling, color: 'bg-blue-50 border-blue-200',    badge: 'bg-blue-100 text-blue-700',    title: 'Dry Waste',       desc: 'Paper, cardboard, plastic bottles, glass. Recyclable materials.' },
+  { Icon: MdDevices,   color: 'bg-purple-50 border-purple-200',badge: 'bg-purple-100 text-purple-700',title: 'E-Waste',         desc: 'Old phones, laptops, chargers. Requires certified e-waste recycling.' },
+  { Icon: MdWarning,   color: 'bg-red-50 border-red-200',      badge: 'bg-red-100 text-red-700',      title: 'Hazardous Waste', desc: 'Batteries, medicines, paint. Must be disposed at designated facilities.' },
 ];
 
 export const WasteCategories = () => (
@@ -51,9 +62,9 @@ export const WasteCategories = () => (
     <div className="max-w-5xl mx-auto">
       <SectionHeader tag="Know Your Waste" title="Waste Categories" sub="Understanding waste types is the first step to responsible disposal." />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {CATEGORIES.map(({ icon, color, badge, title, desc }) => (
+        {CATEGORIES.map(({ Icon, color, badge, title, desc }) => (
           <div key={title} className={`rounded-2xl border p-5 flex flex-col gap-3 hover:shadow-md transition ${color}`}>
-            <span className="text-3xl">{icon}</span>
+            <Icon className="h-8 w-8" />
             <span className={`text-xs font-semibold px-2.5 py-1 rounded-full w-fit ${badge}`}>{title}</span>
             <p className="text-sm text-slate-600 leading-relaxed">{desc}</p>
           </div>
@@ -70,19 +81,19 @@ export const SchedulePickup = ({ onGetStarted }) => (
       <SectionHeader tag="Doorstep Service" title="Schedule a Waste Pickup" sub="Don't wait for garbage day. Request a pickup at your convenience and a verified collector will come to you." />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 text-left">
         {[
-          { icon: '📍', t: 'Enter Location',   d: 'Share your address or use GPS to auto-detect.' },
-          { icon: '🕐', t: 'Pick a Time Slot', d: 'Choose morning, afternoon, or evening pickup.' },
-          { icon: '✅', t: 'Confirm & Done',   d: 'A collector is assigned and notified instantly.' },
-        ].map(({ icon, t, d }) => (
+          { Icon: HiLocationMarker, t: 'Enter Location',   d: 'Share your address or use GPS to auto-detect.' },
+          { Icon: HiClock,          t: 'Pick a Time Slot', d: 'Choose morning, afternoon, or evening pickup.' },
+          { Icon: HiCheckCircle,    t: 'Confirm & Done',   d: 'A collector is assigned and notified instantly.' },
+        ].map(({ Icon, t, d }) => (
           <div key={t} className="flex gap-3 p-4 rounded-xl bg-[#F7FDF8] border border-slate-100">
-            <span className="text-2xl shrink-0">{icon}</span>
+            <Icon className="h-6 w-6 text-green-600 shrink-0" />
             <div><p className="text-sm font-semibold text-slate-900">{t}</p><p className="text-xs text-slate-500 mt-0.5">{d}</p></div>
           </div>
         ))}
       </div>
       <button onClick={onGetStarted}
         className="inline-flex items-center gap-2 bg-green-600 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-green-700 transition shadow-md text-sm">
-        📅 Schedule Pickup Now
+        <HiCalendar className="h-5 w-5" /> Schedule Pickup Now
       </button>
     </div>
   </Section>
@@ -90,10 +101,10 @@ export const SchedulePickup = ({ onGetStarted }) => (
 
 // ── 4. EcoPoints / Rewards ───────────────────────────────────────────────────
 const REWARDS = [
-  { icon: '🗂️', pts: '+10 pts', action: 'Segregate waste correctly' },
-  { icon: '📅', pts: '+15 pts', action: 'Schedule a pickup' },
-  { icon: '📸', pts: '+20 pts', action: 'Report a garbage issue' },
-  { icon: '♻️', pts: '+25 pts', action: 'Recycle 1 kg of dry waste' },
+  { Icon: HiClipboardList, pts: '+10 pts', action: 'Segregate waste correctly' },
+  { Icon: HiCalendar,      pts: '+15 pts', action: 'Schedule a pickup' },
+  { Icon: HiPhotograph,    pts: '+20 pts', action: 'Report a garbage issue' },
+  { Icon: HiRefresh,       pts: '+25 pts', action: 'Recycle 1 kg of dry waste' },
 ];
 
 export const EcoPoints = ({ onGetStarted }) => (
@@ -105,9 +116,9 @@ export const EcoPoints = ({ onGetStarted }) => (
         <p className="mt-3 text-green-100 max-w-xl mx-auto text-sm sm:text-base">Responsible waste disposal earns you points. Redeem them for rewards, discounts, and community recognition.</p>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {REWARDS.map(({ icon, pts, action }) => (
+        {REWARDS.map(({ Icon, pts, action }) => (
           <div key={action} className="bg-white/10 border border-white/20 rounded-2xl p-5 text-center hover:bg-white/20 transition">
-            <span className="text-3xl block mb-2">{icon}</span>
+            <Icon className="h-8 w-8 mx-auto text-yellow-300 mb-2" />
             <span className="text-lg font-extrabold text-yellow-300">{pts}</span>
             <p className="text-xs text-green-100 mt-1 leading-snug">{action}</p>
           </div>
@@ -115,8 +126,8 @@ export const EcoPoints = ({ onGetStarted }) => (
       </div>
       <div className="text-center">
         <button onClick={onGetStarted}
-          className="bg-white text-green-700 font-semibold px-8 py-3.5 rounded-xl hover:bg-green-50 transition shadow-md text-sm">
-          ⭐ Start Earning Points
+          className="inline-flex items-center gap-2 bg-white text-green-700 font-semibold px-8 py-3.5 rounded-xl hover:bg-green-50 transition shadow-md text-sm">
+          <HiStar className="h-5 w-5" /> Start Earning Points
         </button>
       </div>
     </div>
@@ -125,10 +136,10 @@ export const EcoPoints = ({ onGetStarted }) => (
 
 // ── 5. Impact Statistics ─────────────────────────────────────────────────────
 const STATS = [
-  { value: '50,000+', label: 'Citizens Joined',    icon: '👥' },
-  { value: '1,200+',  label: 'Active Collectors',  icon: '🚛' },
-  { value: '200+',    label: 'Municipalities',      icon: '🏛️' },
-  { value: '850 T',   label: 'Waste Recycled',      icon: '♻️' },
+  { value: '50,000+', label: 'Citizens Joined',    Icon: HiUsers },
+  { value: '1,200+',  label: 'Active Collectors',  Icon: HiTruck },
+  { value: '200+',    label: 'Municipalities',      Icon: HiLibrary },
+  { value: '850 T',   label: 'Waste Recycled',      Icon: HiRefresh },
 ];
 
 export const ImpactStats = () => (
@@ -136,9 +147,9 @@ export const ImpactStats = () => (
     <div className="max-w-5xl mx-auto">
       <SectionHeader tag="Our Impact" title="Making a Real Difference" sub="EcoLoop is transforming waste management across India, one city at a time." />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-        {STATS.map(({ value, label, icon }) => (
+        {STATS.map(({ value, label, Icon }) => (
           <div key={label} className="bg-white rounded-2xl border border-slate-100 p-6 text-center shadow-sm hover:shadow-md transition">
-            <span className="text-3xl block mb-2">{icon}</span>
+            <Icon className="h-8 w-8 mx-auto text-green-600 mb-2" />
             <p className="text-2xl sm:text-3xl font-extrabold text-green-600">{value}</p>
             <p className="text-sm text-slate-500 mt-1">{label}</p>
           </div>
@@ -167,12 +178,12 @@ export const NearbyBins = ({ onGetStarted }) => (
           </div>
           <button onClick={onGetStarted}
             className="inline-flex items-center gap-2 bg-green-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-green-700 transition text-sm">
-            📍 Find Bins Near Me
+            <HiLocationMarker className="h-5 w-5" /> Find Bins Near Me
           </button>
         </div>
         <div className="rounded-2xl bg-[#F7FDF8] border border-slate-200 h-64 flex items-center justify-center text-slate-400">
           <div className="text-center space-y-2">
-            <span className="text-5xl block">🗺️</span>
+            <HiMap className="h-10 w-10 mx-auto text-slate-300" />
             <p className="text-sm font-medium">Interactive map coming soon</p>
             <p className="text-xs">Sign in to access live bin locations</p>
           </div>
@@ -189,19 +200,19 @@ export const ReportGarbage = ({ onGetStarted }) => (
       <SectionHeader tag="Civic Action" title="Report Illegal Dumping or Garbage Issues" sub="Spotted overflowing bins or illegal dumping? Report it in seconds and help keep your city clean." />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 text-left">
         {[
-          { icon: '📸', t: 'Take a Photo',      d: 'Capture the garbage issue with your camera.' },
-          { icon: '📍', t: 'Tag Location',       d: 'Pin the exact location on the map.' },
-          { icon: '📨', t: 'Submit to Council',  d: 'Report is sent directly to the municipality.' },
-        ].map(({ icon, t, d }) => (
+          { Icon: HiPhotograph, t: 'Take a Photo',      d: 'Capture the garbage issue with your camera.' },
+          { Icon: HiLocationMarker, t: 'Tag Location',       d: 'Pin the exact location on the map.' },
+          { Icon: HiMail,       t: 'Submit to Council',  d: 'Report is sent directly to the municipality.' },
+        ].map(({ Icon, t, d }) => (
           <div key={t} className="flex gap-3 p-4 rounded-xl bg-white border border-slate-100 shadow-sm">
-            <span className="text-2xl shrink-0">{icon}</span>
+            <Icon className="h-6 w-6 text-orange-500 shrink-0" />
             <div><p className="text-sm font-semibold text-slate-900">{t}</p><p className="text-xs text-slate-500 mt-0.5">{d}</p></div>
           </div>
         ))}
       </div>
       <button onClick={onGetStarted}
         className="inline-flex items-center gap-2 bg-orange-500 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-orange-600 transition shadow-md text-sm">
-        🚨 Report a Garbage Issue
+        <HiExclamation className="h-5 w-5" /> Report a Garbage Issue
       </button>
     </div>
   </Section>
@@ -246,7 +257,7 @@ export const Footer = ({ onGetStarted }) => (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
         <div className="col-span-2 md:col-span-1">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-xl">🌱</span>
+            <HiSparkles className="h-6 w-6 text-green-400" />
             <span className="text-white font-bold text-lg">EcoLoop</span>
           </div>
           <p className="text-xs leading-relaxed">Connecting citizens, collectors, and municipalities for smarter, cleaner waste management.</p>
@@ -271,13 +282,13 @@ export const Footer = ({ onGetStarted }) => (
           <p className="text-white text-sm font-semibold mb-3">Follow Us</p>
           <div className="flex gap-3">
             {[
-              { label: 'Twitter',   icon: '𝕏' },
-              { label: 'Instagram', icon: '📷' },
-              { label: 'LinkedIn',  icon: '💼' },
-            ].map(({ label, icon }) => (
+              { label: 'Twitter',   Icon: SiX },
+              { label: 'Instagram', Icon: FaInstagram },
+              { label: 'LinkedIn',  Icon: FaLinkedin },
+            ].map(({ label, Icon }) => (
               <button key={label} aria-label={label}
                 className="h-8 w-8 rounded-lg bg-slate-800 hover:bg-green-600 flex items-center justify-center text-sm transition">
-                {icon}
+                <Icon className="h-4 w-4 text-white" />
               </button>
             ))}
           </div>
@@ -285,7 +296,9 @@ export const Footer = ({ onGetStarted }) => (
       </div>
       <div className="border-t border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
         <p>© {new Date().getFullYear()} EcoLoop. All rights reserved.</p>
-        <p className="text-green-500 font-medium">🌍 Building a cleaner, greener India</p>
+        <p className="text-green-500 font-medium flex items-center gap-2">
+          <FaGlobeAmericas className="h-3.5 w-3.5" /> Building a cleaner, greener India
+        </p>
       </div>
     </div>
   </footer>

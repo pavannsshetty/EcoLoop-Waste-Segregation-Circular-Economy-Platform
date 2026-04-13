@@ -95,19 +95,83 @@ router.put('/availability', protect, collectorAuth, async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+router.get('/profile', protect, collectorAuth, async (req, res) => {
+  try {
+    const collector = req.collector; // populated by collectorAuth middleware
+    if (!collector) return res.status(404).json({ message: 'Collector not found.' });
+
+    res.json({
+      _id:          collector._id,
+      name:         collector.name,
+      email:        collector.email || '',
+      phone:        collector.mobile || '',
+      role:         'Collector',
+      locality:     collector.area || '',
+      profilePhoto: collector.photo || '',
+      completedTasks: collector.completedTasks || 0,
+      createdAt:    collector.createdAt,
+      collectorId:  collector.collectorId,
+      city:         collector.city,
+      area:         collector.area,
+      performanceScore: collector.performanceScore || 0,
+      availability: collector.availability
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+});
+
+router.put('/profile', protect, collectorAuth, async (req, res) => {
+  try {
+    const { name, mobile, email, photo } = req.body;
+    const update = {};
+    if (name  !== undefined) update.name  = name;
+    if (mobile !== undefined) update.mobile = mobile;
+    if (email !== undefined) update.email = email;
+    if (photo !== undefined) update.photo  = photo;
+
+    const collector = await Collector.findByIdAndUpdate(req.user.id, update, { returnDocument: 'after' }).select('-password');
+    res.json({ message: 'Profile updated.', user: collector });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+});
+
+const ScrapRequest   = require('../models/ScrapRequest');
+
 router.get('/stats', protect, collectorAuth, async (req, res) => {
   try {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const cid = req.user.id;
-    const [pendingSubmitted, assigned, inProgress, completedToday, total] = await Promise.all([
+    const [
+      pendingSubmitted, assigned, inProgress, completedToday, total,
+      pendingScrap, assignedScrap, inProgressScrap, completedScrapToday, totalScrap
+    ] = await Promise.all([
       WasteReport.countDocuments({ status: 'Submitted', assignedCollector: null }),
       WasteReport.countDocuments({ assignedCollector: cid, status: 'Assigned' }),
       WasteReport.countDocuments({ assignedCollector: cid, status: 'In Progress' }),
       WasteReport.countDocuments({ assignedCollector: cid, status: 'Resolved', completedAt: { $gte: today } }),
       WasteReport.countDocuments({ assignedCollector: cid }),
+      
+      ScrapRequest.countDocuments({ status: 'Requested', assignedCollector: null }),
+      ScrapRequest.countDocuments({ assignedCollector: cid, status: 'Assigned' }),
+      ScrapRequest.countDocuments({ assignedCollector: cid, status: 'In Progress' }),
+      ScrapRequest.countDocuments({ assignedCollector: cid, status: 'Collected', updatedAt: { $gte: today } }),
+      ScrapRequest.countDocuments({ assignedCollector: cid }),
     ]);
+
     const collector = await Collector.findById(req.user.id).select('name collectorId city area availability completedTasks');
-    res.json({ pendingSubmitted, assigned, inProgress, completedToday, total, collector });
+    
+    res.json({ 
+      pendingSubmitted: pendingSubmitted + pendingScrap,
+      assigned: assigned + assignedScrap,
+      inProgress: inProgress + inProgressScrap,
+      completedToday: completedToday + completedScrapToday,
+      total: total + totalScrap,
+      collector,
+      wasteDetails: { pendingSubmitted, assigned, inProgress, completedToday, total },
+      scrapDetails: { pendingScrap, assignedScrap, inProgressScrap, completedScrapToday, totalScrap }
+    });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 

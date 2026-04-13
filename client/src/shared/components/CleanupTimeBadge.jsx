@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { HiCheckCircle, HiExclamation, HiClock } from 'react-icons/hi';
 
 const pad = n => String(n).padStart(2, '0');
 
@@ -40,7 +41,7 @@ const CleanupTimeBadge = ({ report, showCountdown = true }) => {
   if (info.type === 'resolved') {
     return (
       <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-        ✅ Completed
+        <HiCheckCircle className="h-3 w-3" /> Completed
       </span>
     );
   }
@@ -51,7 +52,7 @@ const CleanupTimeBadge = ({ report, showCountdown = true }) => {
     const om = overdueMins % 60;
     return (
       <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 animate-pulse">
-        ⚠ Delayed {oh > 0 ? `${oh}h ` : ''}{om}m overdue
+        <HiExclamation className="h-3 w-3" /> Delayed {oh > 0 ? `${oh}h ` : ''}{om}m overdue
       </span>
     );
   }
@@ -59,7 +60,7 @@ const CleanupTimeBadge = ({ report, showCountdown = true }) => {
   if (info.type === 'countdown') {
     return (
       <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
-        ⏱ {info.h}h {pad(info.m)}m left
+        <HiClock className="h-3 w-3" /> {info.h}h {pad(info.m)}m left
       </span>
     );
   }
@@ -67,7 +68,7 @@ const CleanupTimeBadge = ({ report, showCountdown = true }) => {
   if (info.type === 'expected') {
     return (
       <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-        ⏱ Expected: {info.hours}h
+        <HiClock className="h-3 w-3" /> Expected: {info.hours}h
       </span>
     );
   }

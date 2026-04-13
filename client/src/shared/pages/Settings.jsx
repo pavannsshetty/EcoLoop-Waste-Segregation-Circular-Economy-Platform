@@ -42,7 +42,7 @@ const Settings = () => {
         </div>
 
         <div className={`px-5 py-4 ${sub} text-xs`}>
-          You can also toggle dark mode using the <span className="font-semibold">🌙 / ☀️</span> icon in the top header.
+          You can also toggle dark mode using the theme icon in the top header.
         </div>
       </div>
 

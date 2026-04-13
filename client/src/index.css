@@ -3,12 +3,30 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-slate-50 text-slate-900 antialiased;
-    font-family: 'Inter', sans-serif;
+  :root {
+    --transition-speed: 0.3s;
+    --ease-premium: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Dark mode palette — matches Settings page */
+    --dark-bg-primary:   #0B0F13;   /* root body */
+    --dark-bg-secondary: #0f1a14;   /* page sections */
+    --dark-card:         rgba(255,255,255,0.05); /* bg-white/5 */
+    --dark-card-hover:   rgba(255,255,255,0.08);
+    --dark-border:       #374151;   /* gray-700 */
+    --dark-border-light: #1f2937;   /* gray-800 */
   }
+
+  * {
+    @apply transition-colors duration-200;
+  }
+
+  body {
+    @apply bg-[#FBFDFB] text-slate-900 antialiased;
+    font-family: 'Outfit', 'Inter', sans-serif;
+  }
+
   html.dark body {
-    @apply bg-black text-slate-100;
+    @apply bg-[#0B0F13] text-slate-100;
   }
 }
 
@@ -17,8 +35,35 @@
   to   { width: 0%; }
 }
 
+@keyframes pulse-subtle {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.02); opacity: 0.95; }
+}
+
 @layer utilities {
   .animate-shrink {
     animation: shrinkWidth 4.5s linear forwards;
+  }
+
+  .glass-dark {
+    @apply bg-slate-900/40 backdrop-blur-md border border-white/5;
+  }
+
+  /* Unified dark card — matches Settings page style */
+  .dark-surface {
+    background-color: var(--dark-card);
+    border-color: var(--dark-border);
+  }
+
+  .interactive-card {
+    @apply transition-all duration-300 ease-[var(--ease-premium)] hover:-translate-y-1 hover:shadow-xl hover:shadow-green-500/10 active:scale-[0.98];
+  }
+
+  .cta-pulse {
+    animation: pulse-subtle 4s ease-in-out infinite;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-emerald-400;
   }
 }

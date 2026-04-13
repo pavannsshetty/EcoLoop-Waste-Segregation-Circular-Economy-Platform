@@ -128,8 +128,17 @@ const CollectorDashboard = () => {
                 ? `${stats.collector.area}, ${stats.collector.city} — stay on top of your assignments.`
                 : 'Loading your service area…'}
               {(stats.pendingSubmitted ?? 0) > 0 && (
-                <span className="block mt-1 font-medium text-white/95">
-                  {stats.pendingSubmitted} citizen report{(stats.pendingSubmitted === 1) ? '' : 's'} waiting in the queue.
+                <span className="block mt-2 space-y-1">
+                  {stats.wasteDetails?.pendingSubmitted > 0 && (
+                    <span className="block text-xs font-semibold bg-white/10 w-fit px-2 py-0.5 rounded-lg border border-white/20">
+                      {stats.wasteDetails.pendingSubmitted} waste report{(stats.wasteDetails.pendingSubmitted === 1) ? '' : 's'} in queue
+                    </span>
+                  )}
+                  {stats.scrapDetails?.pendingScrap > 0 && (
+                    <span className="block text-xs font-semibold bg-white/10 w-fit px-2 py-0.5 rounded-lg border border-white/20">
+                      {stats.scrapDetails.pendingScrap} scrap pickup{(stats.scrapDetails.pendingScrap === 1) ? '' : 's'} requested
+                    </span>
+                  )}
                 </span>
               )}
             </p>

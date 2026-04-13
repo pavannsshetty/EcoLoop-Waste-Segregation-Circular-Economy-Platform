@@ -308,7 +308,7 @@ const GoogleMapPicker = ({ onLocationSelect, dark = false }) => {
 
       {error && (
         <p className="flex items-center gap-1.5 text-xs text-red-500">
-          <span>⚠</span> {error}
+          <HiExclamation className="h-3.5 w-3.5" /> {error}
         </p>
       )}
 

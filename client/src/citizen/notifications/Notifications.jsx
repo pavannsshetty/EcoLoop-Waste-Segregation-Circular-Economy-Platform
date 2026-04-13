@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import { HiBell, HiRefresh } from 'react-icons/hi';
+import { useState, useEffect } from 'react';
+import { HiBell, HiRefresh, HiClipboardList, HiThumbUp, HiExclamation } from 'react-icons/hi';
 import { useTheme } from '../../shared/context/ThemeContext';
 
-const TYPE_ICONS = { report: '📋', status: '🔄', support: '👍', delay: '⚠️', system: '🔔' };
+const TYPE_ICONS = { report: HiClipboardList, status: HiRefresh, support: HiThumbUp, delay: HiExclamation, system: HiBell };
 const TYPE_COLORS = {
   report:  'bg-green-100 text-green-700',
   status:  'bg-blue-100 text-blue-700',
@@ -66,7 +66,7 @@ const Notifications = () => {
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className={`text-base font-semibold ${dk('text-slate-200','text-slate-800')}`}>Notifications</h1>
+        <h1 className={`text-base font-medium ${dk('text-slate-200','text-slate-800')}`}>Notifications</h1>
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
             <button onClick={markAllRead} className="text-xs text-green-500 hover:underline font-medium">Mark all read</button>
@@ -77,7 +77,7 @@ const Notifications = () => {
         </div>
       </div>
 
-        <div className={`flex items-center gap-1 rounded-xl border shadow-sm p-1 w-fit ${dk('bg-white/5 border-gray-700','bg-white border-slate-100')}`}>
+        <div className={`flex items-center gap-1 rounded-sm border p-1 w-fit transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
           {[['all', 'All'], ['unread', 'Unread'], ['read', 'Read']].map(([val, label]) => (
             <button key={val} onClick={() => setFilter(val)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${filter === val ? 'bg-green-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}>
@@ -95,13 +95,16 @@ const Notifications = () => {
         ) : (
           filtered.map(n => (
             <button key={n._id} onClick={() => markRead(n._id)}
-              className={`w-full flex items-start gap-4 rounded-2xl border p-4 text-left shadow-sm transition hover:shadow-md ${
+              className={`w-full flex items-start gap-4 rounded-sm border p-4 text-left transition-colors duration-200 ${
                 !n.isRead
-                  ? dk('bg-green-900/20 border-green-800','bg-white border-green-200')
-                  : dk('bg-white/5 border-gray-700','bg-white/70 border-slate-100')
+                  ? dk('bg-green-900/20 border-green-800 hover:bg-green-900/30','bg-white border-green-200 hover:bg-green-50')
+                  : dk('bg-white/5 border-gray-700 hover:bg-white/10','bg-white border-slate-200 hover:bg-slate-50')
               }`}>
-              <div className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-lg ${TYPE_COLORS[n.type] || 'bg-slate-100'}`}>
-                {TYPE_ICONS[n.type] || '🔔'}
+              <div className={`h-10 w-10 shrink-0 rounded-sm flex items-center justify-center text-lg ${TYPE_COLORS[n.type] || 'bg-slate-100'}`}>
+                {(() => {
+                  const Icon = TYPE_ICONS[n.type] || HiBell;
+                  return <Icon className="h-5 w-5" />;
+                })()}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">

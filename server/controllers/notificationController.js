@@ -1,3 +1,4 @@
+const Notification = require('../models/Notification');
 const { emitToUser } = require('../socket');
 
 const createNotification = async (userId, title, message, type = 'report', reportId = null) => {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   HiLogout,
@@ -21,17 +21,10 @@ import { ToastContainer, useToast } from '../components/Toast';
 import { useTheme } from '../context/ThemeContext';
 import { useUser } from '../context/UserContext';
 
-const IconDashboard = () => (
-  <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth={1.8}>
-    <rect x="3" y="3" width="7" height="7" rx="1.5" />
-    <rect x="14" y="3" width="7" height="7" rx="1.5" />
-    <rect x="3" y="14" width="7" height="7" rx="1.5" />
-    <rect x="14" y="14" width="7" height="7" rx="1.5" />
-  </svg>
-);
+// Icons are now handled directly via react-icons imports below
 
 const NAV_MAIN = [
-  { path: '/collector/dashboard', Icon: IconDashboard, label: 'Dashboard' },
+  { path: '/collector/dashboard', Icon: () => <HiChartBar className="h-5 w-5" />, label: 'Dashboard' },
   { path: '/collector/assigned', Icon: () => <HiClipboardList className="h-5 w-5" />, label: 'Assigned Reports' },
   { path: '/collector/tasks', Icon: () => <HiCollection className="h-5 w-5" />, label: 'My Tasks' },
   { path: '/collector/completed', Icon: () => <HiCheckCircle className="h-5 w-5" />, label: 'Completed' },
@@ -76,8 +69,16 @@ const CollectorLayout = () => {
   const navigate = useNavigate();
   const { toasts, toast, remove } = useToast();
   const { dark, toggleDark } = useTheme();
-  const { user: ctxUser, clearUser } = useUser();
+  const { user: ctxUser, loading: userLoading, clearUser } = useUser();
   const user = ctxUser || JSON.parse(localStorage.getItem('user') || '{}');
+
+  useEffect(() => {
+    if (!userLoading) {
+      if (!user || user.role !== 'Collector') {
+        navigate('/');
+      }
+    }
+  }, [user, userLoading, navigate]);
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);

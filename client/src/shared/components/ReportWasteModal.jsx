@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import {
   HiX, HiPhotograph, HiClipboardList, HiLocationMarker,
   HiCamera, HiExclamation, HiCheckCircle, HiInformationCircle,
-  HiThumbUp, HiEye, HiEyeOff,
+  HiThumbUp, HiEye, HiEyeOff, HiMap as HiMapIcon, HiPencil
 } from 'react-icons/hi';
 import { MdMyLocation } from 'react-icons/md';
 import MapPicker from './MapPicker';
@@ -10,8 +10,8 @@ import MapPicker from './MapPicker';
 const WASTE_TYPES = ['Wet Waste', 'Dry Waste', 'E-Waste', 'Plastic Waste', 'Mixed Waste'];
 const LANDMARKS   = ['School', 'Temple', 'Bus Stop', 'Hospital', 'Market', 'Park', 'Roadside', 'Residential Area', 'Other'];
 const LOC_METHODS = [
-  { id: 'map',    icon: '🗺️', label: 'Adjust Pin on Map' },
-  { id: 'manual', icon: '✍️', label: 'Enter Manually' },
+  { id: 'map',    Icon: HiMapIcon, label: 'Adjust Pin on Map' },
+  { id: 'manual', Icon: HiPencil,  label: 'Enter Manually' },
 ];
 const SEVERITY_OPTIONS = [
   { value: 'Low',    label: 'Low',    cls: 'bg-green-100 text-green-700 border-green-300',  active: 'bg-green-500 text-white border-green-500' },
@@ -83,7 +83,7 @@ const AccuracyBadge = ({ accuracy }) => {
       ? { label: 'Medium Accuracy', cls: 'bg-yellow-100 text-yellow-700' }
       : { label: 'Low Accuracy', cls: 'bg-red-100 text-red-700' };
   return (
-    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${cls}`}>
+    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-none ${cls}`}>
       <MdMyLocation className="h-3 w-3" /> {label} (±{Math.round(accuracy)}m)
     </span>
   );
@@ -92,7 +92,7 @@ const AccuracyBadge = ({ accuracy }) => {
 const DuplicateModal = ({ report, onContinue, onClose, dark }) => (
   <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
     <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-    <div className={`relative z-10 w-full max-w-sm rounded-2xl shadow-2xl p-5 space-y-4 ${dark ? 'bg-slate-800' : 'bg-white'}`}>
+    <div className={`relative z-10 w-full max-w-sm rounded-none shadow-2xl p-5 space-y-4 ${dark ? 'bg-slate-800' : 'bg-white'}`}>
       <div className="flex items-start gap-3">
         <HiExclamation className="h-6 w-6 text-yellow-500 shrink-0 mt-0.5" />
         <div>
@@ -103,7 +103,7 @@ const DuplicateModal = ({ report, onContinue, onClose, dark }) => (
         </div>
       </div>
       {report && (
-        <div className={`rounded-xl border p-3 text-xs space-y-1 ${dark ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+        <div className={`rounded-none border p-3 text-xs space-y-1 ${dark ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
           <p><span className="font-medium">Type:</span> {report.wasteType}</p>
           <p><span className="font-medium">Severity:</span> {report.severity}</p>
           <p><span className="font-medium">Location:</span> {report.location?.displayAddress || report.location?.address}</p>
@@ -112,10 +112,10 @@ const DuplicateModal = ({ report, onContinue, onClose, dark }) => (
         </div>
       )}
       <div className="flex gap-2 pt-1">
-        <button onClick={onClose} className={`flex-1 rounded-xl border py-2 text-sm font-semibold transition ${dark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50'}`}>
+        <button onClick={onClose} className={`flex-1 rounded-none border py-2 text-sm font-semibold transition ${dark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50'}`}>
           Cancel
         </button>
-        <button onClick={onContinue} className="flex-1 rounded-xl bg-green-600 py-2 text-sm font-semibold text-white hover:bg-green-500 transition">
+        <button onClick={onContinue} className="flex-1 rounded-none bg-green-600 py-2 text-sm font-semibold text-white hover:bg-green-500 transition">
           Submit Anyway
         </button>
       </div>
@@ -239,12 +239,12 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
 
   if (!isOpen) return null;
 
-  const inp = `w-full rounded-lg border py-2.5 px-3.5 text-sm shadow-sm transition focus:outline-none focus:ring-2 focus:ring-green-500 ${
+  const inp = `w-full rounded-none border py-2.5 px-3.5 text-sm shadow-sm transition focus:outline-none focus:ring-2 focus:ring-green-500 ${
     dark ? 'bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400'
   }`;
   const lbl    = `text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-700'}`;
   const errCls = 'text-xs text-red-400 mt-0.5';
-  const card   = `rounded-xl border p-4 space-y-3 ${dark ? 'bg-white/5 border-gray-700' : 'bg-slate-50 border-slate-200'}`;
+  const card   = `rounded-none border p-4 space-y-3 ${dark ? 'bg-white/5 border-gray-700' : 'bg-slate-50 border-slate-200'}`;
 
   return (
     <>
@@ -252,14 +252,14 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
 
       <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
-        <div className={`relative z-10 w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] ${dark ? 'bg-black/90 border border-gray-800' : 'bg-white'}`}>
+        <div className={`relative z-10 w-full sm:max-w-2xl rounded-none sm:rounded-none shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] ${dark ? 'bg-black/90 border border-gray-800' : 'bg-white'}`}>
 
           <div className={`flex items-center justify-between px-4 sm:px-6 py-3.5 border-b shrink-0 ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
             <div className="flex items-center gap-2">
               <HiClipboardList className="h-5 w-5 text-green-500" />
               <span className={`font-semibold text-sm sm:text-base ${dark ? 'text-white' : 'text-slate-900'}`}>Report Waste</span>
             </div>
-            <button type="button" onClick={handleClose} className={`rounded-lg p-1.5 transition ${dark ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-400 hover:bg-slate-100'}`}>
+            <button type="button" onClick={handleClose} className={`rounded-none p-1.5 transition ${dark ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-400 hover:bg-slate-100'}`}>
               <HiX className="h-5 w-5" />
             </button>
           </div>
@@ -282,7 +282,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
                 <div className="flex gap-2 mt-1">
                   {SEVERITY_OPTIONS.map(s => (
                     <button key={s.value} type="button" onClick={() => set('severity', s.value)}
-                      className={`flex-1 rounded-lg border py-2 text-xs font-semibold transition ${form.severity === s.value ? s.active : s.cls}`}>
+                      className={`flex-1 rounded-none border py-2 text-xs font-semibold transition ${form.severity === s.value ? s.active : s.cls}`}>
                       {s.value}
                     </button>
                   ))}
@@ -294,7 +294,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
                 <div className="flex gap-2 mt-1 flex-wrap">
                   {SEEN_OPTIONS.map(o => (
                     <button key={o} type="button" onClick={() => set('wasteSeenAt', o)}
-                      className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition ${
+                      className={`px-3 py-1.5 rounded-none border text-xs font-medium transition ${
                         form.wasteSeenAt === o
                           ? 'bg-green-600 text-white border-green-600'
                           : dark ? 'border-slate-600 text-slate-400 hover:border-green-500' : 'border-slate-300 text-slate-600 hover:border-green-400'
@@ -316,17 +316,17 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
             <div className={card}>
               <p className={`text-xs font-semibold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Photo</p>
               <div className="flex flex-col sm:flex-row gap-2">
-                <label className={`flex-1 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed cursor-pointer transition py-4 ${
+                <label className={`flex-1 flex flex-col items-center justify-center gap-2 rounded-none border-2 border-dashed cursor-pointer transition py-4 ${
                   dark ? 'border-slate-600 hover:border-green-500 bg-slate-800/50' : 'border-slate-300 hover:border-green-400 bg-white'
                 }`}>
                   {preview
-                    ? <img src={preview} alt="preview" className="h-24 w-auto rounded-lg object-cover" />
+                    ? <img src={preview} alt="preview" className="h-24 w-auto rounded-none object-cover" />
                     : <><HiPhotograph className={`h-7 w-7 ${dark ? 'text-slate-500' : 'text-slate-400'}`} /><span className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Upload from gallery</span></>
                   }
                   <input type="file" accept="image/*" className="hidden" onChange={e => handleImage(e.target.files[0])} />
                 </label>
                 <button type="button" onClick={() => cameraRef.current?.click()}
-                  className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-4 transition ${
+                  className={`flex flex-col items-center justify-center gap-2 rounded-none border-2 border-dashed px-6 py-4 transition ${
                     dark ? 'border-slate-600 hover:border-green-500 text-slate-400 hover:text-green-400' : 'border-slate-300 hover:border-green-400 text-slate-400 hover:text-green-600'
                   }`}>
                   <HiCamera className="h-7 w-7" /><span className="text-xs">Take Photo</span>
@@ -334,7 +334,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
                 <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => handleImage(e.target.files[0])} />
               </div>
               {photoWarning && (
-                <div className="flex items-start gap-2 rounded-lg bg-yellow-50 border border-yellow-200 px-3 py-2">
+                <div className="flex items-start gap-2 rounded-none bg-yellow-50 border border-yellow-200 px-3 py-2">
                   <HiExclamation className="h-4 w-4 text-yellow-500 shrink-0 mt-0.5" />
                   <p className="text-xs text-yellow-700">Photo location does not match selected map location (&gt;200m). Please verify.</p>
                 </div>
@@ -372,11 +372,11 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
               <div className="flex gap-2 flex-wrap">
                 {LOC_METHODS.map(m => (
                   <button key={m.id} type="button" onClick={() => setLocMethod(m.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-none text-xs font-medium border transition ${
                       locMethod === m.id ? 'bg-green-600 text-white border-green-600'
                         : dark ? 'border-slate-600 text-slate-400 hover:border-green-500' : 'border-slate-300 text-slate-600 hover:border-green-400'
                     }`}>
-                    <span>{m.icon}</span>{m.label}
+                    <m.Icon className="h-3.5 w-3.5" />{m.label}
                   </button>
                 ))}
               </div>
@@ -385,7 +385,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
                 <div className="space-y-2">
                   <input type="text" value={form.manualAddress} onChange={e => set('manualAddress', e.target.value)}
                     placeholder="Enter full address, area, city..." className={inp} />
-                  <div className={`flex items-start gap-2 rounded-lg px-3 py-2 text-xs ${dark ? 'bg-slate-700 text-slate-400' : 'bg-blue-50 text-blue-700'}`}>
+                  <div className={`flex items-start gap-2 rounded-none px-3 py-2 text-xs ${dark ? 'bg-slate-700 text-slate-400' : 'bg-blue-50 text-blue-700'}`}>
                     <HiInformationCircle className="h-4 w-4 shrink-0 mt-0.5" />
                     <span>Manual address will be used as-is. Use map picker for accurate location.</span>
                   </div>
@@ -416,14 +416,14 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
                 </div>
               </div>
               {form.severity && (
-                <div className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${dark ? 'bg-slate-700 text-slate-300' : 'bg-green-50 text-green-700'}`}>
+                <div className={`flex items-center gap-2 rounded-none px-3 py-2 text-xs ${dark ? 'bg-slate-700 text-slate-300' : 'bg-green-50 text-green-700'}`}>
                   <HiCheckCircle className="h-4 w-4 text-green-500 shrink-0" />
                   Expected cleanup: {form.severity === 'High' ? '24 hours' : form.severity === 'Medium' ? '48 hours' : '72 hours'}
                 </div>
               )}
             </div>
 
-            <div className={`flex items-center justify-between rounded-xl border px-4 py-3 ${dark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+            <div className={`flex items-center justify-between rounded-none border px-4 py-3 ${dark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
               <div className="flex items-center gap-2">
                 {anonymous ? <HiEyeOff className="h-4 w-4 text-slate-400" /> : <HiEye className="h-4 w-4 text-green-500" />}
                 <span className={`text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
@@ -437,18 +437,18 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
             </div>
 
             {errors.submit && (
-              <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-600">{errors.submit}</div>
+              <div className="rounded-none bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-600">{errors.submit}</div>
             )}
 
             <div className="flex flex-col sm:flex-row gap-3 pt-1 pb-2">
               <button type="button" onClick={handleClose}
-                className={`w-full sm:w-auto flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${
+                className={`w-full sm:w-auto flex-1 rounded-none border px-4 py-2.5 text-sm font-semibold transition ${
                   dark ? 'border-slate-600 text-slate-300 hover:bg-slate-800' : 'border-slate-300 text-slate-600 hover:bg-slate-50'
                 }`}>
                 Cancel
               </button>
               <button type="submit" disabled={loading || regionValid === false}
-                className="w-full sm:w-auto flex-1 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-500 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed">
+                className="w-full sm:w-auto flex-1 rounded-none bg-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-500 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed">
                 {loading ? 'Submitting...' : regionValid === false ? 'Outside Service Area' : 'Submit Report'}
               </button>
             </div>

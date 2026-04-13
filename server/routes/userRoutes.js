@@ -2,82 +2,104 @@ const express = require('express');
 const router  = express.Router();
 const { protect } = require('../middleware/auth');
 const User    = require('../models/User');
-const Collector = require('../models/Collector');
 const WasteReport = require('../models/WasteReport');
 const EcoPointHistory = require('../models/EcoPointHistory');
+const multer = require('multer');
+const path   = require('path');
+const fs     = require('fs');
+
+// ── Multer Config ───────────────────────────────────────────
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = 'uploads/profiles';
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `profile-${req.user.id}-${Date.now()}${path.extname(file.originalname)}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png/;
+    const ext = allowed.test(path.extname(file.originalname).toLowerCase());
+    const mime = allowed.test(file.mimetype);
+    if (ext && mime) return cb(null, true);
+    cb(new Error('Only .png, .jpg and .jpeg format allowed!'));
+  }
+});
 
 router.get('/profile', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
-    if (user) {
-      const [reportsCount, resolvedCount, history] = await Promise.all([
-        WasteReport.countDocuments({ userId: req.user.id }),
-        WasteReport.countDocuments({ userId: req.user.id, status: 'Resolved' }),
-        EcoPointHistory.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(20),
-      ]);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
 
-      return res.json({
-        _id:          user._id,
-        name:         user.name,
-        email:        user.email,
-        phone:        user.phone,
-        role:         user.role,
-        address:      user.address,
-        locality:     user.locality,
-        ecoPoints:    user.ecoPoints    || 0,
-        badges:       user.badges       || [],
-        profilePhoto: user.profilePhoto || '',
-        streakCount:  user.streakCount  || 0,
-        reportsCount,
-        resolvedCount,
-        pointsHistory: history,
-        createdAt:    user.createdAt,
-      });
-    }
+    const [reportsCount, resolvedCount, history] = await Promise.all([
+      WasteReport.countDocuments({ userId: req.user.id }),
+      WasteReport.countDocuments({ userId: req.user.id, status: 'Resolved' }),
+      EcoPointHistory.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(20),
+    ]);
 
-    const collector = await Collector.findById(req.user.id).select('-password');
-    if (!collector) return res.status(404).json({ message: 'User not found.' });
+    const safeUser = {
+      _id:          user._id,
+      name:         user.name,
+      email:        user.email,
+      phone:        user.phone,
+      role:         user.role,
+      locality:     user.locality,
+      ecoPoints:    user.ecoPoints    || 0,
+      badges:       user.badges       || [],
+      profilePhoto: user.profilePhoto || '',
+      streakCount:  user.streakCount  || 0,
+      reportsCount,
+      resolvedCount,
+      pointsHistory: history,
+      createdAt:    user.createdAt,
+    };
 
-    return res.json({
-      _id:          collector._id,
-      name:         collector.name,
-      email:        collector.email || '',
-      phone:        collector.mobile || '',
-      role:         'Collector',
-      address:      '',
-      locality:     collector.area || '',
-      ecoPoints:    0,
-      badges:       [],
-      profilePhoto: collector.photo || '',
-      streakCount:  0,
-      reportsCount: 0,
-      resolvedCount: 0,
-      pointsHistory: [],
-      createdAt:    collector.createdAt,
-      collectorId:  collector.collectorId,
-      city:         collector.city,
-      area:         collector.area,
-    });
+    res.json(safeUser);
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }
 });
 
+// Photo upload endpoint
+router.post('/upload-photo', protect, upload.single('photo'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
+    
+    const photoUrl = `/uploads/profiles/${req.file.filename}`;
+    const user = await User.findByIdAndUpdate(req.user.id, { $set: { profilePhoto: photoUrl } }, { new: true }).select('-password');
+    
+    res.json({ message: 'Photo uploaded successfully.', user, photoUrl });
+  } catch (err) {
+    res.status(500).json({ message: 'Error uploading photo.', error: err.message });
+  }
+});
+
 router.put('/profile', protect, async (req, res) => {
   try {
-    const { name, phone, address, locality, city, pincode, profilePhoto } = req.body;
+    const { name, phone, locality } = req.body;
     const update = {};
-    if (name         !== undefined) update.name         = name;
-    if (phone        !== undefined) update.phone        = phone;
-    if (address      !== undefined) update.address      = address;
-    if (locality     !== undefined) update.locality     = locality;
-    if (city         !== undefined) update.city         = city;
-    if (pincode      !== undefined) update.pincode      = pincode;
-    if (profilePhoto !== undefined) update.profilePhoto = profilePhoto;
+    
+    if (name && name.trim())     update.name     = name.trim();
+    if (phone && phone.trim())   update.phone    = phone.trim();
+    if (locality && locality.trim()) update.locality = locality.trim();
 
-    const user = await User.findByIdAndUpdate(req.user.id, update, { returnDocument: 'after' }).select('-password');
-    const stored = JSON.parse(JSON.stringify(user));
-    res.json({ message: 'Profile updated.', user: stored });
+    if (Object.keys(update).length === 0) {
+      return res.status(400).json({ message: 'No valid changes provided.' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id, 
+      { $set: update }, 
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    res.json({ message: 'Profile updated successfully.', user });
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }

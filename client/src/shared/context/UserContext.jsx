@@ -17,20 +17,31 @@ export const UserProvider = ({ children }) => {
   const refreshUser = useCallback(async () => {
     const token = localStorage.getItem('token');
     if (!token) { setUser(null); setLoading(false); return; }
+
     try {
-      const res = await fetch('/api/user/profile', { headers: { Authorization: `Bearer ${token}` } });
+      // Decode or get role from stored user if available to decide which API to call
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const role = storedUser.role;
+
+      let url = '/api/user/profile';
+      if (role === 'Citizen') url = '/api/citizen/profile';
+      else if (role === 'Collector') url = '/api/collector/profile';
+      else if (role === 'GreenChampion') url = '/api/citizen/profile'; // Green champions share user model for now
+
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const data = await res.json();
         setUser(data);
         localStorage.setItem('user', JSON.stringify(data));
       } else {
-        setUser(null);
         if (res.status === 401 || res.status === 404) {
+          setUser(null);
           localStorage.removeItem('token');
           localStorage.removeItem('user');
         }
       }
-    } catch {
+    } catch (err) {
+      console.error('Refresh User Error:', err);
       const stored = localStorage.getItem('user');
       if (stored) setUser(JSON.parse(stored));
     } finally {

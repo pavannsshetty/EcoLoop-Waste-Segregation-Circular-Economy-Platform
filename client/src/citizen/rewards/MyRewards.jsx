@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { HiRefresh, HiStar, HiCheckCircle, HiClipboardList, HiThumbUp, HiSearch, HiSparkles } from 'react-icons/hi';
+import { useState, useEffect } from 'react';
+import { HiRefresh, HiStar, HiCheckCircle, HiClipboardList, HiThumbUp, HiSearch, HiSparkles, HiTrendingUp } from 'react-icons/hi';
 import { MdRecycling, MdEmojiNature, MdEmojiEvents, MdLeaderboard } from 'react-icons/md';
 import { useTheme } from '../../shared/context/ThemeContext';
 import { useUser } from '../../shared/context/UserContext';
@@ -49,7 +49,7 @@ const MyRewards = () => {
   const fetchRewards = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/user/profile', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch('/api/citizen/profile', { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const d = await res.json();
         setData({ ecoPoints: d.ecoPoints || 0, badges: d.badges || [], history: d.pointsHistory || [], streakCount: d.streakCount || 0 });
@@ -69,13 +69,13 @@ const MyRewards = () => {
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className={`text-xl font-extrabold ${dk('text-slate-200','text-slate-800')}`}>My Rewards</h1>
+        <h1 className={`text-base font-semibold ${dk('text-slate-200','text-slate-800')}`}>My Rewards</h1>
         <button onClick={fetchRewards} className={`transition ${dk('text-slate-400 hover:text-green-400','text-slate-400 hover:text-green-600')}`}>
           <HiRefresh className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-yellow-400 to-orange-400 p-6 sm:p-8 shadow-lg text-white">
+      <div className="relative rounded-sm overflow-hidden bg-gradient-to-br from-yellow-400 to-orange-400 p-6 sm:p-8 shadow-sm text-white border border-yellow-300/40">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
         <div className="relative flex items-center justify-between gap-4">
           <div>
@@ -89,8 +89,11 @@ const MyRewards = () => {
             )}
           </div>
           <MdLeaderboard className="h-14 w-14 opacity-70" />
-          <div className="text-right text-xs opacity-75 mt-1">
-            🔥 {ctxUser?.streakCount ?? data.streakCount} day streak
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-1.5 bg-white/20 px-2 py-1 rounded-lg text-xs font-bold">
+              <HiTrendingUp className="h-3.5 w-3.5" />
+              {ctxUser?.streakCount ?? data.streakCount} day streak
+            </div>
           </div>
         </div>
         {nextBadge && (
@@ -106,13 +109,13 @@ const MyRewards = () => {
         )}
       </div>
 
-      <div className={`rounded-2xl border shadow-sm p-5 space-y-4 ${dk('bg-white/5 border-gray-700','bg-white border-slate-100')}`}>
-        <h2 className={`text-sm font-semibold ${dk('text-slate-200','text-slate-800')}`}>Badges & Achievements</h2>
+      <div className={`rounded-sm border p-5 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
+        <h2 className={`text-sm font-medium ${dk('text-slate-200','text-slate-700')}`}>Badges & Achievements</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {ALL_BADGES.map(b => {
             const earned = badges.includes(b.name);
             return (
-              <div key={b.name} className={`rounded-xl border p-3 text-center space-y-1.5 transition ${earned ? b.color : dk('bg-white/5 border-gray-700 opacity-40','bg-slate-50 border-slate-200 opacity-40')}`}>
+              <div key={b.name} className={`rounded-sm border p-3 text-center space-y-1.5 transition-colors duration-200 ${earned ? b.color : dk('bg-white/5 border-gray-700 opacity-50','bg-slate-50 border-slate-200 opacity-50')}`}>
                 <b.Icon className={`h-7 w-7 mx-auto ${earned ? '' : 'text-slate-400'}`} />
                 <p className={`text-xs font-semibold ${earned ? '' : 'text-slate-500'}`}>{b.name}</p>
                 <p className="text-xs text-slate-400">{b.threshold} pts</p>
@@ -123,10 +126,10 @@ const MyRewards = () => {
         </div>
       </div>
 
-      <div className={`rounded-2xl border shadow-sm p-5 space-y-1 ${dk('bg-white/5 border-gray-700','bg-white border-slate-100')}`}>
-        <h2 className={`text-sm font-semibold mb-3 ${dk('text-slate-200','text-slate-800')}`}>How to Earn Points</h2>
+      <div className={`rounded-sm border p-5 space-y-1 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
+        <h2 className={`text-sm font-medium mb-3 ${dk('text-slate-200','text-slate-700')}`}>How to Earn Points</h2>
         {HOW_TO_EARN.map(({ action, pts, Icon }) => (
-          <div key={action} className={`flex items-center justify-between py-2 border-b last:border-0 ${dk('border-gray-700','border-slate-50')}`}>
+          <div key={action} className={`flex items-center justify-between py-2 border-b last:border-0 ${dk('border-slate-700','border-slate-100')}`}>
             <span className={`flex items-center gap-2 text-sm ${dk('text-slate-300','text-slate-600')}`}>
               <Icon className="h-4 w-4 text-green-500 shrink-0" />
               {action}
@@ -136,8 +139,8 @@ const MyRewards = () => {
         ))}
       </div>
 
-      <div className={`rounded-2xl border shadow-sm p-5 space-y-3 ${dk('bg-white/5 border-gray-700','bg-white border-slate-100')}`}>
-        <h2 className={`text-sm font-semibold ${dk('text-slate-200','text-slate-800')}`}>Points History</h2>
+      <div className={`rounded-sm border p-5 space-y-3 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
+        <h2 className={`text-sm font-medium ${dk('text-slate-200','text-slate-700')}`}>Points History</h2>
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="h-6 w-6 rounded-full border-2 border-green-500 border-t-transparent animate-spin" />
@@ -148,9 +151,9 @@ const MyRewards = () => {
           data.history.map(h => {
             const PointIcon = POINT_ICONS[h.reason] || POINT_ICONS.default;
             return (
-              <div key={h._id} className={`flex items-center justify-between py-2 border-b last:border-0 ${dk('border-gray-700','border-slate-50')}`}>
+              <div key={h._id} className={`flex items-center justify-between py-2 border-b last:border-0 ${dk('border-slate-700','border-slate-100')}`}>
                 <div className="flex items-center gap-3">
-                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${dk('bg-green-900/40','bg-green-50')}`}>
+                  <div className={`h-8 w-8 rounded-sm flex items-center justify-center ${dk('bg-green-900/30','bg-green-50')}`}>
                     <PointIcon className="h-4 w-4 text-green-500" />
                   </div>
                   <div>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { HiBell, HiX, HiCheckCircle } from 'react-icons/hi';
+import { HiBell, HiX, HiCheckCircle, HiClipboardList, HiRefresh, HiThumbUp, HiExclamation } from 'react-icons/hi';
 
-const TYPE_ICONS = { report: '📋', status: '🔄', support: '👍', delay: '⚠️', system: '🔔' };
+const TYPE_ICONS = { report: HiClipboardList, status: HiRefresh, support: HiThumbUp, delay: HiExclamation, system: HiBell };
 
 const timeAgo = (iso) => {
   const diff = Date.now() - new Date(iso).getTime();
@@ -119,16 +119,22 @@ const NotificationBell = () => {
       </button>
 
       {open && (
-        <div className="fixed sm:absolute right-4 sm:right-0 left-4 sm:left-auto top-16 sm:top-11 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <HiBell className="h-4 w-4 text-green-500" />
-              <span className="text-sm font-semibold text-slate-800">Notifications</span>
-              {unread > 0 && <span className="text-xs bg-red-100 text-red-600 font-semibold px-1.5 py-0.5 rounded-full">{unread}</span>}
+        <div className={`fixed sm:absolute right-4 sm:right-0 left-4 sm:left-auto top-16 sm:top-12 sm:w-[400px] rounded-3xl shadow-2xl z-50 overflow-hidden ring-1 ring-black/5 animate-in fade-in slide-in-from-top-2 duration-300 ${
+          dark ? 'bg-slate-900/95 backdrop-blur-xl border border-white/5' : 'bg-white border border-slate-100'
+        }`}>
+          <div className={`flex items-center justify-between px-6 py-4 border-b ${dark ? 'border-white/5' : 'border-slate-50'}`}>
+            <div className="flex items-center gap-3">
+              <div className={`h-8 w-8 rounded-xl flex items-center justify-center ${dark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-600'}`}>
+                <HiBell className="h-4 w-4" />
+              </div>
+              <div>
+                <span className={`text-sm font-black tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>Notifications</span>
+                {unread > 0 && <p className="text-[10px] font-bold text-green-500 uppercase tracking-widest">{unread} unread messages</p>}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {unread > 0 && (
-                <button onClick={markAllRead} className="text-xs text-green-600 hover:underline font-medium">Mark all read</button>
+                <button onClick={markAllRead} className="text-[10px] font-black uppercase tracking-widest text-green-600 hover:text-green-700 transition-colors">Mark all read</button>
               )}
               <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-600 transition">
                 <HiX className="h-4 w-4" />
@@ -136,34 +142,54 @@ const NotificationBell = () => {
             </div>
           </div>
 
-          <div className="max-h-80 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="max-h-[420px] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="h-5 w-5 rounded-full border-2 border-green-500 border-t-transparent animate-spin" />
+              <div className="flex items-center justify-center py-12">
+                <div className="h-6 w-6 rounded-full border-2 border-green-500 border-t-transparent animate-spin" />
               </div>
             ) : notifications.length === 0 ? (
-              <div className="text-center py-10 text-slate-400 text-sm">No notifications yet.</div>
+              <div className="text-center py-16 flex flex-col items-center gap-3">
+                <div className={`h-12 w-12 rounded-full flex items-center justify-center ${dark ? 'bg-white/5' : 'bg-slate-50'}`}>
+                  <HiBell className="h-6 w-6 text-slate-300" />
+                </div>
+                <p className="text-xs text-slate-400 font-medium">All caught up! No notifications yet.</p>
+              </div>
             ) : (
-              notifications.map(n => (
-                <button key={n._id} onClick={() => markRead(n._id)}
-                  className={`w-full flex items-start gap-3 px-4 py-3 text-left border-b border-slate-50 last:border-0 transition hover:bg-slate-50 ${!n.isRead ? 'bg-green-50/50' : ''}`}>
-                  <span className="text-lg shrink-0 mt-0.5">{TYPE_ICONS[n.type] || '🔔'}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className={`text-xs font-semibold truncate ${!n.isRead ? 'text-slate-900' : 'text-slate-600'}`}>{n.title}</p>
-                      {!n.isRead && <span className="h-2 w-2 rounded-full bg-green-500 shrink-0" />}
-                    </div>
-                    <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{n.message}</p>
-                    <p className="text-xs text-slate-400 mt-1">{timeAgo(n.createdAt)}</p>
-                  </div>
-                </button>
-              ))
+              <div className="divide-y divide-slate-50 dark:divide-white/5">
+                {notifications.map(n => {
+                  const Icon = TYPE_ICONS[n.type] || HiBell;
+                  return (
+                    <button key={n._id} onClick={() => markRead(n._id)}
+                      className={`w-full flex items-start gap-4 px-6 py-4 text-left transition relative group overflow-hidden ${
+                        !n.isRead 
+                          ? dark ? 'bg-green-500/5 hover:bg-green-500/10' : 'bg-green-50/50 hover:bg-green-50' 
+                          : dark ? 'hover:bg-white/5' : 'hover:bg-slate-50'
+                      }`}>
+                      <div className={`h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 ${
+                        !n.isRead 
+                          ? dark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-600'
+                          : dark ? 'bg-white/5 text-slate-500' : 'bg-slate-100 text-slate-400'
+                      }`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className={`text-xs font-bold tracking-tight truncate ${!n.isRead ? (dark ? 'text-white' : 'text-slate-900') : 'text-slate-500'}`}>{n.title}</p>
+                          {!n.isRead && <div className="h-1.5 w-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />}
+                        </div>
+                        <p className={`text-xs mt-1 leading-relaxed line-clamp-2 ${dark ? 'text-slate-400' : 'text-slate-500'} ${!n.isRead && 'font-medium'}`}>{n.message}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-2">{timeAgo(n.createdAt)}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
 
-          <div className="px-4 py-2.5 border-t border-slate-100 text-center">
+          <div className={`px-6 py-3 border-t text-center ${dark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
             <button onClick={() => { setOpen(false); window.location.href = '/citizen/notifications'; }}
-              className="text-xs text-green-600 hover:underline font-medium">View all notifications</button>
+              className="text-[10px] font-black uppercase tracking-widest text-green-600 hover:text-green-700 transition-colors">View all notifications</button>
           </div>
         </div>
       )}

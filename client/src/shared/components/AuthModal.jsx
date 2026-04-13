@@ -52,7 +52,7 @@ const getStrength = v => {
   return       { label: 'Strong',  color: 'bg-green-500',  width: 'w-full' };
 };
 
-const InputField = ({ id, label, type = 'text', placeholder, icon: Icon, value = '', onChange, onBlur, error, touched, maxLength, dark }) => {
+const InputField = ({ id, label, type = 'text', placeholder, icon: Icon, value = '', onChange, onBlur, error, touched, maxLength, dark, disabled }) => {
   const [show, setShow] = useState(false);
   const isPassword = type === 'password';
   const inputType  = isPassword ? (show ? 'text' : 'password') : type;
@@ -71,19 +71,19 @@ const InputField = ({ id, label, type = 'text', placeholder, icon: Icon, value =
         <input
           id={id}
           type={inputType}
-          placeholder={isPassword ? '••••••••' : placeholder}
+          placeholder={placeholder || (isPassword ? '••••••••' : '')}
           value={value}
           onChange={onChange}
           onBlur={onBlur}
           maxLength={maxLength}
-          autoComplete={isPassword ? 'new-password' : 'one-time-code'}
+          disabled={disabled}
+          autoComplete={isPassword ? 'new-password' : 'off'}
           className={[
             'w-full rounded-lg border py-3 text-sm shadow-sm transition focus:outline-none focus:ring-2',
-            dark
-              ? 'bg-slate-800 text-slate-100 placeholder-slate-500'
-              : 'bg-white text-slate-900 placeholder-slate-400',
+            dark ? 'bg-slate-800 text-slate-100 placeholder-slate-500' : 'bg-white text-slate-900 placeholder-slate-400',
             Icon ? 'pl-9' : 'px-3.5',
             isPassword ? 'pr-10' : 'pr-3.5',
+            disabled ? 'opacity-50 cursor-not-allowed' : '',
             hasError
               ? 'border-red-500 focus:border-red-500 focus:ring-red-500/30'
               : isOk
@@ -163,7 +163,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
     password:        validators.password(fields.password) || (fields.password && screen === 'register' && !pwdRules.every(r => r.test(fields.password)) ? 'Password does not meet all requirements' : ''),
     confirmPassword: validators.confirmPassword(fields.confirmPassword, fields.password),
     address:         validators.address(fields.address),
-  }), [fields]);
+  }), [fields, screen]);
 
   const errors = getErrors();
   const handleChange = field => e => { setFields(f => ({ ...f, [field]: e.target.value })); setTouched(t => ({ ...t, [field]: true })); };
@@ -184,7 +184,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
   };
 
   const handleSubmit = async e => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     const currentErrors = {
       fullName:        validators.fullName(fields.fullName),
       email:           validators.email(fields.email),
@@ -201,13 +201,15 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
     setTouched(Object.fromEntries(Object.keys(initFields()).map(k => [k, true])));
 
     const relevantErrors = screen === 'register'
-      ? Object.entries(currentErrors).filter(([k]) => k !== 'collectorId' && k !== 'identifier' && !(k === 'address' && userRole !== 'Citizen')).map(([, v]) => v)
+      ? Object.entries(currentErrors)
+          .filter(([k]) => k !== 'collectorId' && k !== 'identifier' && !(k === 'areaLocality' && userRole !== 'Citizen'))
+          .map(([, v]) => v)
       : screen === 'login'
         ? [userRole === 'Collector' ? currentErrors.collectorId : currentErrors.identifier, currentErrors.password]
         : [];
 
     if (relevantErrors.some(Boolean)) {
-      toast.error('Please fill all required fields.');
+      toast.error('Please fill all required fields correctly.');
       return;
     }
 
@@ -217,23 +219,12 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
         const body = {
           name: fields.fullName, email: fields.email, password: fields.password, phone: fields.mobile,
           role: userRole === 'Green Champion' ? 'GreenChampion' : userRole,
-          ...(userRole === 'Citizen'        && { address:  fields.address }),
+          ...(userRole === 'Citizen'        && { locality: fields.areaLocality }),
           ...(userRole === 'Green Champion' && { locality: fields.areaLocality }),
         };
-        let res, data;
-        try {
-          res  = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-          data = await res.json();
-        } catch {
-          toast.success(`Welcome, ${fields.fullName}! Registration successful.`);
-          setTimeout(() => { reset('role-select', null); onClose(); navigate('/citizen/dashboard'); }, 300);
-          return;
-        }
-        if (!res.ok) {
-          if (res.status === 409) toast.warning('User already exists, please login.');
-          else toast.error(data.message || 'Registration failed.');
-          return;
-        }
+        const res  = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await res.json();
+        if (!res.ok) { toast.error(data.message || 'Registration failed.'); return; }
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         toast.success(`Welcome, ${data.user.name}! Registration successful.`);
@@ -247,17 +238,9 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
           password: fields.password,
           ...(userRole === 'Collector' ? { collectorId: fields.collectorId } : { identifier: fields.identifier }),
         };
-        let res, data;
-        try {
-          res  = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-          data = await res.json();
-        } catch {
-          toast.success(`Welcome back! Signed in as ${userRole}.`);
-          const fallbackPath = getRolePath(apiRole);
-          setTimeout(() => { reset('role-select', null); onClose(); navigate(fallbackPath); }, 300);
-          return;
-        }
-        if (!res.ok) { toast.error('Invalid credentials.'); return; }
+        const res  = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await res.json();
+        if (!res.ok) { toast.error(data.message || 'Invalid credentials.'); return; }
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         toast.success(`Welcome back, ${data.user.name}!`);
@@ -271,11 +254,10 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
   const fp = field => ({ value: fields[field], onChange: handleChange(field), onBlur: handleBlur(field), error: errors[field], touched: touched[field], dark });
 
   const headerTitle = { 'role-select': 'Get Started', register: `Register as ${userRole}`, login: `Sign in — ${userRole}`, forgot: 'Reset Password' }[screen];
-
-  const dlg  = dark ? 'bg-slate-900 text-slate-100' : 'bg-white text-slate-900';
-  const hdr  = dark ? 'border-slate-700' : 'border-slate-100';
-  const muted= dark ? 'text-slate-400' : 'text-slate-500';
-  const closeBtn = dark ? 'text-slate-500 hover:bg-slate-700 hover:text-slate-200' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600';
+  const dlg     = dark ? 'bg-slate-900 text-slate-100' : 'bg-white text-slate-900';
+  const hdr     = dark ? 'border-slate-700' : 'border-slate-100';
+  const muted   = dark ? 'text-slate-400' : 'text-slate-500';
+  const closeBtn= dark ? 'text-slate-500 hover:bg-slate-700 hover:text-slate-200' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600';
 
   if (!isOpen) return null;
 
@@ -287,7 +269,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
 
         <div className={`flex items-center justify-between border-b px-4 sm:px-6 py-3.5 sm:py-4 ${hdr}`}>
           <div className="flex items-center gap-2">
-            <span className="text-lg sm:text-xl">🌱</span>
+            <HiSparkles className="h-5 w-5 text-green-500" />
             <span className={`text-sm sm:text-base font-semibold ${dark ? 'text-slate-100' : 'text-slate-900'}`}>{headerTitle}</span>
           </div>
           <button type="button" onClick={handleClose} aria-label="Close"
@@ -400,47 +382,49 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
               <form onSubmit={handleSubmit} noValidate autoComplete="off" className="space-y-4">
                 <input type="text" style={{ display: 'none' }} autoComplete="username" readOnly />
                 <input type="password" style={{ display: 'none' }} autoComplete="new-password" readOnly />
+
                 {screen === 'register' && userRole === 'Citizen' && (<>
-                  <InputField id="fullName" label="Full Name" placeholder="John Doe" icon={HiUser} {...fp('fullName')} />
-                  <InputField id="email" label="Email" type="email" placeholder="name@company.com" icon={HiMail} {...fp('email')} />
-                  <InputField id="mobile" label="Mobile Number" type="tel" placeholder="9876543210" icon={HiPhone} maxLength={10} dark={dark}
+                  <InputField id="fullName" label="Full Name" placeholder="Enter your full name" icon={HiUser} {...fp('fullName')} />
+                  <InputField id="email" label="Email" type="email" placeholder="Enter your email address" icon={HiMail} {...fp('email')} />
+                  <InputField id="mobile" label="Mobile Number" type="tel" placeholder="Enter your phone number" icon={HiPhone} maxLength={10} dark={dark}
                     value={fields.mobile} onBlur={handleBlur('mobile')} error={errors.mobile} touched={touched.mobile}
                     onChange={e => { const v = e.target.value.replace(/\D/g,'').slice(0,10); setFields(f=>({...f,mobile:v})); setTouched(t=>({...t,mobile:true})); }} />
-                  <div><InputField id="password" label="Password" type="password" icon={HiLockClosed} {...fp('password')} /><PasswordStrength value={fields.password} dark={dark} /></div>
-                  <InputField id="confirmPassword" label="Confirm Password" type="password" icon={HiLockClosed} {...fp('confirmPassword')} />
-                  <InputField id="address" label="Address" placeholder="123 Main St, City..." icon={HiLocationMarker} {...fp('address')} />
+                  <div><InputField id="password" label="Password" type="password" placeholder="Create a password" icon={HiLockClosed} {...fp('password')} /><PasswordStrength value={fields.password} dark={dark} /></div>
+                  <InputField id="confirmPassword" label="Confirm Password" type="password" placeholder="Re-enter your password" icon={HiLockClosed} {...fp('confirmPassword')} />
+                  <InputField id="areaLocality" label="Area / Locality" placeholder="Enter your area or locality" icon={HiLocationMarker}
+                    value={fields.areaLocality} onChange={handleChange('areaLocality')} onBlur={handleBlur('areaLocality')} dark={dark} />
                 </>)}
 
                 {screen === 'register' && userRole === 'Green Champion' && (<>
-                  <InputField id="fullName" label="Full Name" placeholder="John Doe" icon={HiUser} {...fp('fullName')} />
-                  <InputField id="email" label="Email" type="email" placeholder="name@company.com" icon={HiMail} {...fp('email')} />
-                  <InputField id="mobile" label="Mobile Number" type="tel" placeholder="9876543210" icon={HiPhone} maxLength={10} dark={dark}
+                  <InputField id="fullName" label="Full Name" placeholder="Enter your full name" icon={HiUser} {...fp('fullName')} />
+                  <InputField id="email" label="Email" type="email" placeholder="Enter your email address" icon={HiMail} {...fp('email')} />
+                  <InputField id="mobile" label="Mobile Number" type="tel" placeholder="Enter your phone number" icon={HiPhone} maxLength={10} dark={dark}
                     value={fields.mobile} onBlur={handleBlur('mobile')} error={errors.mobile} touched={touched.mobile}
                     onChange={e => { const v = e.target.value.replace(/\D/g,'').slice(0,10); setFields(f=>({...f,mobile:v})); setTouched(t=>({...t,mobile:true})); }} />
-                  <div><InputField id="password" label="Password" type="password" icon={HiLockClosed} {...fp('password')} /><PasswordStrength value={fields.password} dark={dark} /></div>
-                  <InputField id="confirmPassword" label="Confirm Password" type="password" icon={HiLockClosed} {...fp('confirmPassword')} />
-                  <InputField id="areaLocality" label="Area / Locality" placeholder="Your Locality" icon={HiLocationMarker}
+                  <div><InputField id="password" label="Password" type="password" placeholder="Create a password" icon={HiLockClosed} {...fp('password')} /><PasswordStrength value={fields.password} dark={dark} /></div>
+                  <InputField id="confirmPassword" label="Confirm Password" type="password" placeholder="Re-enter your password" icon={HiLockClosed} {...fp('confirmPassword')} />
+                  <InputField id="areaLocality" label="Area / Locality" placeholder="Enter your area or locality" icon={HiLocationMarker}
                     value={fields.areaLocality} onChange={handleChange('areaLocality')} onBlur={handleBlur('areaLocality')} dark={dark} />
                 </>)}
 
                 {screen === 'login' && userRole === 'Citizen' && (<>
-                  <InputField id="loginIdentifier" label="Email or Phone Number" type="text" placeholder="Enter email or phone number" icon={HiMail} dark={dark}
-                    value={fields.identifier} onChange={handleChange('identifier')} onBlur={handleBlur('identifier')} error={null} touched={false} />
-                  <InputField id="loginPassword" label="Password" type="password" icon={HiLockClosed} dark={dark}
-                    value={fields.password} onChange={handleChange('password')} onBlur={handleBlur('password')} error={null} touched={false} />
+                  <InputField id="loginIdentifier" label="Email or Phone Number" type="text" placeholder="Enter your email or phone number" icon={HiMail} dark={dark}
+                    value={fields.identifier} onChange={handleChange('identifier')} onBlur={handleBlur('identifier')} error={errors.identifier} touched={touched.identifier} />
+                  <InputField id="loginPassword" label="Password" type="password" placeholder="Enter your password" icon={HiLockClosed} dark={dark}
+                    value={fields.password} onChange={handleChange('password')} onBlur={handleBlur('password')} error={errors.password} touched={touched.password} />
                 </>)}
 
                 {screen === 'login' && userRole === 'Green Champion' && (<>
-                  <InputField id="gcIdentifier" label="Email or Phone Number" type="text" placeholder="Enter email or phone number" icon={HiMail} dark={dark}
+                  <InputField id="gcIdentifier" label="Email or Phone Number" type="text" placeholder="Enter your email or phone number" icon={HiMail} dark={dark}
                     value={fields.identifier} onChange={handleChange('identifier')} onBlur={handleBlur('identifier')} error={null} touched={false} />
-                  <InputField id="gcPassword" label="Password" type="password" icon={HiLockClosed} dark={dark}
+                  <InputField id="gcPassword" label="Password" type="password" placeholder="Enter your password" icon={HiLockClosed} dark={dark}
                     value={fields.password} onChange={handleChange('password')} onBlur={handleBlur('password')} error={null} touched={false} />
                 </>)}
 
                 {screen === 'login' && userRole === 'Collector' && (<>
-                  <InputField id="collectorId" label="Collector ID" placeholder="COL-12345" icon={HiIdentification} dark={dark}
+                  <InputField id="collectorId" label="Collector ID" placeholder="Enter your collector ID" icon={HiIdentification} dark={dark}
                     value={fields.collectorId} onChange={handleChange('collectorId')} onBlur={handleBlur('collectorId')} error={errors.collectorId} touched={touched.collectorId} />
-                  <InputField id="collectorPassword" label="Password" type="password" icon={HiLockClosed} {...fp('password')} />
+                  <InputField id="collectorPassword" label="Password" type="password" placeholder="Enter your password" icon={HiLockClosed} {...fp('password')} />
                 </>)}
 
                 {screen === 'login' && (

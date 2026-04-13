@@ -1,38 +1,106 @@
 const jwt       = require('jsonwebtoken');
 const User      = require('../models/User');
 const Collector = require('../models/Collector');
+const Otp       = require('../models/Otp');
 const bcrypt    = require('bcryptjs');
+const { sendOtpEmail } = require('../utils/emailService');
 
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
+// POST /api/auth/send-otp
+const sendOtp = async (req, res) => {
+  try {
+    const { email, name } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required.' });
+
+    console.log(`[sendOtp] Request received for email: ${email}`);
+    // Generate 4 digit OTP
+    const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    // Store in DB
+    await Otp.findOneAndUpdate(
+      { email },
+      { otp: otpCode, expiresAt, attempts: 0 },
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    // Send Email
+    await sendOtpEmail(email, name || 'User', otpCode);
+
+    res.json({ message: 'OTP sent successfully to your email.' });
+  } catch (err) {
+    console.error('[sendOtp]', err.message);
+    res.status(500).json({ message: 'Failed to send OTP. Please try again later.' });
+  }
+};
+
+// POST /api/auth/verify-otp
+const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const record = await Otp.findOne({ email });
+
+    if (!record) return res.status(400).json({ message: 'No OTP found for this email.' });
+    if (record.expiresAt < Date.now()) return res.status(400).json({ message: 'OTP expired.' });
+    if (record.attempts >= 3) return res.status(400).json({ message: 'Too many attempts. Request a new OTP.' });
+
+    if (record.otp !== otp) {
+      record.attempts += 1;
+      await record.save();
+      return res.status(400).json({ message: 'Invalid OTP.' });
+    }
+
+    // Success - delete OTP
+    await Otp.deleteOne({ email });
+    res.json({ message: 'OTP verified successfully.' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // POST /api/auth/register
 const register = async (req, res) => {
   try {
-    const { name, email, password, phone, address, role, collectorId, locality } = req.body;
+    const { name, email, password, phone, role, locality } = req.body;
 
     if (role === 'Collector') {
       return res.status(403).json({ message: 'Collector accounts are issued by the administrator.' });
     }
 
-    const orConditions = [{ email }];
-    if (phone) orConditions.push({ phone });
-    const existing = await User.findOne({ $or: orConditions });
+    const existing = await User.findOne({ $or: [{ email }, { phone }] });
     if (existing) {
-      const field = existing.email === email ? 'Email' : 'Phone number';
-      return res.status(409).json({ message: `${field} already registered. Please login.` });
+      return res.status(409).json({ message: 'Email or phone already registered.' });
     }
 
-    const userData = { name, email, password, phone, role };
-    if (address)  userData.address  = address;
+    const userData = { name, email, password, phone, role, isVerified: true };
     if (locality) userData.locality = locality;
 
-    const user = await User.create(userData);
+    const user  = await User.create(userData);
     const token = signToken(user._id);
-
     res.status(201).json({ token, user });
   } catch (err) {
-    console.error('[register]', err.message);
+    res.status(400).json({ message: err.message });
+  }
+};
+
+// POST /api/auth/login-otp
+const loginOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    const record = await Otp.findOne({ email });
+    if (!record || record.otp !== otp || record.expiresAt < Date.now()) {
+      return res.status(400).json({ message: 'Invalid or expired OTP.' });
+    }
+
+    await Otp.deleteOne({ email });
+    const token = signToken(user._id);
+    res.json({ token, user });
+  } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
@@ -41,8 +109,6 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { identifier, collectorId, password, role } = req.body;
-
-    let user;
 
     if (role === 'Collector') {
       if (!collectorId) return res.status(400).json({ message: 'Collector ID is required.' });
@@ -57,7 +123,7 @@ const login = async (req, res) => {
     }
 
     if (!identifier) return res.status(400).json({ message: 'Email or phone is required.' });
-    user = await User.findOne({
+    const user = await User.findOne({
       $or: [{ email: identifier }, { phone: identifier }],
       role,
     }).select('+password');
@@ -66,6 +132,8 @@ const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials.' });
     }
 
+
+
     const token = signToken(user._id);
     res.json({ token, user });
   } catch (err) {
@@ -73,4 +141,4 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+module.exports = { register, login, sendOtp, verifyOtp, loginOtp };

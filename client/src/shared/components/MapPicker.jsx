@@ -216,7 +216,7 @@ const MapPicker = ({ onLocationSelect, dark = false }) => {
         )}
       </div>
 
-      {error && <p className="text-xs text-red-500 flex items-center gap-1"><span>⚠</span> {error}</p>}
+      {error && <p className="text-xs text-red-500 flex items-center gap-1"><HiExclamation className="h-4 w-4 shrink-0" /> {error}</p>}
 
       {regionValid === false && (
         <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3">

@@ -1,22 +1,24 @@
 import { useEffect, useState } from 'react';
-import { HiRefresh } from 'react-icons/hi';
+import { HiRefresh, HiStar, HiSparkles, HiAcademicCap as HiCrown } from 'react-icons/hi';
+import { MdEmojiEvents, MdRecycling, MdEmojiNature } from 'react-icons/md';
+import { FaMedal, FaTrophy } from 'react-icons/fa';
 import { useTheme } from '../../shared/context/ThemeContext';
 
 const BADGE_META = {
-  'Green Champion':  { icon: '🏆', color: 'bg-yellow-100 text-yellow-700' },
-  'Eco Warrior':     { icon: '🌿', color: 'bg-emerald-100 text-emerald-700' },
-  'Green Supporter': { icon: '♻️', color: 'bg-blue-100 text-blue-700' },
-  'Eco Beginner':    { icon: '🌱', color: 'bg-green-100 text-green-700' },
+  'Green Champion':  { Icon: MdEmojiEvents,  color: 'bg-yellow-100 text-yellow-700' },
+  'Eco Warrior':     { Icon: HiSparkles,     color: 'bg-emerald-100 text-emerald-700' },
+  'Green Supporter': { Icon: MdRecycling,    color: 'bg-blue-100 text-blue-700' },
+  'Eco Beginner':    { Icon: MdEmojiNature,  color: 'bg-green-100 text-green-700' },
 };
 
 const RANK_MEDALS = ['🥇', '🥈', '🥉'];
 
 const BadgePill = ({ badge }) => {
   if (!badge) return null;
-  const meta = BADGE_META[badge] || { icon: '⭐', color: 'bg-slate-100 text-slate-600' };
+  const meta = BADGE_META[badge] || { Icon: HiStar, color: 'bg-slate-100 text-slate-600' };
   return (
     <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${meta.color}`}>
-      {meta.icon} {badge}
+      <meta.Icon className="h-3 w-3" /> {badge}
     </span>
   );
 };
@@ -47,7 +49,9 @@ const Leaderboard = () => {
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={`text-xl font-extrabold ${dk('text-slate-200','text-slate-800')}`}>🏅 Community Leaderboard</h1>
+          <h1 className={`text-base font-medium flex items-center gap-2 ${dk('text-slate-200','text-slate-800')}`}>
+            <FaTrophy className="text-yellow-500 h-6 w-6" /> Community Leaderboard
+          </h1>
           <p className={`text-sm mt-0.5 ${dk('text-slate-400','text-slate-500')}`}>Top citizens making a difference</p>
         </div>
         <button onClick={() => fetchData()} className={`transition ${dk('text-slate-400 hover:text-green-400','text-slate-400 hover:text-green-600')}`}>
@@ -55,7 +59,7 @@ const Leaderboard = () => {
         </button>
       </div>
 
-        <div className={`flex items-center gap-1 rounded-xl border shadow-sm p-1 w-fit mx-auto ${dk('bg-white/5 border-gray-700','bg-white border-slate-100')}`}>
+        <div className={`flex items-center gap-1 rounded-sm border p-1 w-fit mx-auto transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
           {[['overall', 'Overall'], ['monthly', 'This Month']].map(([val, label]) => (
             <button key={val} onClick={() => { setFilter(val); fetchData(val); }}
               className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition ${filter === val ? 'bg-green-600 text-white' : dk('text-slate-400 hover:text-slate-200','text-slate-500 hover:text-slate-700')}`}>
@@ -105,19 +109,23 @@ const Leaderboard = () => {
                   const actualRank = u.rank;
                   const isFirst    = actualRank === 1;
                   return (
-                    <div key={u._id} className={`relative flex flex-col items-center rounded-2xl border p-5 text-center shadow-sm transition hover:shadow-md ${
-                      isFirst ? 'bg-gradient-to-b from-yellow-50 to-amber-50 border-yellow-200 order-first sm:order-none' : 'bg-white border-slate-100'
+                    <div key={u._id} className={`relative flex flex-col items-center rounded-sm border p-5 text-center transition-colors duration-200 ${
+                      isFirst ? dk('bg-yellow-900/20 border-yellow-700','bg-yellow-50 border-yellow-200') : dk('bg-white/5 border-gray-700','bg-white border-slate-200')
                     }`}>
-                      {isFirst && <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-2xl">👑</div>}
+                      {isFirst && <HiCrown className="absolute -top-3 left-1/2 -translate-x-1/2 text-2xl text-yellow-500" />}
                       <div className={`h-14 w-14 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-md mb-3 mt-2 ${
                         actualRank === 1 ? 'bg-gradient-to-br from-yellow-400 to-orange-400' :
                         actualRank === 2 ? 'bg-gradient-to-br from-slate-400 to-slate-500' :
                         'bg-gradient-to-br from-orange-400 to-amber-500'
                       }`}>
-                        {(u.name || 'C')[0].toUpperCase()}
-                      </div>
-                      <span className="text-xl mb-1">{RANK_MEDALS[actualRank - 1]}</span>
-                      <p className="text-sm font-bold text-slate-800 truncate w-full">{u.name}</p>
+                        {(u.name || 'C')[0].toUpperCase()
+                      }</div>
+                      <FaMedal className={`h-6 w-6 mb-1 ${
+                        actualRank === 1 ? 'text-yellow-400' :
+                        actualRank === 2 ? 'text-slate-300' :
+                        'text-orange-400'
+                      }`} />
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate w-full">{u.name}</p>
                       <p className="text-xs text-slate-500 mt-0.5">{u.reportsCount} reports</p>
                       <p className={`text-lg font-extrabold mt-1 ${actualRank === 1 ? 'text-yellow-600' : 'text-green-600'}`}>{u.ecoPoints} pts</p>
                       {u.topBadge && <div className="mt-2"><BadgePill badge={u.topBadge} /></div>}
@@ -128,8 +136,8 @@ const Leaderboard = () => {
             )}
 
             {rest.length > 0 && (
-              <div className={`rounded-2xl border overflow-hidden ${dk('bg-white/5 border-gray-700','bg-white border-slate-100')}`}>
-                <div className={`hidden sm:grid grid-cols-12 gap-2 px-4 py-2.5 border-b text-xs font-semibold uppercase tracking-wide ${dk('bg-white/5 border-gray-700 text-slate-500','bg-slate-50 border-slate-100 text-slate-500')}`}>
+              <div className={`rounded-sm border overflow-hidden transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
+                <div className={`hidden sm:grid grid-cols-12 gap-2 px-4 py-2.5 border-b text-xs font-medium uppercase tracking-wide ${dk('bg-white/5 border-gray-700 text-slate-500','bg-slate-50 border-slate-200 text-slate-500')}`}>
                   <span className="col-span-1">Rank</span>
                   <span className="col-span-4">Citizen</span>
                   <span className="col-span-2 text-right">Points</span>
@@ -137,7 +145,7 @@ const Leaderboard = () => {
                   <span className="col-span-3 text-right">Badge</span>
                 </div>
                 {rest.map((u) => (
-                  <div key={u._id} className={`flex sm:grid sm:grid-cols-12 items-center gap-3 sm:gap-2 px-4 py-3 border-b last:border-0 transition ${dk('border-gray-700 hover:bg-white/5','border-slate-50 hover:bg-slate-50')}`}>
+                  <div key={u._id} className={`flex sm:grid sm:grid-cols-12 items-center gap-3 sm:gap-2 px-4 py-3 border-b last:border-0 transition-colors duration-200 ${dk('border-gray-700 hover:bg-white/5','border-slate-100 hover:bg-slate-50')}`}>
                     <span className={`col-span-1 text-sm font-bold w-6 shrink-0 ${dk('text-slate-500','text-slate-400')}`}>#{u.rank}</span>
                     <div className="col-span-4 flex items-center gap-2 flex-1 min-w-0">
                       <div className="h-8 w-8 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-xs font-bold shrink-0">

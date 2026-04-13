@@ -69,7 +69,7 @@ const MyReports = () => {
   return (
     <div className={`p-4 sm:p-6 space-y-4 max-w-4xl mx-auto`}>
       <div className="flex items-center justify-between">
-        <h1 className={`text-base font-semibold ${dk('text-slate-200','text-slate-800')}`}>My Reports</h1>
+        <h1 className={`text-base font-medium ${dk('text-slate-200','text-slate-800')}`}>My Reports</h1>
         <button onClick={fetchReports} className={`flex items-center gap-1.5 text-sm transition ${dk('text-slate-400 hover:text-green-400','text-slate-500 hover:text-green-600')}`}>
           <HiRefresh className="h-5 w-5" /><span className="hidden sm:inline">Refresh</span>
         </button>
@@ -97,9 +97,9 @@ const MyReports = () => {
           const iconCls = WASTE_COLORS[r.wasteType] || 'bg-slate-100 text-slate-500';
           const upvoted = r.upvotes?.some(u => u === user._id || u?._id === user._id);
           return (
-            <div key={r._id} className={`rounded-2xl border shadow-sm p-4 sm:p-5 space-y-3 ${dk('bg-white/5 border-gray-700','bg-white border-slate-100')}`}>
+            <div key={r._id} className={`rounded-sm border p-4 sm:p-5 space-y-3 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
               <div className="flex flex-col sm:flex-row gap-3">
-                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${iconCls}`}>
+                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-sm ${iconCls}`}>
                   <Icon className="h-6 w-6" />
                 </div>
                 <div className="flex-1 min-w-0 space-y-1.5">
@@ -135,8 +135,8 @@ const MyReports = () => {
                   <p className="text-xs text-slate-400">Reported</p>
                   <p className="text-xs font-medium text-slate-600">{fmt(r.createdAt)}</p>
                   <button onClick={() => handleUpvote(r._id)}
-                    className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border transition ${
-                      upvoted ? 'bg-green-600 text-white border-green-600' : 'border-slate-200 text-slate-500 hover:border-green-400 hover:text-green-600'
+                    className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-sm border transition ${
+                      upvoted ? 'bg-green-600 text-white border-green-600' : 'border-slate-200 dark:border-slate-600 text-slate-500 hover:border-green-400 hover:text-green-600'
                     }`}>
                     <HiThumbUp className="h-3.5 w-3.5" />
                     {r.upvotes?.length || 0}
