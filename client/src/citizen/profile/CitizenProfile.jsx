@@ -180,7 +180,7 @@ const CitizenProfile = () => {
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-4xl mx-auto">
 
-        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-green-600 to-emerald-500 p-6 sm:p-8 shadow-lg">
+        <div className="relative rounded-sm overflow-hidden bg-gradient-to-br from-green-600 to-emerald-500 p-6 sm:p-8 shadow-lg">
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
           <div className="relative flex flex-col sm:flex-row items-center sm:items-end gap-5">
             <div className="relative shrink-0">
@@ -242,28 +242,7 @@ const CitizenProfile = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {loadingStats ? (
-            Array(4).fill(0).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center animate-pulse">
-                <div className="h-8 w-12 bg-slate-200 rounded mx-auto mb-2" />
-                <div className="h-3 w-20 bg-slate-100 rounded mx-auto" />
-              </div>
-            ))
-          ) : (
-            [
-              { label: 'Reports Submitted', value: totalReports,    color: 'text-green-600'  },
-              { label: 'Resolved',          value: resolvedReports, color: 'text-blue-600'   },
-              { label: 'Eco Points',        value: ecoPoints,       color: 'text-yellow-600' },
-              { label: 'Streak (days)',     value: streakDays,      color: 'text-purple-600' },
-            ].map(({ label, value, color }) => (
-              <div key={label} className={`rounded-sm border p-4 text-center transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
-                <p className={`text-2xl font-bold ${color}`}>{value}</p>
-                <p className={`text-xs mt-1 font-normal ${dk('text-slate-400','text-slate-500')}`}>{label}</p>
-              </div>
-            ))
-          )}
-        </div>
+
 
         <div className={`rounded-sm border p-5 sm:p-6 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
           <div className="flex items-center justify-between flex-wrap gap-2">

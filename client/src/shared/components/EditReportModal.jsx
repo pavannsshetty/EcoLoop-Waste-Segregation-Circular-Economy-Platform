@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { HiX, HiSave, HiExclamation } from 'react-icons/hi';
-import GoogleMapPicker from './GoogleMapPicker';
+import MapPicker from './MapPicker';
+import { useTheme } from '../context/ThemeContext';
 
 const WASTE_TYPES = ['Wet Waste', 'Dry Waste', 'E-Waste', 'Plastic Waste', 'Mixed Waste'];
 const LANDMARKS   = ['School', 'Temple', 'Bus Stop', 'Hospital', 'Market', 'Park', 'Roadside', 'Residential Area', 'Other'];
@@ -10,7 +11,8 @@ const SEVERITY    = [
   { value: 'High',   active: 'bg-red-500 text-white border-red-500',      base: 'bg-red-50 text-red-700 border-red-200'       },
 ];
 
-const EditReportModal = ({ isOpen, onClose, report, onUpdated, dark = false }) => {
+const EditReportModal = ({ isOpen, onClose, report, onUpdated }) => {
+  const { dark } = useTheme();
   const [form,     setForm]     = useState({});
   const [location, setLocation] = useState(null);
   const [loading,  setLoading]  = useState(false);
@@ -67,22 +69,22 @@ const EditReportModal = ({ isOpen, onClose, report, onUpdated, dark = false }) =
 
   const canEdit = report.status === 'Submitted';
   const inp = `w-full rounded-none border py-2.5 px-3.5 text-sm shadow-sm transition focus:outline-none focus:ring-2 focus:ring-green-500 ${
-    dark ? 'bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400'
+    dark ? 'bg-white/5 border-gray-700 text-slate-100 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400'
   }`;
   const lbl = `text-xs font-medium mb-1 block ${dark ? 'text-slate-400' : 'text-slate-500'}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative z-10 w-full sm:max-w-2xl rounded-none sm:rounded-none shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] ${dark ? 'bg-slate-900' : 'bg-white'}`}>
+      <div className={`relative z-10 w-full sm:max-w-2xl rounded-none sm:rounded-none shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] ${dark ? 'bg-[#0B0F13] border border-gray-700' : 'bg-white'}`}>
 
-        <div className={`flex items-center justify-between px-4 sm:px-6 py-3.5 border-b shrink-0 ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
+        <div className={`flex items-center justify-between px-4 sm:px-6 py-3.5 border-b shrink-0 ${dark ? 'border-gray-700' : 'border-slate-100'}`}>
           <div className="flex items-center gap-2">
             <HiSave className="h-5 w-5 text-green-500" />
             <span className={`font-semibold text-sm sm:text-base ${dark ? 'text-white' : 'text-slate-900'}`}>Edit Report</span>
             {report.isEdited && <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">Edited</span>}
           </div>
-          <button type="button" onClick={onClose} className={`rounded-lg p-1.5 transition ${dark ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-400 hover:bg-slate-100'}`}>
+          <button type="button" onClick={onClose} className={`rounded-lg p-1.5 transition ${dark ? 'text-slate-400 hover:bg-white/10' : 'text-slate-400 hover:bg-slate-100'}`}>
             <HiX className="h-5 w-5" />
           </button>
         </div>
@@ -157,7 +159,7 @@ const EditReportModal = ({ isOpen, onClose, report, onUpdated, dark = false }) =
 
               <div>
                 <label className={lbl}>Update Location (optional)</label>
-                <GoogleMapPicker onLocationSelect={setLocation} dark={dark} />
+                <MapPicker onLocationSelect={setLocation} dark={dark} />
               </div>
 
               {error && (
@@ -166,7 +168,7 @@ const EditReportModal = ({ isOpen, onClose, report, onUpdated, dark = false }) =
 
               <div className="flex flex-col sm:flex-row gap-3 pt-1 pb-2">
                 <button type="button" onClick={onClose}
-                  className={`flex-1 rounded-none border px-4 py-2.5 text-sm font-semibold transition ${dark ? 'border-slate-600 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                  className={`flex-1 rounded-none border px-4 py-2.5 text-sm font-semibold transition ${dark ? 'border-gray-700 text-slate-300 hover:bg-white/5' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
                   Cancel
                 </button>
                 <button type="submit" disabled={loading}
