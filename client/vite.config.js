@@ -7,8 +7,13 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5002',
+        target: 'http://localhost:5003',
         changeOrigin: true,
+      },
+      '/socket.io': {
+        target: 'http://localhost:5003',
+        changeOrigin: true,
+        ws: true,
       },
     },
   },

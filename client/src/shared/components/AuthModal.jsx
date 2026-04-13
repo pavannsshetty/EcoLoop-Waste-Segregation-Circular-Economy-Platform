@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
+import { apiUrl } from '../utils/api';
 import {
   HiX, HiUser, HiMail, HiPhone, HiLockClosed,
   HiLocationMarker, HiIdentification,
@@ -222,7 +223,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
           ...(userRole === 'Citizen'        && { locality: fields.areaLocality }),
           ...(userRole === 'Green Champion' && { locality: fields.areaLocality }),
         };
-        const res  = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const res  = await fetch(apiUrl('/api/auth/register'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const data = await res.json();
         if (!res.ok) { toast.error(data.message || 'Registration failed.'); return; }
         localStorage.setItem('token', data.token);
@@ -238,7 +239,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
           password: fields.password,
           ...(userRole === 'Collector' ? { collectorId: fields.collectorId } : { identifier: fields.identifier }),
         };
-        const res  = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const res  = await fetch(apiUrl('/api/auth/login'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const data = await res.json();
         if (!res.ok) { toast.error(data.message || 'Invalid credentials.'); return; }
         localStorage.setItem('token', data.token);

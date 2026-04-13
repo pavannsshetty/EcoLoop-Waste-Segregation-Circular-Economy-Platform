@@ -12,7 +12,14 @@ const PORT = process.env.PORT || 5000;
 
 connectDB();
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://ecoloop-waste-segregation-circular-economy-platform.pages.dev',
+    process.env.CLIENT_URL,
+  ].filter(Boolean),
+  credentials: true,
+}));
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
