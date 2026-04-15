@@ -17,7 +17,7 @@ const BadgePill = ({ badge }) => {
   if (!badge) return null;
   const meta = BADGE_META[badge] || { Icon: HiStar, color: 'bg-slate-100 text-slate-600' };
   return (
-    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${meta.color}`}>
+    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${meta.color}`}>
       <meta.Icon className="h-3 w-3" /> {badge}
     </span>
   );
@@ -49,7 +49,7 @@ const Leaderboard = () => {
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={`text-base font-medium flex items-center gap-2 ${dk('text-slate-200','text-slate-800')}`}>
+          <h1 className={`text-base font-bold flex items-center gap-2 ${dk('text-slate-200','text-slate-800')}`}>
             <FaTrophy className="text-yellow-500 h-6 w-6" /> Community Leaderboard
           </h1>
           <p className={`text-sm mt-0.5 ${dk('text-slate-400','text-slate-500')}`}>Top citizens making a difference</p>
@@ -62,7 +62,7 @@ const Leaderboard = () => {
         <div className={`flex items-center gap-1 rounded-sm border p-1 w-fit mx-auto transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
           {[['overall', 'Overall'], ['monthly', 'This Month']].map(([val, label]) => (
             <button key={val} onClick={() => { setFilter(val); fetchData(val); }}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition ${filter === val ? 'bg-green-600 text-white' : dk('text-slate-400 hover:text-slate-200','text-slate-500 hover:text-slate-700')}`}>
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition ${filter === val ? 'bg-green-600 text-white' : dk('text-slate-400 hover:text-slate-200','text-slate-500 hover:text-slate-700')}`}>
               {label}
             </button>
           ))}
@@ -70,24 +70,24 @@ const Leaderboard = () => {
 
         {data.me && (
           <div className="bg-gradient-to-r from-green-600 to-emerald-500 rounded-2xl p-4 sm:p-5 text-white shadow-md">
-            <p className="text-xs opacity-75 font-medium mb-1">Your Ranking</p>
+            <p className="text-xs opacity-75 mb-1">Your Ranking</p>
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-sm">
                   {(data.me.name || 'C')[0].toUpperCase()}
                 </div>
                 <div>
-                  <p className="font-semibold text-sm">{data.me.name}</p>
+                  <p className="font-bold text-sm">{data.me.name}</p>
                   <p className="text-xs opacity-75">{data.me.reportsCount} reports submitted</p>
                 </div>
               </div>
               <div className="flex items-center gap-4 text-center">
                 <div>
-                  <p className="text-2xl font-extrabold">#{data.me.rank}</p>
+                  <p className="text-2xl font-bold">#{data.me.rank}</p>
                   <p className="text-xs opacity-75">Rank</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-extrabold">{data.me.ecoPoints}</p>
+                  <p className="text-2xl font-bold">{data.me.ecoPoints}</p>
                   <p className="text-xs opacity-75">Points</p>
                 </div>
               </div>
@@ -125,9 +125,9 @@ const Leaderboard = () => {
                         actualRank === 2 ? 'text-slate-300' :
                         'text-orange-400'
                       }`} />
-                      <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate w-full">{u.name}</p>
+                      <p className="text-sm text-slate-800 dark:text-slate-200 truncate w-full">{u.name}</p>
                       <p className="text-xs text-slate-500 mt-0.5">{u.reportsCount} reports</p>
-                      <p className={`text-lg font-extrabold mt-1 ${actualRank === 1 ? 'text-yellow-600' : 'text-green-600'}`}>{u.ecoPoints} pts</p>
+                      <p className={`text-lg font-bold mt-1 ${actualRank === 1 ? 'text-yellow-600' : 'text-green-600'}`}>{u.ecoPoints} pts</p>
                       {u.topBadge && <div className="mt-2"><BadgePill badge={u.topBadge} /></div>}
                     </div>
                   );
@@ -137,7 +137,7 @@ const Leaderboard = () => {
 
             {rest.length > 0 && (
               <div className={`rounded-sm border overflow-hidden transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
-                <div className={`hidden sm:grid grid-cols-12 gap-2 px-4 py-2.5 border-b text-xs font-medium uppercase tracking-wide ${dk('bg-white/5 border-gray-700 text-slate-500','bg-slate-50 border-slate-200 text-slate-500')}`}>
+                <div className={`hidden sm:grid grid-cols-12 gap-2 px-4 py-2.5 border-b text-xs font-bold uppercase tracking-wide ${dk('bg-white/5 border-gray-700 text-slate-500','bg-slate-50 border-slate-200 text-slate-500')}`}>
                   <span className="col-span-1">Rank</span>
                   <span className="col-span-4">Citizen</span>
                   <span className="col-span-2 text-right">Points</span>
@@ -151,7 +151,7 @@ const Leaderboard = () => {
                       <div className="h-8 w-8 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
                         {(u.name || 'C')[0].toUpperCase()}
                       </div>
-                      <span className={`text-sm font-medium truncate ${dk('text-slate-200','text-slate-800')}`}>{u.name}</span>
+                      <span className={`text-sm truncate ${dk('text-slate-200','text-slate-800')}`}>{u.name}</span>
                     </div>
                     <span className="col-span-2 text-sm font-bold text-green-600 text-right">{u.ecoPoints}</span>
                     <span className="col-span-2 text-sm text-slate-500 text-right hidden sm:block">{u.reportsCount}</span>

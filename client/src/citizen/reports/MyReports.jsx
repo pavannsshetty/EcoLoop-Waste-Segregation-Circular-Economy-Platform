@@ -69,7 +69,7 @@ const MyReports = () => {
   return (
     <div className={`p-4 sm:p-6 space-y-4 max-w-4xl mx-auto`}>
       <div className="flex items-center justify-between">
-        <h1 className={`text-base font-medium ${dk('text-slate-200','text-slate-800')}`}>My Reports</h1>
+        <h1 className={`text-base font-bold ${dk('text-slate-200','text-slate-800')}`}>My Reports</h1>
         <button onClick={fetchReports} className={`flex items-center gap-1.5 text-sm transition ${dk('text-slate-400 hover:text-green-400','text-slate-500 hover:text-green-600')}`}>
           <HiRefresh className="h-5 w-5" /><span className="hidden sm:inline">Refresh</span>
         </button>
@@ -84,9 +84,9 @@ const MyReports = () => {
         {!loading && !error && reports.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
             <MdWarning className="h-12 w-12 text-slate-300" />
-            <p className="text-slate-500 font-medium">No reports yet.</p>
+            <p className="text-slate-500">No reports yet.</p>
             <button onClick={() => navigate('/citizen/dashboard')}
-              className="mt-2 rounded-xl bg-green-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-500 transition">
+              className="mt-2 rounded-xl bg-green-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-green-500 transition">
               Go to Dashboard
             </button>
           </div>
@@ -104,9 +104,9 @@ const MyReports = () => {
                 </div>
                 <div className="flex-1 min-w-0 space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className={`text-sm font-semibold ${dk('text-slate-200','text-slate-900')}`}>{r.wasteType}</span>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_STYLES[r.status] || 'bg-slate-100 text-slate-600'}`}>{r.status}</span>
-                    {r.severity && <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${SEVERITY_STYLES[r.severity] || ''}`}>{r.severity}</span>}
+                    <span className={`text-sm font-bold ${dk('text-slate-200','text-slate-900')}`}>{r.wasteType}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLES[r.status] || 'bg-slate-100 text-slate-600'}`}>{r.status}</span>
+                    {r.severity && <span className={`text-xs px-2 py-0.5 rounded-full ${SEVERITY_STYLES[r.severity] || ''}`}>{r.severity}</span>}
                     {r.anonymous && <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">Anonymous</span>}
                     <CleanupTimeBadge report={r} />
                   </div>
@@ -122,20 +122,20 @@ const MyReports = () => {
                     </span>
                   </div>
                   {r.wasteSeenAt && (
-                    <p className="text-xs text-slate-400">Seen: <span className="font-medium text-slate-600">{r.wasteSeenAt}</span></p>
+                    <p className="text-xs text-slate-400">Seen: <span className="text-slate-600">{r.wasteSeenAt}</span></p>
                   )}
                   {r.landmarkType && (
-                    <p className="text-xs text-slate-400">Near: <span className="font-medium text-slate-600">{r.landmarkType}{r.landmark ? ` — ${r.landmark}` : ''}</span></p>
+                    <p className="text-xs text-slate-400">Near: <span className="text-slate-600">{r.landmarkType}{r.landmark ? ` — ${r.landmark}` : ''}</span></p>
                   )}
                   {r.expectedCleanupHours && r.status !== 'Resolved' && (
-                    <p className="text-xs text-green-600 font-medium">Expected cleanup: {r.expectedCleanupHours}h</p>
+                    <p className="text-xs text-green-600">Expected cleanup: {r.expectedCleanupHours}h</p>
                   )}
                 </div>
                 <div className="shrink-0 flex flex-row sm:flex-col items-center sm:items-end gap-3 sm:gap-1">
                   <p className="text-xs text-slate-400">Reported</p>
-                  <p className="text-xs font-medium text-slate-600">{fmt(r.createdAt)}</p>
+                  <p className="text-xs text-slate-600">{fmt(r.createdAt)}</p>
                   <button onClick={() => handleUpvote(r._id)}
-                    className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-sm border transition ${
+                    className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-sm border transition ${
                       upvoted ? 'bg-green-600 text-white border-green-600' : 'border-slate-200 dark:border-slate-600 text-slate-500 hover:border-green-400 hover:text-green-600'
                     }`}>
                     <HiThumbUp className="h-3.5 w-3.5" />

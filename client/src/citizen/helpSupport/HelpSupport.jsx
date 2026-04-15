@@ -22,7 +22,7 @@ const FAQItem = ({ q, a, dark }) => {
     <div className={`border-b ${border} last:border-0`}>
       <button onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left">
-        <span className={`text-sm font-medium ${qColor}`}>{q}</span>
+        <span className={`text-sm ${qColor}`}>{q}</span>
         {open ? <HiChevronUp className={`h-4 w-4 shrink-0 ${iconCls}`} /> : <HiChevronDown className={`h-4 w-4 shrink-0 ${iconCls}`} />}
       </button>
       {open && <p className={`px-5 pb-4 text-xs leading-relaxed ${aColor}`}>{a}</p>}
@@ -44,13 +44,13 @@ const HelpSupport = () => {
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-2xl mx-auto">
       <div>
-        <h1 className={`text-base font-medium ${title}`}>Help & Support</h1>
+        <h1 className={`text-base font-bold ${title}`}>Help & Support</h1>
         <p className={`text-sm mt-0.5 ${sub}`}>Find answers and get in touch</p>
       </div>
 
       <div className={`rounded-sm border overflow-hidden transition-colors duration-200 ${card}`}>
         <div className={`px-5 py-3 border-b ${divider}`}>
-          <p className={`text-xs font-semibold uppercase tracking-wider ${sub}`}>Frequently Asked Questions</p>
+          <p className={`text-xs font-bold uppercase tracking-wider ${sub}`}>Frequently Asked Questions</p>
         </div>
         {FAQ_ITEMS.map((item, i) => <FAQItem key={i} q={item.q} a={item.a} dark={dark} />)}
       </div>
@@ -66,7 +66,7 @@ const HelpSupport = () => {
             <div className={`h-11 w-11 rounded-sm flex items-center justify-center ${color}`}>
               <Icon className="h-5 w-5" />
             </div>
-            <p className={`text-sm font-semibold ${title}`}>{label}</p>
+            <p className={`text-sm font-bold ${title}`}>{label}</p>
             <p className={`text-xs ${sub}`}>{desc}</p>
           </button>
         ))}
@@ -74,11 +74,11 @@ const HelpSupport = () => {
 
       <div className={`rounded-sm border p-5 space-y-4 transition-colors duration-200 ${card}`}>
         <div>
-          <p className={`text-sm font-semibold ${title}`}>Send Feedback</p>
+          <p className={`text-sm font-bold ${title}`}>Send Feedback</p>
           <p className={`text-xs mt-0.5 ${sub}`}>Help us improve EcoLoop</p>
         </div>
         {sent ? (
-          <div className={`rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2 ${dark ? 'bg-green-900/40 text-green-400' : 'bg-green-50 text-green-700'}`}>
+          <div className={`rounded-xl px-4 py-3 text-sm flex items-center gap-2 ${dark ? 'bg-green-900/40 text-green-400' : 'bg-green-50 text-green-700'}`}>
             <HiCheckCircle className="h-5 w-5" /> Thank you for your feedback!
           </div>
         ) : (
@@ -88,7 +88,7 @@ const HelpSupport = () => {
               className={`${inp} resize-none`} />
             <button onClick={() => { if (feedback.trim()) setSent(true); }}
               disabled={!feedback.trim()}
-              className="w-full rounded-xl bg-green-600 text-white text-sm font-semibold py-2.5 hover:bg-green-500 transition disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]">
+              className="w-full rounded-xl bg-green-600 text-white text-sm font-bold py-2.5 hover:bg-green-500 transition disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]">
               Submit Feedback
             </button>
           </>

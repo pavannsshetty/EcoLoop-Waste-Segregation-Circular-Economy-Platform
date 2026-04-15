@@ -14,8 +14,10 @@ const timeAgo = (iso) => {
 };
 
 import { useSocket } from '../context/SocketContext';
+import { useTheme } from '../context/ThemeContext';
 
 const NotificationBell = () => {
+  const { dark } = useTheme();
   const [open,         setOpen]         = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unread,       setUnread]       = useState(0);
@@ -119,22 +121,22 @@ const NotificationBell = () => {
       </button>
 
       {open && (
-        <div className={`fixed sm:absolute right-4 sm:right-0 left-4 sm:left-auto top-16 sm:top-12 sm:w-[400px] rounded-3xl shadow-2xl z-50 overflow-hidden ring-1 ring-black/5 animate-in fade-in slide-in-from-top-2 duration-300 ${
-          dark ? 'bg-slate-900/95 backdrop-blur-xl border border-white/5' : 'bg-white border border-slate-100'
+        <div className={`fixed sm:absolute right-4 sm:right-0 left-4 sm:left-auto top-16 sm:top-12 sm:w-[400px] rounded-sm shadow-2xl z-50 overflow-hidden ring-1 ring-black/5 animate-in fade-in slide-in-from-top-2 duration-300 ${
+          dark ? 'bg-black/90 border border-gray-800' : 'bg-white border border-slate-100'
         }`}>
-          <div className={`flex items-center justify-between px-6 py-4 border-b ${dark ? 'border-white/5' : 'border-slate-50'}`}>
+          <div className={`flex items-center justify-between px-6 py-4 border-b ${dark ? 'border-gray-800' : 'border-slate-50'}`}>
             <div className="flex items-center gap-3">
               <div className={`h-8 w-8 rounded-xl flex items-center justify-center ${dark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-600'}`}>
                 <HiBell className="h-4 w-4" />
               </div>
               <div>
-                <span className={`text-sm font-black tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>Notifications</span>
-                {unread > 0 && <p className="text-[10px] font-bold text-green-500 uppercase tracking-widest">{unread} unread messages</p>}
+                <span className={`text-sm font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>Notifications</span>
+                {unread > 0 && <p className="text-[10px] text-green-500 uppercase tracking-widest">{unread} unread messages</p>}
               </div>
             </div>
             <div className="flex items-center gap-3">
               {unread > 0 && (
-                <button onClick={markAllRead} className="text-[10px] font-black uppercase tracking-widest text-green-600 hover:text-green-700 transition-colors">Mark all read</button>
+                <button onClick={markAllRead} className="text-[10px] uppercase tracking-widest text-green-600 hover:text-green-700 transition-colors">Mark all read</button>
               )}
               <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-600 transition">
                 <HiX className="h-4 w-4" />
@@ -152,10 +154,10 @@ const NotificationBell = () => {
                 <div className={`h-12 w-12 rounded-full flex items-center justify-center ${dark ? 'bg-white/5' : 'bg-slate-50'}`}>
                   <HiBell className="h-6 w-6 text-slate-300" />
                 </div>
-                <p className="text-xs text-slate-400 font-medium">All caught up! No notifications yet.</p>
+                <p className="text-xs text-slate-400">All caught up! No notifications yet.</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-50 dark:divide-white/5">
+              <div className="divide-y divide-slate-50 dark:divide-gray-800">
                 {notifications.map(n => {
                   const Icon = TYPE_ICONS[n.type] || HiBell;
                   return (
@@ -177,8 +179,8 @@ const NotificationBell = () => {
                           <p className={`text-xs font-bold tracking-tight truncate ${!n.isRead ? (dark ? 'text-white' : 'text-slate-900') : 'text-slate-500'}`}>{n.title}</p>
                           {!n.isRead && <div className="h-1.5 w-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />}
                         </div>
-                        <p className={`text-xs mt-1 leading-relaxed line-clamp-2 ${dark ? 'text-slate-400' : 'text-slate-500'} ${!n.isRead && 'font-medium'}`}>{n.message}</p>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-2">{timeAgo(n.createdAt)}</p>
+                        <p className={`text-xs mt-1 leading-relaxed line-clamp-2 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{n.message}</p>
+                        <p className="text-[10px] uppercase tracking-wider text-slate-400 mt-2">{timeAgo(n.createdAt)}</p>
                       </div>
                     </button>
                   );
@@ -187,9 +189,9 @@ const NotificationBell = () => {
             )}
           </div>
 
-          <div className={`px-6 py-3 border-t text-center ${dark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
+          <div className={`px-6 py-3 border-t text-center ${dark ? 'bg-white/5 border-gray-800' : 'bg-slate-50 border-slate-100'}`}>
             <button onClick={() => { setOpen(false); window.location.href = '/citizen/notifications'; }}
-              className="text-[10px] font-black uppercase tracking-widest text-green-600 hover:text-green-700 transition-colors">View all notifications</button>
+              className="text-[10px] uppercase tracking-widest text-green-600 hover:text-green-700 transition-colors">View all notifications</button>
           </div>
         </div>
       )}

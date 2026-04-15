@@ -4,7 +4,6 @@ import {
   HiCamera, HiExclamation, HiCheckCircle, HiInformationCircle,
   HiThumbUp, HiEye, HiEyeOff, HiMap as HiMapIcon, HiPencil
 } from 'react-icons/hi';
-import { MdMyLocation } from 'react-icons/md';
 import MapPicker from './MapPicker';
 
 const WASTE_TYPES = ['Wet Waste', 'Dry Waste', 'E-Waste', 'Plastic Waste', 'Mixed Waste'];
@@ -75,20 +74,6 @@ const readExifLocation = (file) =>
     reader.readAsArrayBuffer(file);
   });
 
-const AccuracyBadge = ({ accuracy }) => {
-  if (accuracy == null) return null;
-  const { label, cls } = accuracy < 20
-    ? { label: 'High Accuracy', cls: 'bg-green-100 text-green-700' }
-    : accuracy < 100
-      ? { label: 'Medium Accuracy', cls: 'bg-yellow-100 text-yellow-700' }
-      : { label: 'Low Accuracy', cls: 'bg-red-100 text-red-700' };
-  return (
-    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-none ${cls}`}>
-      <MdMyLocation className="h-3 w-3" /> {label} (±{Math.round(accuracy)}m)
-    </span>
-  );
-};
-
 const DuplicateModal = ({ report, onContinue, onClose, dark }) => (
   <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
     <div className="absolute inset-0 bg-black/50" onClick={onClose} />
@@ -96,7 +81,7 @@ const DuplicateModal = ({ report, onContinue, onClose, dark }) => (
       <div className="flex items-start gap-3">
         <HiExclamation className="h-6 w-6 text-yellow-500 shrink-0 mt-0.5" />
         <div>
-          <p className={`text-sm font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>Already Reported Nearby</p>
+          <p className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>Already Reported Nearby</p>
           <p className={`text-xs mt-1 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
             A waste report exists within 50m in the last 24 hours. You can support the existing report or submit a new one.
           </p>
@@ -104,18 +89,18 @@ const DuplicateModal = ({ report, onContinue, onClose, dark }) => (
       </div>
       {report && (
         <div className={`rounded-none border p-3 text-xs space-y-1 ${dark ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
-          <p><span className="font-medium">Type:</span> {report.wasteType}</p>
-          <p><span className="font-medium">Severity:</span> {report.severity}</p>
-          <p><span className="font-medium">Location:</span> {report.location?.displayAddress || report.location?.address}</p>
-          <p><span className="font-medium">Status:</span> {report.status}</p>
-          <p><span className="font-medium">Supports:</span> {report.upvotes?.length || 0}</p>
+          <p><span className="font-bold">Type:</span> {report.wasteType}</p>
+          <p><span className="font-bold">Severity:</span> {report.severity}</p>
+          <p><span className="font-bold">Location:</span> {report.location?.displayAddress || report.location?.address}</p>
+          <p><span className="font-bold">Status:</span> {report.status}</p>
+          <p><span className="font-bold">Supports:</span> {report.upvotes?.length || 0}</p>
         </div>
       )}
       <div className="flex gap-2 pt-1">
-        <button onClick={onClose} className={`flex-1 rounded-none border py-2 text-sm font-semibold transition ${dark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50'}`}>
+        <button onClick={onClose} className={`flex-1 rounded-none border py-2 text-sm transition ${dark ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50'}`}>
           Cancel
         </button>
-        <button onClick={onContinue} className="flex-1 rounded-none bg-green-600 py-2 text-sm font-semibold text-white hover:bg-green-500 transition">
+        <button onClick={onContinue} className="flex-1 rounded-none bg-green-600 py-2 text-sm text-white hover:bg-green-500 transition">
           Submit Anyway
         </button>
       </div>
@@ -134,7 +119,6 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   const [locMethod,    setLocMethod]    = useState('map');
   const [location,     setLocation]     = useState(null);
   const [regionValid,  setRegionValid]  = useState(null);
-  const [accuracy,     setAccuracy]     = useState(null);
   const [imageFile,    setImageFile]    = useState(null);
   const [preview,      setPreview]      = useState('');
   const [photoLoc,     setPhotoLoc]     = useState(null);
@@ -143,9 +127,6 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   const [loading,      setLoading]      = useState(false);
   const [dupData,      setDupData]      = useState(null);
   const [showDup,      setShowDup]      = useState(false);
-  const [detecting,    setDetecting]    = useState(false);
-
-  const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: '' })); };
 
   const handleLocationSelect = (loc) => {
     setLocation(loc);
@@ -164,15 +145,6 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
     } else { setPhotoLoc(null); setPhotoWarning(false); }
   };
 
-  const detectCurrentLocation = () => {
-    if (!navigator.geolocation) return;
-    setDetecting(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => { setAccuracy(pos.coords.accuracy); setDetecting(false); },
-      () => setDetecting(false),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-  };
 
   const validate = () => {
     const e = {};
@@ -198,7 +170,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
         description: form.description, anonymous,
         image: imageFile ? `[image:${imageFile.name}]` : '',
         location: finalLoc, landmark: form.landmark, landmarkType: form.landmarkType,
-        photoLocation: photoLoc || { lat: null, lng: null }, accuracy, pickupTime,
+        photoLocation: photoLoc || { lat: null, lng: null }, pickupTime,
       };
       const res  = await fetch('/api/waste/report', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -232,7 +204,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   const handleClose = () => {
     setForm({ wasteType: '', severity: 'Medium', wasteSeenAt: 'Just now', description: '', pickupDate: '', pickupTime: '', landmark: '', landmarkType: '', manualAddress: '' });
     setAnonymous(false); setLocation(null); setImageFile(null); setPreview(''); setErrors({});
-    setPhotoLoc(null); setPhotoWarning(false); setAccuracy(null);
+    setPhotoLoc(null); setPhotoWarning(false);
     setDupData(null); setShowDup(false); setLocMethod('map');
     onClose();
   };
@@ -242,7 +214,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   const inp = `w-full rounded-none border py-2.5 px-3.5 text-sm shadow-sm transition focus:outline-none focus:ring-2 focus:ring-green-500 ${
     dark ? 'bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400'
   }`;
-  const lbl    = `text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-700'}`;
+  const lbl    = `text-sm ${dark ? 'text-slate-300' : 'text-slate-700'}`;
   const errCls = 'text-xs text-red-400 mt-0.5';
   const card   = `rounded-none border p-4 space-y-3 ${dark ? 'bg-white/5 border-gray-700' : 'bg-slate-50 border-slate-200'}`;
 
@@ -257,7 +229,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
           <div className={`flex items-center justify-between px-4 sm:px-6 py-3.5 border-b shrink-0 ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
             <div className="flex items-center gap-2">
               <HiClipboardList className="h-5 w-5 text-green-500" />
-              <span className={`font-semibold text-sm sm:text-base ${dark ? 'text-white' : 'text-slate-900'}`}>Report Waste</span>
+              <span className={`font-bold text-sm sm:text-base ${dark ? 'text-white' : 'text-slate-900'}`}>Report Waste</span>
             </div>
             <button type="button" onClick={handleClose} className={`rounded-none p-1.5 transition ${dark ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-400 hover:bg-slate-100'}`}>
               <HiX className="h-5 w-5" />
@@ -267,7 +239,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
           <form onSubmit={handleSubmit} noValidate className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 space-y-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 
             <div className={card}>
-              <p className={`text-xs font-semibold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Waste Details</p>
+              <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Waste Details</p>
               <div>
                 <label className={lbl}>Waste Type</label>
                 <select value={form.wasteType} onChange={e => set('wasteType', e.target.value)} className={`${inp} mt-1`}>
@@ -282,7 +254,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
                 <div className="flex gap-2 mt-1">
                   {SEVERITY_OPTIONS.map(s => (
                     <button key={s.value} type="button" onClick={() => set('severity', s.value)}
-                      className={`flex-1 rounded-none border py-2 text-xs font-semibold transition ${form.severity === s.value ? s.active : s.cls}`}>
+                      className={`flex-1 rounded-none border py-2 text-xs font-bold transition ${form.severity === s.value ? s.active : s.cls}`}>
                       {s.value}
                     </button>
                   ))}
@@ -294,7 +266,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
                 <div className="flex gap-2 mt-1 flex-wrap">
                   {SEEN_OPTIONS.map(o => (
                     <button key={o} type="button" onClick={() => set('wasteSeenAt', o)}
-                      className={`px-3 py-1.5 rounded-none border text-xs font-medium transition ${
+                      className={`px-3 py-1.5 rounded-none border text-xs transition ${
                         form.wasteSeenAt === o
                           ? 'bg-green-600 text-white border-green-600'
                           : dark ? 'border-slate-600 text-slate-400 hover:border-green-500' : 'border-slate-300 text-slate-600 hover:border-green-400'
@@ -314,7 +286,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
             </div>
 
             <div className={card}>
-              <p className={`text-xs font-semibold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Photo</p>
+              <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Photo</p>
               <div className="flex flex-col sm:flex-row gap-2">
                 <label className={`flex-1 flex flex-col items-center justify-center gap-2 rounded-none border-2 border-dashed cursor-pointer transition py-4 ${
                   dark ? 'border-slate-600 hover:border-green-500 bg-slate-800/50' : 'border-slate-300 hover:border-green-400 bg-white'
@@ -347,7 +319,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
             </div>
 
             <div className={card}>
-              <p className={`text-xs font-semibold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Landmark</p>
+              <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Landmark</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <select value={form.landmarkType} onChange={e => set('landmarkType', e.target.value)} className={inp}>
                   <option value="">Select landmark type</option>
@@ -360,19 +332,12 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
 
             <div className={card}>
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <p className={`text-xs font-semibold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Location</p>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <AccuracyBadge accuracy={accuracy} />
-                  <button type="button" onClick={detectCurrentLocation} disabled={detecting}
-                    className="flex items-center gap-1 text-xs text-green-600 hover:underline disabled:opacity-50">
-                    <MdMyLocation className="h-3.5 w-3.5" />{detecting ? 'Detecting...' : 'Use Current Location'}
-                  </button>
-                </div>
+                <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Location</p>
               </div>
               <div className="flex gap-2 flex-wrap">
                 {LOC_METHODS.map(m => (
                   <button key={m.id} type="button" onClick={() => setLocMethod(m.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-none text-xs font-medium border transition ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-none text-xs border transition ${
                       locMethod === m.id ? 'bg-green-600 text-white border-green-600'
                         : dark ? 'border-slate-600 text-slate-400 hover:border-green-500' : 'border-slate-300 text-slate-600 hover:border-green-400'
                     }`}>
@@ -401,7 +366,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
             </div>
 
             <div className={card}>
-              <p className={`text-xs font-semibold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Pickup Schedule</p>
+              <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Pickup Schedule</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={lbl}>Pickup Date</label>
@@ -426,7 +391,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
             <div className={`flex items-center justify-between rounded-none border px-4 py-3 ${dark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
               <div className="flex items-center gap-2">
                 {anonymous ? <HiEyeOff className="h-4 w-4 text-slate-400" /> : <HiEye className="h-4 w-4 text-green-500" />}
-                <span className={`text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
+                <span className={`text-sm ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
                   {anonymous ? 'Reporting anonymously' : 'Reporting as yourself'}
                 </span>
               </div>
@@ -442,13 +407,13 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
 
             <div className="flex flex-col sm:flex-row gap-3 pt-1 pb-2">
               <button type="button" onClick={handleClose}
-                className={`w-full sm:w-auto flex-1 rounded-none border px-4 py-2.5 text-sm font-semibold transition ${
+                className={`w-full sm:w-auto flex-1 rounded-none border px-4 py-2.5 text-sm transition ${
                   dark ? 'border-slate-600 text-slate-300 hover:bg-slate-800' : 'border-slate-300 text-slate-600 hover:bg-slate-50'
                 }`}>
                 Cancel
               </button>
               <button type="submit" disabled={loading || regionValid === false}
-                className="w-full sm:w-auto flex-1 rounded-none bg-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-500 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed">
+                className="w-full sm:w-auto flex-1 rounded-none bg-green-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-green-500 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed">
                 {loading ? 'Submitting...' : regionValid === false ? 'Outside Service Area' : 'Submit Report'}
               </button>
             </div>

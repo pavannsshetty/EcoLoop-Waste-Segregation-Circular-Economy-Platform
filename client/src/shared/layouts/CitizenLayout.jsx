@@ -5,7 +5,6 @@ import { MdOutlineReportProblem, MdRecycling } from 'react-icons/md';
 import { FaTrophy, FaMedal, FaTruck } from 'react-icons/fa';
 import EcoLoopLogo from '../components/EcoLoopLogo';
 import NotificationBell from '../components/NotificationBell';
-import ReportWasteModal from '../components/ReportWasteModal';
 import DarkBg from '../components/DarkBg';
 import { ToastContainer, useToast } from '../components/Toast';
 import { useTheme } from '../context/ThemeContext';
@@ -15,7 +14,7 @@ import { useUser } from '../context/UserContext';
 
 const NAV_MAIN = [
   { path: '/citizen/dashboard',     Icon: () => <HiChartBar className="h-5 w-5" />,             label: 'Dashboard'     },
-  { path: 'report',                 Icon: () => <MdOutlineReportProblem className="h-5 w-5" />, label: 'Report Waste'  },
+  { path: '/citizen/report-waste',  Icon: () => <MdOutlineReportProblem className="h-5 w-5" />, label: 'Report Waste'  },
   { path: '/citizen/my-reports',    Icon: () => <HiClipboardList className="h-5 w-5" />,        label: 'My Reports'    },
   { path: '/citizen/my-rewards',    Icon: () => <FaTrophy className="h-5 w-5" />,               label: 'My Rewards'    },
   { path: '/citizen/nearby-issues', Icon: () => <HiMap className="h-5 w-5" />,                  label: 'Nearby Issues' },
@@ -37,11 +36,11 @@ const NAV_USER = [
 
 const NavItem = ({ item, collapsed, dark, onClick }) => {
   const location = useLocation();
-  const active   = item.path !== 'report' && location.pathname === item.path;
+  const active   = location.pathname === item.path;
   return (
     <button onClick={() => onClick(item.path)}
       title={collapsed ? item.label : undefined}
-      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-sm font-medium transition-all duration-200 group ${
+      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-sm transition-all duration-200 group ${
         active
           ? dark ? 'bg-green-900/40 text-green-400' : 'bg-green-50 text-green-700'
           : dark ? 'text-slate-400 hover:bg-white/5 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
@@ -72,7 +71,6 @@ const CitizenLayout = () => {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed,  setCollapsed]  = useState(false);
-  const [reportOpen, setReportOpen] = useState(false);
 
   const sideW    = collapsed ? 'lg:w-20' : 'lg:w-64';
   const mainML   = collapsed ? 'lg:ml-20' : 'lg:ml-64';
@@ -80,7 +78,6 @@ const CitizenLayout = () => {
   const logout = () => { clearUser(); navigate('/'); };
 
   const handleNav = (path) => {
-    if (path === 'report') { setReportOpen(true); setMobileOpen(false); return; }
     navigate(path);
     setMobileOpen(false);
   };
@@ -110,28 +107,28 @@ const CitizenLayout = () => {
         </div>
 
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <p className={`text-xs font-semibold px-3 mb-1 uppercase tracking-wider ${collapsed ? 'lg:hidden' : ''} ${sectionLbl}`}>Main</p>
+          <p className={`text-xs font-bold px-3 mb-1 uppercase tracking-wider ${collapsed ? 'lg:hidden' : ''} ${sectionLbl}`}>Main</p>
           {NAV_MAIN.map(item => <NavItem key={item.path} item={item} collapsed={collapsed} dark={dark} onClick={handleNav} />)}
 
           <div className={`pt-3 ${collapsed ? 'lg:hidden' : ''}`}>
-            <p className={`text-xs font-semibold px-3 mb-1 uppercase tracking-wider ${sectionLbl}`}>Circular Economy</p>
+            <p className={`text-xs font-bold px-3 mb-1 uppercase tracking-wider ${sectionLbl}`}>Circular Economy</p>
           </div>
           {NAV_CIRCULAR.map(item => <NavItem key={item.path} item={item} collapsed={collapsed} dark={dark} onClick={handleNav} />)}
 
           <div className={`pt-3 ${collapsed ? 'lg:hidden' : ''}`}>
-            <p className={`text-xs font-semibold px-3 mb-1 uppercase tracking-wider ${sectionLbl}`}>Activity</p>
+            <p className={`text-xs font-bold px-3 mb-1 uppercase tracking-wider ${sectionLbl}`}>Activity</p>
           </div>
           {NAV_ACTIVITY.map(item => <NavItem key={item.path} item={item} collapsed={collapsed} dark={dark} onClick={handleNav} />)}
 
           <div className={`pt-3 ${collapsed ? 'lg:hidden' : ''}`}>
-            <p className={`text-xs font-semibold px-3 mb-1 uppercase tracking-wider ${sectionLbl}`}>Account</p>
+            <p className={`text-xs font-bold px-3 mb-1 uppercase tracking-wider ${sectionLbl}`}>Account</p>
           </div>
           {NAV_USER.map(item => <NavItem key={item.path} item={item} collapsed={collapsed} dark={dark} onClick={handleNav} />)}
         </nav>
 
         <div className={`p-3 border-t shrink-0 ${dark ? 'border-white/10' : 'border-slate-200'}`}>
           <button onClick={logout} title={collapsed ? 'Sign Out' : undefined}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition group ${dark ? 'text-slate-400 hover:bg-red-900/30 hover:text-red-400' : 'text-slate-500 hover:bg-red-50 hover:text-red-500'}`}>
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition group ${dark ? 'text-slate-400 hover:bg-red-900/30 hover:text-red-400' : 'text-slate-500 hover:bg-red-50 hover:text-red-500'}`}>
             <HiLogout className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110" />
             <span className={`whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>Sign Out</span>
           </button>
@@ -148,7 +145,7 @@ const CitizenLayout = () => {
             <h1 className={`text-base font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
               {user.name || 'Citizen'}
             </h1>
-            <p className={`text-[10px] font-bold uppercase tracking-widest leading-none mt-0.5 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+            <p className={`text-[10px] uppercase tracking-widest leading-none mt-0.5 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
               Dashboard
             </p>
           </div>
@@ -166,12 +163,10 @@ const CitizenLayout = () => {
         </header>
 
         <main className="flex-1 overflow-y-auto">
-          <Outlet context={{ toast, reportOpen, setReportOpen, dark }} />
+          <Outlet context={{ toast, dark }} />
         </main>
       </div>
 
-      <ReportWasteModal isOpen={reportOpen} onClose={() => setReportOpen(false)}
-        onSuccess={() => { toast.success('Waste report submitted successfully!'); }} dark={dark} />
       <ToastContainer toasts={toasts} onRemove={remove} />
     </div>
   );

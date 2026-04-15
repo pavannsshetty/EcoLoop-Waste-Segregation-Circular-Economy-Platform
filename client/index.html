@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/EcoLoop_Logo.png" />
+    <link rel="icon" type="image/svg+xml" href="/src/assets/entrypagelogo/ecoloop.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EcoLoop - Waste Segregation & Circular Economy Platform</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -11,6 +11,32 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   </head>
   <body>
+
+    <div id="splash" style="position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#fff;transition:opacity 0.5s ease;">
+      <img src="/src/assets/entrypagelogo/ecoloop.svg" alt="EcoLoop" class="splash-logo" />
+      <img src="/src/assets/entrypagelogo/Infinity@1x-0.9s-120px-120px.svg" alt="" style="width:60px;height:60px;" />
+    </div>
+
+    <style>
+      .splash-logo {
+        height: 100px;
+        width: auto;
+        animation: splash-pulse 1.2s ease-in-out infinite;
+      }
+    </style>
+
+    <script>
+      window.addEventListener('load', function () {
+        setTimeout(function () {
+          var s = document.getElementById('splash');
+          if (s) {
+            s.style.opacity = '0';
+            setTimeout(function () { s.remove(); }, 500);
+          }
+        }, 3000);
+      });
+    </script>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

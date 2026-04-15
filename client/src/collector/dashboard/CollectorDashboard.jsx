@@ -63,6 +63,7 @@ const CollectorDashboard = () => {
       label: 'New reports',
       value: stats.pendingSubmitted ?? 0,
       Icon: HiInbox,
+      Icon: HiInbox,
       color: 'text-orange-600',
       path: '/collector/assigned',
     },

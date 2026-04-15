@@ -69,7 +69,7 @@ const MyRewards = () => {
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className={`text-base font-semibold ${dk('text-slate-200','text-slate-800')}`}>My Rewards</h1>
+        <h1 className={`text-base font-bold ${dk('text-slate-200','text-slate-800')}`}>My Rewards</h1>
         <button onClick={fetchRewards} className={`transition ${dk('text-slate-400 hover:text-green-400','text-slate-400 hover:text-green-600')}`}>
           <HiRefresh className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
         </button>
@@ -79,12 +79,12 @@ const MyRewards = () => {
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
         <div className="relative flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm opacity-80 font-medium">Total Eco Points</p>
-            <p className="text-5xl font-extrabold mt-1">{loading ? '—' : ecoPoints}</p>
+            <p className="text-sm opacity-80">Total Eco Points</p>
+            <p className="text-5xl font-bold mt-1">{loading ? '—' : ecoPoints}</p>
             {currentBadge && (
               <div className="flex items-center gap-2 mt-2">
                 <currentBadge.Icon className="h-5 w-5 opacity-90" />
-                <span className="text-sm font-semibold opacity-90">{currentBadge.name}</span>
+                <span className="text-sm font-bold opacity-90">{currentBadge.name}</span>
               </div>
             )}
           </div>
@@ -110,14 +110,14 @@ const MyRewards = () => {
       </div>
 
       <div className={`rounded-sm border p-5 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
-        <h2 className={`text-sm font-medium ${dk('text-slate-200','text-slate-700')}`}>Badges & Achievements</h2>
+        <h2 className={`text-sm font-bold ${dk('text-slate-200','text-slate-700')}`}>Badges & Achievements</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {ALL_BADGES.map(b => {
             const earned = badges.includes(b.name);
             return (
               <div key={b.name} className={`rounded-sm border p-3 text-center space-y-1.5 transition-colors duration-200 ${earned ? b.color : dk('bg-white/5 border-gray-700 opacity-50','bg-slate-50 border-slate-200 opacity-50')}`}>
                 <b.Icon className={`h-7 w-7 mx-auto ${earned ? '' : 'text-slate-400'}`} />
-                <p className={`text-xs font-semibold ${earned ? '' : 'text-slate-500'}`}>{b.name}</p>
+                <p className={`text-xs font-bold ${earned ? '' : 'text-slate-500'}`}>{b.name}</p>
                 <p className="text-xs text-slate-400">{b.threshold} pts</p>
                 {earned && <span className="inline-block text-xs bg-green-600 text-white px-2 py-0.5 rounded-full">Earned</span>}
               </div>
@@ -127,7 +127,7 @@ const MyRewards = () => {
       </div>
 
       <div className={`rounded-sm border p-5 space-y-1 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
-        <h2 className={`text-sm font-medium mb-3 ${dk('text-slate-200','text-slate-700')}`}>How to Earn Points</h2>
+        <h2 className={`text-sm font-bold mb-3 ${dk('text-slate-200','text-slate-700')}`}>How to Earn Points</h2>
         {HOW_TO_EARN.map(({ action, pts, Icon }) => (
           <div key={action} className={`flex items-center justify-between py-2 border-b last:border-0 ${dk('border-slate-700','border-slate-100')}`}>
             <span className={`flex items-center gap-2 text-sm ${dk('text-slate-300','text-slate-600')}`}>
@@ -140,7 +140,7 @@ const MyRewards = () => {
       </div>
 
       <div className={`rounded-sm border p-5 space-y-3 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
-        <h2 className={`text-sm font-medium ${dk('text-slate-200','text-slate-700')}`}>Points History</h2>
+        <h2 className={`text-sm font-bold ${dk('text-slate-200','text-slate-700')}`}>Points History</h2>
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="h-6 w-6 rounded-full border-2 border-green-500 border-t-transparent animate-spin" />
@@ -157,7 +157,7 @@ const MyRewards = () => {
                     <PointIcon className="h-4 w-4 text-green-500" />
                   </div>
                   <div>
-                    <p className={`text-sm font-medium ${dk('text-slate-200','text-slate-700')}`}>{h.reason}</p>
+                    <p className={`text-sm font-bold ${dk('text-slate-200','text-slate-700')}`}>{h.reason}</p>
                     <p className={`text-xs ${dk('text-slate-500','text-slate-400')}`}>{timeAgo(h.createdAt)}</p>
                   </div>
                 </div>

@@ -11,12 +11,14 @@ import Settings from '../settings/Settings';
 import HelpSupport from '../helpSupport/HelpSupport';
 import SellScrap from '../scrap/SellScrap';
 import MyScrapRequests from '../scrap/MyScrapRequests';
+import ReportWastePage from '../reports/ReportWastePage';
 
 const citizenRoutes = (
   <Route path="/citizen" element={<CitizenLayout />}>
     <Route index element={<Navigate to="dashboard" replace />} />
     <Route path="dashboard" element={<CitizenDashboard />} />
     <Route path="my-reports" element={<MyReportsPage />} />
+    <Route path="report-waste" element={<ReportWastePage />} />
     <Route path="my-rewards" element={<MyRewards />} />
     <Route path="nearby-issues" element={<NearbyIssues />} />
     <Route path="leaderboard" element={<Leaderboard />} />

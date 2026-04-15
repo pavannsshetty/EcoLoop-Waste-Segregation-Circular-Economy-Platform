@@ -81,6 +81,7 @@ const CitizenDashboard = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [viewReport,    setViewReport]    = useState(null);
 
   const fetchReports = useCallback(async () => {
     const token = localStorage.getItem('token');
@@ -211,7 +212,7 @@ const CitizenDashboard = () => {
 
                     {/* trend badge */}
                     {trend && (
-                      <span className="absolute top-3 right-3 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-white/20 text-white">
+                      <span className="absolute top-3 right-3 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/20 text-white">
                         {trend}
                       </span>
                     )}
@@ -225,7 +226,7 @@ const CitizenDashboard = () => {
                     <p className="relative z-10 text-2xl font-bold tracking-tight leading-none text-white">{value}</p>
 
                     {/* label */}
-                    <p className="relative z-10 text-xs mt-1.5 font-medium text-white/75">{label}</p>
+                    <p className="relative z-10 text-xs mt-1.5 text-white/75">{label}</p>
 
                     {/* streak progress bar */}
                     {streakBar && (
@@ -241,7 +242,7 @@ const CitizenDashboard = () => {
               <div className="pt-2">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="h-1 w-4 rounded-full bg-green-500" />
-                  <h3 className={`text-xs font-medium uppercase tracking-widest ${dk('text-slate-400','text-slate-500')}`}>Circular Economy Impact</h3>
+                  <h3 className={`text-xs uppercase tracking-widest ${dk('text-slate-400','text-slate-500')}`}>Circular Economy Impact</h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 
@@ -254,9 +255,9 @@ const CitizenDashboard = () => {
                     </div>
                     <div className="relative z-10 flex-1 min-w-0">
                       <p className="text-xl font-bold leading-none text-white">{scrapStats.points}</p>
-                      <p className="text-xs mt-1 font-medium text-white/75">Points Earned</p>
+                      <p className="text-xs mt-1 text-white/75">Points Earned</p>
                     </div>
-                    <span className="relative z-10 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-white/20 text-white shrink-0">+pts</span>
+                    <span className="relative z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/20 text-white shrink-0">+pts</span>
                   </div>
 
                   {/* Recycled Total */}
@@ -273,8 +274,8 @@ const CitizenDashboard = () => {
                       <HiRefresh className="absolute inset-0 m-auto h-4 w-4 text-white" />
                     </div>
                     <div className="relative z-10 flex-1 min-w-0">
-                      <p className="text-xl font-bold leading-none text-white">{scrapStats.totalWeight} <span className="text-sm font-medium">kg</span></p>
-                      <p className="text-xs mt-1 font-medium text-white/75">Recycled Total</p>
+                      <p className="text-xl font-bold leading-none text-white">{scrapStats.totalWeight} <span className="text-sm">kg</span></p>
+                      <p className="text-xs mt-1 text-white/75">Recycled Total</p>
                     </div>
                   </div>
 
@@ -283,8 +284,8 @@ const CitizenDashboard = () => {
                     <div className="absolute inset-0 rounded-xl opacity-[0.06] pointer-events-none"
                       style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '12px 12px' }} />
                     <div className="relative z-10">
-                      <p className="text-[10px] font-medium uppercase tracking-widest opacity-75 mb-1">CO₂ Abatement</p>
-                      <p className="text-xl font-bold leading-none">{scrapStats.co2Saved} <span className="text-sm font-medium">kg</span></p>
+                      <p className="text-[10px] uppercase tracking-widest opacity-75 mb-1">CO₂ Abatement</p>
+                      <p className="text-xl font-bold leading-none">{scrapStats.co2Saved} <span className="text-sm">kg</span></p>
                       <div className="mt-3 space-y-1">
                         <div className="flex justify-between text-[10px] opacity-70">
                           <span>Progress</span><span>65%</span>
@@ -309,11 +310,11 @@ const CitizenDashboard = () => {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                     <div>
                       <h3 className={`text-lg font-bold tracking-tight ${dk('text-slate-200','text-slate-800')}`}>Recent Reports</h3>
-                      <p className="text-xs text-slate-500 font-medium">Manage and track your cleanup submissions</p>
+                      <p className="text-xs text-slate-500">Manage and track your cleanup submissions</p>
                     </div>
                     <div className="flex items-center gap-2">
                        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-                         className={`text-xs font-medium rounded-sm border border-slate-200 dark:border-gray-700 ${dk('bg-white/5 text-slate-200','bg-white text-slate-700')} focus:ring-green-500 px-3 py-1.5 transition-colors duration-200`}>
+                         className={`text-xs rounded-sm border border-slate-200 dark:border-gray-700 ${dk('bg-white/5 text-slate-200','bg-white text-slate-700')} focus:ring-green-500 px-3 py-1.5 transition-colors duration-200`}>
                          <option value="all">All Status</option>
                          <option value="Submitted">Submitted</option>
                          <option value="In Progress">In Progress</option>
@@ -343,7 +344,7 @@ const CitizenDashboard = () => {
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-3 flex-wrap mb-2">
-                                  <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${statusColors[r.status] || ''}`}>
+                                  <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${statusColors[r.status] || ''}`}>
                                     {r.status}
                                   </span>
                                   <p className={`text-lg font-bold tracking-tight ${dk('text-slate-100','text-slate-900')}`}>{r.wasteType}</p>
@@ -375,7 +376,7 @@ const CitizenDashboard = () => {
                                   }`}>
                                   <HiPencil className="h-4 w-4" /> Edit
                                 </button>
-                                <button onClick={(e) => { e.stopPropagation(); navigate('/citizen/my-reports'); }}
+                                <button onClick={(e) => { e.stopPropagation(); setViewReport(r); }}
                                   className="h-10 px-4 rounded-none flex items-center gap-2 text-xs font-bold bg-white dark:bg-white/10 text-blue-600 shadow-sm hover:shadow-md active:scale-95 transition-all relative z-10">
                                   <HiEye className="h-4 w-4" /> View
                                 </button>
@@ -402,16 +403,16 @@ const CitizenDashboard = () => {
           {tab === 'reports' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold text-slate-800">My Reports</h2>
+                <h2 className="text-base font-bold text-slate-800">My Reports</h2>
                 <div className="flex items-center gap-3">
                   <button onClick={fetchReports} className="text-xs text-slate-400 hover:text-green-600 transition flex items-center gap-1">
                     <HiRefresh className="h-3.5 w-3.5" /> Refresh
                   </button>
-                  <button onClick={() => navigate('/citizen/my-reports')} className="text-sm text-green-600 hover:underline font-medium">Full page →</button>
+                  <button onClick={() => navigate('/citizen/my-reports')} className="text-sm text-green-600 hover:underline">Full page →</button>
                 </div>
               </div>
               <button onClick={() => setReportOpen(true)}
-                className="w-full flex items-center justify-center gap-2 rounded-none bg-gradient-to-r from-green-600 to-emerald-500 px-4 py-3.5 text-sm font-semibold text-white hover:shadow-lg hover:shadow-green-200 transition active:scale-[0.98]">
+                className="w-full flex items-center justify-center gap-2 rounded-none bg-gradient-to-r from-green-600 to-emerald-500 px-4 py-3.5 text-sm font-bold text-white hover:shadow-lg hover:shadow-green-200 transition active:scale-[0.98]">
                 <HiExclamation className="h-5 w-5" />
                 Report New Waste
               </button>
@@ -433,8 +434,8 @@ const CitizenDashboard = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-semibold text-slate-900">{r.wasteType}</p>
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusCls}`}>{r.status}</span>
+                            <p className="text-sm font-bold text-slate-900">{r.wasteType}</p>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${statusCls}`}>{r.status}</span>
                             {r.severity && <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{r.severity}</span>}
                           </div>
                           <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{r.description}</p>
@@ -443,15 +444,15 @@ const CitizenDashboard = () => {
                       </div>
                       <div className="flex items-center gap-2 flex-wrap pl-1">
                         <button onClick={() => setEditReport(r)} disabled={!canEdit}
-                          className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-none border transition ${canEdit ? 'border-green-200 text-green-700 bg-green-50 hover:bg-green-100' : 'border-slate-200 text-slate-400 cursor-not-allowed opacity-50'}`}>
+                          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-none border transition ${canEdit ? 'border-green-200 text-green-700 bg-green-50 hover:bg-green-100' : 'border-slate-200 text-slate-400 cursor-not-allowed opacity-50'}`}>
                           <HiPencil className="h-3 w-3" /> Edit
                         </button>
-                        <button onClick={() => navigate('/citizen/my-reports')}
-                          className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-none border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition">
+                        <button onClick={() => setViewReport(r)}
+                          className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-none border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition">
                           <HiEye className="h-3 w-3" /> View
                         </button>
                         <button onClick={() => handleDelete(r._id)} disabled={!canEdit}
-                          className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-none border transition ${canEdit ? 'border-red-200 text-red-600 bg-red-50 hover:bg-red-100' : 'border-slate-200 text-slate-400 cursor-not-allowed opacity-50'}`}>
+                          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-none border transition ${canEdit ? 'border-red-200 text-red-600 bg-red-50 hover:bg-red-100' : 'border-slate-200 text-slate-400 cursor-not-allowed opacity-50'}`}>
                           <HiTrash className="h-3 w-3" /> Delete
                         </button>
                       </div>
@@ -465,19 +466,19 @@ const CitizenDashboard = () => {
           {tab === 'rewards' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold text-slate-800">My Rewards</h2>
-                <button onClick={() => navigate('/citizen/my-rewards')} className="text-sm text-green-600 hover:underline font-medium">Full page →</button>
+                <h2 className="text-base font-bold text-slate-800">My Rewards</h2>
+                <button onClick={() => navigate('/citizen/my-rewards')} className="text-sm text-green-600 hover:underline">Full page →</button>
               </div>
               <div className="relative rounded-none overflow-hidden bg-gradient-to-br from-yellow-400 to-orange-400 p-6 text-white shadow-lg">
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
                 <div className="relative">
-                  <p className="text-sm opacity-80 font-medium">Total EcoPoints</p>
-                  <p className="text-5xl font-extrabold mt-1">{recentReports.length * 10}</p>
+                  <p className="text-sm opacity-80">Total EcoPoints</p>
+                  <p className="text-5xl font-bold mt-1">{recentReports.length * 10}</p>
                   <p className="text-xs opacity-75 mt-2">Keep reporting waste to earn more points!</p>
                 </div>
               </div>
               <div className="bg-white rounded-none border border-slate-100 shadow-sm p-5 space-y-3">
-                <p className="text-sm font-semibold text-slate-800">How to earn points</p>
+                <p className="text-sm font-bold text-slate-800">How to earn points</p>
                 {[
                   { action: 'Submit a waste report', pts: '+10 pts', color: 'text-green-600' },
                   { action: 'Report gets resolved',  pts: '+15 pts', color: 'text-blue-600'  },
@@ -504,6 +505,90 @@ const CitizenDashboard = () => {
          message="Are you sure you want to remove this report? All progress and potentially pending EcoPoints will be lost."
       />
       <ToastContainer toasts={toasts} onRemove={remove} />
+
+      {/* View Report Modal */}
+      {viewReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setViewReport(null)}>
+          <div onClick={e => e.stopPropagation()}
+            className={`relative w-full max-w-lg rounded-sm shadow-2xl overflow-hidden ${dk('bg-slate-900 border border-gray-700', 'bg-white')}`}>
+            {/* Header */}
+            <div className={`flex items-center justify-between px-5 py-4 border-b ${dk('border-gray-700', 'border-slate-100')}`}>
+              <div className="flex items-center gap-2">
+                <HiClipboardList className="h-5 w-5 text-green-500" />
+                <span className={`font-bold text-sm ${dk('text-white', 'text-slate-900')}`}>Report Details</span>
+              </div>
+              <button onClick={() => setViewReport(null)} className={`p-1.5 rounded-sm transition ${dk('text-slate-400 hover:bg-slate-700', 'text-slate-400 hover:bg-slate-100')}`}>
+                ✕
+              </button>
+            </div>
+            {/* Body */}
+            <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Status + Type */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${
+                  viewReport.status === 'Resolved'    ? 'bg-green-100 text-green-700 border-green-200' :
+                  viewReport.status === 'In Progress' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                  'bg-amber-100 text-amber-700 border-amber-200'
+                }`}>{viewReport.status}</span>
+                <span className={`text-base font-bold ${dk('text-slate-100', 'text-slate-900')}`}>{viewReport.wasteType}</span>
+                {viewReport.severity && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full border ${dk('bg-white/5 border-white/10 text-slate-400', 'bg-slate-100 border-slate-200 text-slate-500')}`}>{viewReport.severity}</span>
+                )}
+              </div>
+
+              {/* Fields */}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: 'Date Submitted', value: viewReport.createdAt ? new Date(viewReport.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—' },
+                  { label: 'Waste Seen At',  value: viewReport.wasteSeenAt || '—' },
+                  { label: 'Landmark',       value: viewReport.landmark || '—' },
+                  { label: 'Landmark Type',  value: viewReport.landmarkType || '—' },
+                ].map(({ label, value }) => (
+                  <div key={label} className={`rounded-sm border p-3 ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`}>
+                    <p className={`text-[10px] font-bold uppercase tracking-wide mb-1 ${dk('text-slate-500', 'text-slate-400')}`}>{label}</p>
+                    <p className={`text-xs ${dk('text-slate-200', 'text-slate-700')}`}>{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Location */}
+              <div className={`rounded-sm border p-3 ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`}>
+                <p className={`text-[10px] font-bold uppercase tracking-wide mb-1 ${dk('text-slate-500', 'text-slate-400')}`}>Location</p>
+                <div className="flex items-start gap-1.5">
+                  <HiLocationMarker className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                  <p className={`text-xs ${dk('text-slate-200', 'text-slate-700')}`}>{viewReport.location?.displayAddress || viewReport.location?.address || '—'}</p>
+                </div>
+              </div>
+
+              {/* Description */}
+              {viewReport.description && (
+                <div className={`rounded-sm border p-3 ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`}>
+                  <p className={`text-[10px] font-bold uppercase tracking-wide mb-1 ${dk('text-slate-500', 'text-slate-400')}`}>Description</p>
+                  <p className={`text-xs leading-relaxed ${dk('text-slate-300', 'text-slate-600')}`}>{viewReport.description}</p>
+                </div>
+              )}
+
+              {/* Pickup Schedule */}
+              {viewReport.pickupTime && (
+                <div className={`rounded-sm border p-3 ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`}>
+                  <p className={`text-[10px] font-bold uppercase tracking-wide mb-1 ${dk('text-slate-500', 'text-slate-400')}`}>Scheduled Pickup</p>
+                  <p className={`text-xs ${dk('text-slate-200', 'text-slate-700')}`}>
+                    {new Date(viewReport.pickupTime).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className={`px-5 py-3 border-t flex justify-end ${dk('border-gray-700', 'border-slate-100')}`}>
+              <button onClick={() => setViewReport(null)}
+                className={`text-sm font-bold px-4 py-2 rounded-sm transition ${dk('bg-white/10 text-slate-200 hover:bg-white/20', 'bg-slate-100 text-slate-700 hover:bg-slate-200')}`}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

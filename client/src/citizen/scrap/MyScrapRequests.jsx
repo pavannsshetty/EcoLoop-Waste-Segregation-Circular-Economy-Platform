@@ -58,7 +58,7 @@ const MyScrapRequests = () => {
     <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={`text-base font-medium ${dk('text-white', 'text-slate-900')}`}>My Scrap Requests</h1>
+          <h1 className={`text-base font-bold ${dk('text-white', 'text-slate-900')}`}>My Scrap Requests</h1>
           <p className="text-xs text-slate-500">Track and manage your recyclable scrap pickups.</p>
         </div>
         <button 
@@ -73,12 +73,12 @@ const MyScrapRequests = () => {
       {loading && requests.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 space-y-4">
           <div className="h-10 w-10 border-4 border-green-500 border-t-transparent animate-spin rounded-full" />
-          <p className="text-sm text-slate-500 font-medium">Loading your requests...</p>
+          <p className="text-sm text-slate-500">Loading your requests...</p>
         </div>
       ) : error ? (
         <div className="rounded-2xl bg-red-50 border border-red-100 p-8 text-center space-y-3">
-          <p className="text-red-600 font-medium">{error}</p>
-          <button onClick={fetchRequests} className="text-sm text-red-700 underline font-semibold">Try again</button>
+          <p className="text-red-600">{error}</p>
+          <button onClick={fetchRequests} className="text-sm text-red-700 underline font-bold">Try again</button>
         </div>
       ) : requests.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 bg-white/5 rounded-3xl border-2 border-dashed border-slate-200 p-8 text-center space-y-4">
@@ -91,7 +91,7 @@ const MyScrapRequests = () => {
           </div>
           <button 
             onClick={() => navigate('/citizen/sell-scrap')}
-            className="bg-green-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-green-100 hover:bg-green-500 transition"
+            className="bg-green-600 text-white px-6 py-2.5 rounded-sm font-bold hover:bg-green-500 transition"
           >
             Sell Scrap Now
           </button>
@@ -111,7 +111,7 @@ const MyScrapRequests = () => {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className={`font-bold truncate ${dk('text-white', 'text-slate-900')}`}>{r.scrapType}</h3>
-                      <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${STATUS_STYLES[r.status] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${STATUS_STYLES[r.status] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
                         {r.status}
                       </span>
                     </div>
@@ -128,11 +128,11 @@ const MyScrapRequests = () => {
 
                 <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 border-slate-100 pt-3 sm:pt-0 gap-2">
                   <div className="text-right">
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">Requested on</p>
-                    <p className={`text-xs font-semibold ${dk('text-slate-300', 'text-slate-700')}`}>{formatDate(r.createdAt)}</p>
+                    <p className="text-[10px] text-slate-400 uppercase">Requested on</p>
+                    <p className={`text-xs ${dk('text-slate-300', 'text-slate-700')}`}>{formatDate(r.createdAt)}</p>
                   </div>
                   {r.assignedCollector && (
-                    <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
+                    <div className="flex items-center gap-1.5 text-xs text-green-600">
                       <HiUser className="h-3.5 w-3.5" />
                       Collector Assigned
                     </div>
@@ -147,7 +147,7 @@ const MyScrapRequests = () => {
               
               {r.description && (
                 <div className={`mt-4 p-3 rounded-sm text-xs ${dk('bg-slate-900 text-slate-400', 'bg-slate-50 text-slate-600')}`}>
-                  <p className="font-semibold mb-1 uppercase text-[10px] text-slate-400">Notes:</p>
+                  <p className="font-bold mb-1 uppercase text-[10px] text-slate-400">Notes:</p>
                   {r.description}
                 </div>
               )}
@@ -180,7 +180,7 @@ const MyScrapRequests = () => {
         </div>
         <button 
           onClick={() => navigate('/citizen/sell-scrap')}
-          className="bg-white text-green-600 text-xs font-bold px-4 py-2 rounded-lg border border-green-200 shadow-sm hover:bg-green-50 transition"
+          className="bg-white text-green-600 text-xs font-bold px-4 py-2 rounded-sm border border-green-200 hover:bg-green-50 transition"
         >
           New Request
         </button>

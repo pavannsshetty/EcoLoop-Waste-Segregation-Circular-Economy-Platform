@@ -66,10 +66,10 @@ const Notifications = () => {
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className={`text-base font-medium ${dk('text-slate-200','text-slate-800')}`}>Notifications</h1>
+        <h1 className={`text-base font-bold ${dk('text-slate-200','text-slate-800')}`}>Notifications</h1>
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
-            <button onClick={markAllRead} className="text-xs text-green-500 hover:underline font-medium">Mark all read</button>
+            <button onClick={markAllRead} className="text-xs text-green-500 hover:underline">Mark all read</button>
           )}
           <button onClick={fetchAll} className={`flex items-center gap-1 text-xs transition ${dk('text-slate-400 hover:text-green-400','text-slate-400 hover:text-green-600')}`}>
             <HiRefresh className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -80,7 +80,7 @@ const Notifications = () => {
         <div className={`flex items-center gap-1 rounded-sm border p-1 w-fit transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
           {[['all', 'All'], ['unread', 'Unread'], ['read', 'Read']].map(([val, label]) => (
             <button key={val} onClick={() => setFilter(val)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${filter === val ? 'bg-green-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}>
+              className={`px-3 py-1.5 rounded-lg text-xs transition ${filter === val ? 'bg-green-600 text-white font-bold' : 'text-slate-500 hover:text-slate-700'}`}>
               {label}
             </button>
           ))}
@@ -108,7 +108,7 @@ const Notifications = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <p className={`text-sm font-semibold ${!n.isRead ? dk('text-slate-100','text-slate-900') : dk('text-slate-400','text-slate-600')}`}>{n.title}</p>
+                  <p className={`text-sm font-bold ${!n.isRead ? dk('text-slate-100','text-slate-900') : dk('text-slate-400','text-slate-600')}`}>{n.title}</p>
                   {!n.isRead && <span className="h-2 w-2 rounded-full bg-green-500 shrink-0" />}
                 </div>
                 <p className={`text-xs mt-0.5 leading-relaxed ${dk('text-slate-400','text-slate-500')}`}>{n.message}</p>
