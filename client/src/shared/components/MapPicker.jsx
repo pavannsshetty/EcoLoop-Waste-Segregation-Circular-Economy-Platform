@@ -161,36 +161,38 @@ const MapPicker = ({ onLocationSelect, dark = false }) => {
           </p>
         </div>
         <button type="button" onClick={detectLocation} disabled={detecting}
-          className="shrink-0 flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed">
+          className="shrink-0 flex items-center gap-1.5 rounded-sm bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed">
           <HiLocationMarker className="h-3.5 w-3.5" />
           {detecting ? 'Detecting...' : 'Detect My Location'}
         </button>
       </div>
 
       <div className="relative w-full">
-        <div className={`flex w-full items-center rounded-xl border overflow-hidden shadow-sm transition-all focus-within:ring-2 focus-within:ring-green-500 focus-within:border-green-500 ${dark ? 'border-slate-600 bg-slate-800' : 'border-gray-200 bg-white'}`}>
-          <HiSearch className={`ml-3 h-4 w-4 shrink-0 ${dark ? 'text-slate-500' : 'text-slate-400'}`} />
-          <input
-            ref={searchRef}
-            type="text"
-            value={query}
-            onChange={onQueryChange}
-            onFocus={() => suggestions.length > 0 && setShowDrop(true)}
-            onBlur={() => setTimeout(() => setShowDrop(false), 200)}
-            placeholder="Search address, area, city, landmark..."
-            className={`flex-1 min-w-0 bg-transparent py-2.5 px-2 text-sm outline-none focus:ring-0 border-none ${dark ? 'text-slate-100 placeholder-slate-500' : 'text-slate-900 placeholder-slate-400'}`}
-          />
-          {query && (
-            <button type="button" tabIndex={-1} onMouseDown={(e) => { e.preventDefault(); clearSearch(); }}
-              className={`shrink-0 p-1.5 transition ${dark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}>
-              <HiX className="h-4 w-4" />
-            </button>
-          )}
+        <div className="flex w-full items-center gap-2">
+          <div className={`flex flex-1 items-center rounded-xl border overflow-hidden shadow-sm transition-all focus-within:ring-2 focus-within:ring-green-500 focus-within:border-green-500 ${dark ? 'border-slate-600 bg-slate-800' : 'border-gray-200 bg-white'}`}>
+            <HiSearch className={`ml-3 h-4 w-4 shrink-0 ${dark ? 'text-slate-500' : 'text-slate-400'}`} />
+            <input
+              ref={searchRef}
+              type="text"
+              value={query}
+              onChange={onQueryChange}
+              onFocus={() => suggestions.length > 0 && setShowDrop(true)}
+              onBlur={() => setTimeout(() => setShowDrop(false), 200)}
+              placeholder="Search address, area, city, landmark..."
+              className={`flex-1 min-w-0 bg-transparent py-2.5 px-2 text-sm outline-none focus:ring-0 border-none ${dark ? 'text-slate-100 placeholder-slate-500' : 'text-slate-900 placeholder-slate-400'}`}
+            />
+            {query && (
+              <button type="button" tabIndex={-1} onMouseDown={(e) => { e.preventDefault(); clearSearch(); }}
+                className={`shrink-0 p-1.5 transition ${dark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}>
+                <HiX className="h-4 w-4" />
+              </button>
+            )}
+          </div>
           <button type="button" onMouseDown={(e) => { e.preventDefault(); fetchSuggestions(query); }}
             disabled={query.trim().length < 2}
-            className="shrink-0 flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-4 py-2.5 border-none outline-none transition disabled:opacity-50">
+            className="shrink-0 flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl border-none outline-none transition disabled:opacity-50 disabled:cursor-not-allowed">
             <HiSearch className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Search</span>
+            <span>Search</span>
           </button>
         </div>
 

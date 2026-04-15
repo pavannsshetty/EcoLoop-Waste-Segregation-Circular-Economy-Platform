@@ -88,7 +88,7 @@ const HelpSupport = () => {
               className={`${inp} resize-none`} />
             <button onClick={() => { if (feedback.trim()) setSent(true); }}
               disabled={!feedback.trim()}
-              className="w-full rounded-xl bg-green-600 text-white text-sm font-bold py-2.5 hover:bg-green-500 transition disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]">
+              className="w-full rounded-sm bg-green-600 text-white text-sm font-bold py-2.5 hover:bg-green-500 transition disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]">
               Submit Feedback
             </button>
           </>

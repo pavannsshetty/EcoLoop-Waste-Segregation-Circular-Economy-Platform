@@ -46,7 +46,7 @@ const NavItem = ({ item, collapsed, dark, onClick }) => {
       type="button"
       onClick={() => onClick(item.path)}
       title={collapsed ? item.label : undefined}
-      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
+      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-medium transition-all duration-200 group ${
         active
           ? dark
             ? 'bg-green-900/40 text-green-400'
@@ -146,7 +146,7 @@ const CollectorLayout = () => {
           <button
             type="button"
             onClick={() => setCollapsed((c) => !c)}
-            className={`hidden lg:flex items-center justify-center h-8 w-8 rounded-lg transition shrink-0 ${
+            className={`hidden lg:flex items-center justify-center h-8 w-8 rounded-sm transition shrink-0 ${
               dark ? 'text-slate-500 hover:bg-white/10 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
             }`}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -181,7 +181,7 @@ const CollectorLayout = () => {
             type="button"
             onClick={logout}
             title={collapsed ? 'Sign Out' : undefined}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-medium transition group ${
               dark ? 'text-slate-400 hover:bg-red-900/30 hover:text-red-400' : 'text-slate-500 hover:bg-red-50 hover:text-red-500'
             }`}
           >
@@ -198,7 +198,7 @@ const CollectorLayout = () => {
           <button
             type="button"
             onClick={() => setMobileOpen((o) => !o)}
-            className={`flex items-center justify-center h-9 w-9 rounded-xl transition lg:hidden ${
+            className={`flex items-center justify-center h-9 w-9 rounded-sm transition lg:hidden ${
               dark ? 'text-slate-400 hover:bg-white/10 hover:text-green-400' : 'text-slate-500 hover:bg-slate-100 hover:text-green-600'
             }`}
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
@@ -217,7 +217,7 @@ const CollectorLayout = () => {
             type="button"
             onClick={toggleDark}
             aria-label="Toggle dark mode"
-            className={`flex items-center justify-center h-9 w-9 rounded-xl transition ${
+            className={`flex items-center justify-center h-9 w-9 rounded-sm transition ${
               dark ? 'text-yellow-400 hover:bg-white/10' : 'text-slate-500 hover:bg-slate-100'
             }`}
           >

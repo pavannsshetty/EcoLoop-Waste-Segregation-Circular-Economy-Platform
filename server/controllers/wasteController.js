@@ -61,6 +61,8 @@ const createReport = async (req, res) => {
         coordinates: [location.lng, location.lat],
         address: location.address,
         displayAddress: location.displayAddress || '',
+        houseNo: location.houseNo || '', street: location.street || '',
+        addrLandmark: location.addrLandmark || '',
         area: location.area || '', city: location.city || '',
         district: location.district || '', state: location.state || '',
         pincode: location.pincode || '', country: location.country || '',

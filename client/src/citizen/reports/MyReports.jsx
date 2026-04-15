@@ -86,7 +86,7 @@ const MyReports = () => {
             <MdWarning className="h-12 w-12 text-slate-300" />
             <p className="text-slate-500">No reports yet.</p>
             <button onClick={() => navigate('/citizen/dashboard')}
-              className="mt-2 rounded-xl bg-green-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-green-500 transition">
+              className="mt-2 rounded-sm bg-green-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-green-500 transition">
               Go to Dashboard
             </button>
           </div>

@@ -111,7 +111,7 @@ const NotificationBell = () => {
   return (
     <div className="relative" ref={panelRef}>
       <button onClick={() => setOpen(o => !o)}
-        className="relative flex items-center justify-center h-9 w-9 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-green-600 transition">
+        className="relative flex items-center justify-center h-9 w-9 rounded-sm text-slate-500 hover:bg-slate-100 hover:text-green-600 transition">
         <HiBell className="h-5 w-5" />
         {unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">

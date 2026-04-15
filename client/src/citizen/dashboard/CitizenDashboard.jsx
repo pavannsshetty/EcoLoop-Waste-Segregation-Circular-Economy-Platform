@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HiChevronRight, HiPencil, HiTrash, HiEye, HiExclamation, HiClipboardList, HiStar, HiChartBar, HiCheckCircle, HiClock, HiRefresh, HiLocationMarker } from 'react-icons/hi';
-import ReportWasteModal from '../../shared/components/ReportWasteModal';
 import EditReportModal from '../../shared/components/EditReportModal';
 import CleanupTimeBadge from '../../shared/components/CleanupTimeBadge';
 import ConfirmationModal from '../../shared/components/ConfirmationModal';
@@ -72,7 +71,6 @@ const CitizenDashboard = () => {
   const dk = (d, l) => dark ? d : l;
   const user = ctxUser || JSON.parse(localStorage.getItem('user') || '{}');
   const [tab,           setTab]           = useState('home');
-  const [reportOpen,    setReportOpen]    = useState(false);
   const [editReport,    setEditReport]    = useState(null);
   const [recentReports, setRecentReports] = useState([]);
   const [loadingReports, setLoadingReports] = useState(false);
@@ -138,7 +136,7 @@ const CitizenDashboard = () => {
   };
 
   const handleCardClick = (id) => {
-    if (id === 'report')  { setReportOpen(true); return; }
+    if (id === 'report')  { navigate('/citizen/report-waste'); return; }
     if (id === 'reports') { setTab('reports'); return; }
     if (id === 'rewards') { navigate('/citizen/my-rewards'); return; }
   };
@@ -155,7 +153,7 @@ const CitizenDashboard = () => {
                     <p className="text-green-100 text-xs font-bold uppercase tracking-widest mb-2 opacity-80">Welcome back,</p>
                     <h2 className="text-white text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight drop-shadow-sm">{user.name || 'Citizen'}</h2>
                     <p className="text-green-50 text-sm mt-3 max-w-sm leading-relaxed opacity-90">Your contributions are making {user.area || 'your city'} cleaner and greener.</p>
-                    <button onClick={() => setReportOpen(true)}
+                    <button onClick={() => navigate('/citizen/report-waste')}
                       className="mt-6 inline-flex items-center gap-2 bg-white text-green-700 text-sm font-bold px-6 py-3 rounded-none shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 group cta-pulse">
                       Report Waste Now
                       <HiChevronRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
@@ -411,7 +409,7 @@ const CitizenDashboard = () => {
                   <button onClick={() => navigate('/citizen/my-reports')} className="text-sm text-green-600 hover:underline">Full page →</button>
                 </div>
               </div>
-              <button onClick={() => setReportOpen(true)}
+              <button onClick={() => navigate('/citizen/report-waste')}
                 className="w-full flex items-center justify-center gap-2 rounded-none bg-gradient-to-r from-green-600 to-emerald-500 px-4 py-3.5 text-sm font-bold text-white hover:shadow-lg hover:shadow-green-200 transition active:scale-[0.98]">
                 <HiExclamation className="h-5 w-5" />
                 Report New Waste
@@ -495,7 +493,6 @@ const CitizenDashboard = () => {
 
       </div>
 
-      <ReportWasteModal isOpen={reportOpen} onClose={() => setReportOpen(false)} onSuccess={handleReportSuccess} />
       <EditReportModal isOpen={!!editReport} report={editReport} onClose={() => setEditReport(null)} onUpdated={handleReportUpdated} />
       <ConfirmationModal 
          isOpen={!!deleteConfirm} 

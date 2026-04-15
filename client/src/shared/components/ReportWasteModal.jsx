@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import {
   HiX, HiPhotograph, HiClipboardList, HiLocationMarker,
-  HiCamera, HiExclamation, HiCheckCircle, HiInformationCircle,
+  HiCamera, HiExclamation, HiCheckCircle,
   HiThumbUp, HiEye, HiEyeOff, HiMap as HiMapIcon, HiPencil
 } from 'react-icons/hi';
 import MapPicker from './MapPicker';
@@ -114,6 +114,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
     wasteType: '', severity: 'Medium', wasteSeenAt: 'Just now',
     description: '', pickupDate: '', pickupTime: '',
     landmark: '', landmarkType: '', manualAddress: '',
+    houseNo: '', street: '', addrLandmark: '', city: '', state: '', pincode: '',
   });
   const [anonymous,    setAnonymous]    = useState(false);
   const [locMethod,    setLocMethod]    = useState('map');
@@ -151,7 +152,14 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
     if (!form.wasteType)          e.wasteType   = 'Select a waste type.';
     if (!form.description.trim()) e.description = 'Description is required.';
     if (locMethod === 'map'    && !location)                  e.location = 'Select a location on the map.';
-    if (locMethod === 'manual' && !form.manualAddress.trim()) e.location = 'Enter a location address.';
+    if (locMethod === 'manual') {
+      if (!form.houseNo.trim())  e.houseNo  = 'House No / Building Name is required.';
+      if (!form.street.trim())   e.street   = 'Street / Area is required.';
+      if (!form.city.trim())     e.city     = 'City / Town is required.';
+      if (!form.state.trim())    e.state    = 'State is required.';
+      if (!form.pincode.trim())  e.pincode  = 'Pincode is required.';
+      else if (!/^\d{6}$/.test(form.pincode.trim())) e.pincode = 'Enter a valid 6-digit pincode.';
+    }
     if (!form.pickupDate)         e.pickupDate  = 'Select a pickup date.';
     if (!form.pickupTime)         e.pickupTime  = 'Select a pickup time.';
     return e;
@@ -163,7 +171,17 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
       const token      = localStorage.getItem('token');
       const pickupTime = new Date(`${form.pickupDate}T${form.pickupTime}`).toISOString();
       const finalLoc   = locMethod === 'manual'
-        ? { lat: 0, lng: 0, address: form.manualAddress, displayAddress: form.manualAddress }
+        ? (() => {
+            const parts = [form.houseNo, form.street, form.addrLandmark, form.city, form.state].filter(Boolean);
+            const full  = `${parts.join(', ')} - ${form.pincode}`.trim();
+            return {
+              lat: 0, lng: 0,
+              address: full, displayAddress: full,
+              houseNo: form.houseNo, street: form.street,
+              addrLandmark: form.addrLandmark,
+              city: form.city, state: form.state, pincode: form.pincode,
+            };
+          })()
         : location;
       const body = {
         wasteType: form.wasteType, severity: form.severity, wasteSeenAt: form.wasteSeenAt,
@@ -202,7 +220,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   };
 
   const handleClose = () => {
-    setForm({ wasteType: '', severity: 'Medium', wasteSeenAt: 'Just now', description: '', pickupDate: '', pickupTime: '', landmark: '', landmarkType: '', manualAddress: '' });
+    setForm({ wasteType: '', severity: 'Medium', wasteSeenAt: 'Just now', description: '', pickupDate: '', pickupTime: '', landmark: '', landmarkType: '', manualAddress: '', houseNo: '', street: '', addrLandmark: '', city: '', state: '', pincode: '' });
     setAnonymous(false); setLocation(null); setImageFile(null); setPreview(''); setErrors({});
     setPhotoLoc(null); setPhotoWarning(false);
     setDupData(null); setShowDup(false); setLocMethod('map');
@@ -319,18 +337,6 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
             </div>
 
             <div className={card}>
-              <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Landmark</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <select value={form.landmarkType} onChange={e => set('landmarkType', e.target.value)} className={inp}>
-                  <option value="">Select landmark type</option>
-                  {LANDMARKS.map(l => <option key={l} value={l}>{l}</option>)}
-                </select>
-                <input type="text" value={form.landmark} onChange={e => set('landmark', e.target.value)}
-                  placeholder="e.g. Near St. Mary's School" className={inp} />
-              </div>
-            </div>
-
-            <div className={card}>
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Location</p>
               </div>
@@ -347,13 +353,54 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
               </div>
               {locMethod === 'map' && <MapPicker onLocationSelect={handleLocationSelect} dark={dark} />}
               {locMethod === 'manual' && (
-                <div className="space-y-2">
-                  <input type="text" value={form.manualAddress} onChange={e => set('manualAddress', e.target.value)}
-                    placeholder="Enter full address, area, city..." className={inp} />
-                  <div className={`flex items-start gap-2 rounded-none px-3 py-2 text-xs ${dark ? 'bg-slate-700 text-slate-400' : 'bg-blue-50 text-blue-700'}`}>
-                    <HiInformationCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                    <span>Manual address will be used as-is. Use map picker for accurate location.</span>
+                <div className="space-y-3">
+                  <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Enter Exact Address</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className={lbl}>House No / Building Name <span className="text-red-400">*</span></label>
+                      <input type="text" value={form.houseNo} onChange={e => set('houseNo', e.target.value)}
+                        placeholder="e.g. 12A, Sri Nilaya" className={`${inp} mt-1`} />
+                      {errors.houseNo && <p className={errCls}>{errors.houseNo}</p>}
+                    </div>
+                    <div>
+                      <label className={lbl}>Street / Area / Locality <span className="text-red-400">*</span></label>
+                      <input type="text" value={form.street} onChange={e => set('street', e.target.value)}
+                        placeholder="e.g. MG Road, Kundapura" className={`${inp} mt-1`} />
+                      {errors.street && <p className={errCls}>{errors.street}</p>}
+                    </div>
+                    <div>
+                      <label className={lbl}>Landmark <span className={`text-xs ${dark ? 'text-slate-500' : 'text-slate-400'}`}>(optional)</span></label>
+                      <input type="text" value={form.addrLandmark} onChange={e => set('addrLandmark', e.target.value)}
+                        placeholder="e.g. Near Bus Stand" className={`${inp} mt-1`} />
+                    </div>
+                    <div>
+                      <label className={lbl}>City / Town <span className="text-red-400">*</span></label>
+                      <input type="text" value={form.city} onChange={e => set('city', e.target.value)}
+                        placeholder="e.g. Kundapura" className={`${inp} mt-1`} />
+                      {errors.city && <p className={errCls}>{errors.city}</p>}
+                    </div>
+                    <div>
+                      <label className={lbl}>State <span className="text-red-400">*</span></label>
+                      <input type="text" value={form.state} onChange={e => set('state', e.target.value)}
+                        placeholder="e.g. Karnataka" className={`${inp} mt-1`} />
+                      {errors.state && <p className={errCls}>{errors.state}</p>}
+                    </div>
+                    <div>
+                      <label className={lbl}>Pincode <span className="text-red-400">*</span></label>
+                      <input type="text" value={form.pincode} onChange={e => set('pincode', e.target.value)}
+                        placeholder="e.g. 576201" maxLength={6} className={`${inp} mt-1`} />
+                      {errors.pincode && <p className={errCls}>{errors.pincode}</p>}
+                    </div>
                   </div>
+                  {form.houseNo && form.street && form.city && form.state && form.pincode && (
+                    <div className={`flex items-start gap-2 rounded-none px-3 py-2 text-xs ${dark ? 'bg-slate-700 text-slate-300' : 'bg-green-50 text-green-700'}`}>
+                      <HiLocationMarker className="h-4 w-4 shrink-0 mt-0.5 text-green-500" />
+                      <span>
+                        {[form.houseNo, form.street, form.addrLandmark].filter(Boolean).join(', ')},&nbsp;
+                        {form.city}, {form.state} - {form.pincode}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
               {errors.location && <p className={errCls}>{errors.location}</p>}

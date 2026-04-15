@@ -81,7 +81,7 @@ const InputField = ({ id, label, type = 'text', placeholder, icon: Icon, value =
           autoComplete={isPassword ? 'new-password' : 'off'}
           className={[
             'w-full rounded-lg border py-3 text-sm shadow-sm transition focus:outline-none focus:ring-2',
-            dark ? 'bg-slate-800 text-slate-100 placeholder-slate-500' : 'bg-white text-slate-900 placeholder-slate-400',
+            dark ? 'bg-white/5 text-slate-100 placeholder-slate-500' : 'bg-white text-slate-900 placeholder-slate-400',
             Icon ? 'pl-9' : 'px-3.5',
             isPassword ? 'pr-10' : 'pr-3.5',
             disabled ? 'opacity-50 cursor-not-allowed' : '',
@@ -90,7 +90,7 @@ const InputField = ({ id, label, type = 'text', placeholder, icon: Icon, value =
               : isOk
                 ? 'border-green-500 focus:border-green-500 focus:ring-green-500/30'
                 : dark
-                  ? 'border-slate-600 focus:border-green-500 focus:ring-green-500/30'
+                  ? 'border-gray-700 focus:border-green-500 focus:ring-green-500/30'
                   : 'border-slate-300 focus:border-green-500 focus:ring-green-500/30',
           ].join(' ')}
         />
@@ -113,7 +113,7 @@ const PasswordStrength = ({ value, dark }) => {
   return (
     <div className="space-y-2 mt-1">
       <div className="flex items-center gap-2">
-        <div className={`flex-1 h-1.5 rounded-full overflow-hidden ${dark ? 'bg-slate-700' : 'bg-slate-200'}`}>
+        <div className={`flex-1 h-1.5 rounded-full overflow-hidden ${dark ? 'bg-white/10' : 'bg-slate-200'}`}>
           <div className={`h-full rounded-full transition-all duration-300 ${s.color} ${s.width}`} />
         </div>
         <span className={`text-xs font-medium ${s.label === 'Weak' ? 'text-red-400' : s.label === 'Medium' ? 'text-yellow-400' : 'text-green-400'}`}>
@@ -202,9 +202,11 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
     setTouched(Object.fromEntries(Object.keys(initFields()).map(k => [k, true])));
 
     const relevantErrors = screen === 'register'
-      ? Object.entries(currentErrors)
-          .filter(([k]) => k !== 'collectorId' && k !== 'identifier' && !(k === 'areaLocality' && userRole !== 'Citizen'))
-          .map(([, v]) => v)
+      ? (() => {
+          const base = [currentErrors.email, currentErrors.mobile, currentErrors.password, currentErrors.confirmPassword];
+          if (userRole === 'Citizen' || userRole === 'Green Champion') base.push(/* areaLocality optional */ '');
+          return base;
+        })()
       : screen === 'login'
         ? [userRole === 'Collector' ? currentErrors.collectorId : currentErrors.identifier, currentErrors.password]
         : [];
@@ -255,10 +257,10 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
   const fp = field => ({ value: fields[field], onChange: handleChange(field), onBlur: handleBlur(field), error: errors[field], touched: touched[field], dark });
 
   const headerTitle = { 'role-select': 'Get Started', register: `Register as ${userRole}`, login: `Sign in — ${userRole}`, forgot: 'Reset Password' }[screen];
-  const dlg     = dark ? 'bg-slate-900 text-slate-100' : 'bg-white text-slate-900';
-  const hdr     = dark ? 'border-slate-700' : 'border-slate-100';
+  const dlg     = dark ? 'bg-black/90 border border-gray-800 text-slate-100' : 'bg-white text-slate-900';
+  const hdr     = dark ? 'border-gray-800' : 'border-slate-100';
   const muted   = dark ? 'text-slate-400' : 'text-slate-500';
-  const closeBtn= dark ? 'text-slate-500 hover:bg-slate-700 hover:text-slate-200' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600';
+  const closeBtn= dark ? 'text-slate-500 hover:bg-white/10 hover:text-slate-200' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600';
 
   if (!isOpen) return null;
 
@@ -274,7 +276,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
             <span className={`text-sm sm:text-base font-semibold ${dark ? 'text-slate-100' : 'text-slate-900'}`}>{headerTitle}</span>
           </div>
           <button type="button" onClick={handleClose} aria-label="Close"
-            className={`rounded-lg p-1.5 transition ${closeBtn}`}>
+            className={`rounded-sm p-1.5 transition ${closeBtn}`}>
             <HiX className="h-5 w-5" />
           </button>
         </div>
@@ -287,11 +289,11 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {ROLES.map(({ key, icon: Icon, desc }) => (
                   <button key={key} type="button" onClick={() => selectRole(key)}
-                    className={`flex sm:flex-col items-center gap-3 sm:gap-2 rounded-xl border-2 px-4 sm:px-3 py-4 sm:py-5 text-left sm:text-center transition hover:border-green-500 hover:shadow-md group ${
-                      dark ? 'border-slate-700 bg-slate-800 hover:bg-green-900/30' : 'border-slate-200 bg-white hover:bg-green-50'
+                    className={`flex sm:flex-col items-center gap-3 sm:gap-2 rounded-sm border-2 px-4 sm:px-3 py-4 sm:py-5 text-left sm:text-center transition hover:border-green-500 hover:shadow-md group ${
+                      dark ? 'border-gray-700 bg-white/5 hover:bg-green-900/30' : 'border-slate-200 bg-white hover:bg-green-50'
                     }`}>
                     <span className={`flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full transition ${
-                      dark ? 'bg-slate-700 group-hover:bg-green-900' : 'bg-slate-100 group-hover:bg-green-100'
+                      dark ? 'bg-white/10 group-hover:bg-green-900' : 'bg-slate-100 group-hover:bg-green-100'
                     }`}>
                       <Icon className={`h-5 w-5 sm:h-6 sm:w-6 transition ${dark ? 'text-slate-400 group-hover:text-green-400' : 'text-slate-500 group-hover:text-green-600'}`} />
                     </span>
@@ -339,7 +341,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
                       value={fields.password} onChange={handleChange('password')} onBlur={handleBlur('password')} error={errors.password} touched={touched.password} />
                     <PasswordStrength value={fields.password} dark={dark} />
                   </div>
-                  <button type="submit" className="w-full rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                  <button type="submit" className="w-full rounded-sm bg-green-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500">
                     Reset Password
                   </button>
                 </form>
@@ -365,14 +367,14 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
                 )}
               </div>
 
-              <div className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 ${dark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 ${dark ? 'bg-white/5 border-gray-700' : 'bg-slate-50 border-slate-200'}`}>
                 {(() => { const r = ROLES.find(r => r.key === userRole); const Icon = r?.icon; return Icon ? <Icon className="h-4 w-4 text-green-500" /> : null; })()}
                 <span className={`text-sm font-medium ${dark ? 'text-slate-200' : 'text-slate-700'}`}>{userRole}</span>
                 <span className={`ml-auto text-xs ${muted}`}>{screen === 'login' ? 'Login' : 'Registration'}</span>
               </div>
 
               {userRole === 'Collector' && (
-                <div className={`flex items-start gap-2.5 rounded-xl border px-4 py-3 ${dark ? 'bg-blue-900/30 border-blue-700' : 'bg-blue-50 border-blue-200'}`}>
+                <div className={`flex items-start gap-2.5 rounded-xl border px-4 py-3 ${dark ? 'bg-white/5 border-gray-700' : 'bg-blue-50 border-blue-200'}`}>
                   <HiInformationCircle className={`h-5 w-5 shrink-0 mt-0.5 ${dark ? 'text-blue-400' : 'text-blue-500'}`} />
                   <p className={`text-xs leading-relaxed ${dark ? 'text-blue-300' : 'text-blue-700'}`}>
                     Collector accounts are issued by the municipality administrator. If you don't have credentials, please contact your local municipal office.
@@ -444,7 +446,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
 
                 <div className="pt-1">
                   <button type="submit" disabled={loading}
-                    className="w-full rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-green-500 active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100">
+                    className={`w-full rounded-sm px-4 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 ${dark ? 'bg-green-600 hover:bg-green-500' : 'bg-green-600 hover:bg-green-500'}`}>
                     {loading
                       ? <span className="flex items-center justify-center gap-2"><svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Please wait...</span>
                       : screen === 'login' ? `Sign In as ${userRole}` : `Register as ${userRole}`

@@ -162,7 +162,7 @@ const CollectorDashboard = () => {
             <button
               type="button"
               onClick={fetchStats}
-              className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
+              className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold px-4 py-2 rounded-sm transition"
             >
               <HiRefresh className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh stats
@@ -179,7 +179,7 @@ const CollectorDashboard = () => {
             type="button"
             key={card.label}
             onClick={() => navigate(card.path)}
-            className={`rounded-2xl border shadow-sm p-4 text-center hover:shadow-md transition ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-100')}`}
+            className={`rounded-sm border shadow-sm p-4 text-center hover:shadow-md transition ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-100')}`}
           >
             <StatIcon className={`h-5 w-5 mx-auto mb-1 ${card.color}`} />
             <p className={`text-2xl font-extrabold ${card.color}`}>{loading ? '—' : card.value}</p>
@@ -197,7 +197,7 @@ const CollectorDashboard = () => {
             type="button"
             key={action.path}
             onClick={() => navigate(action.path)}
-            className={`group relative flex items-center gap-4 rounded-2xl border bg-gradient-to-br ${action.bg} ${action.border} p-4 sm:p-5 text-left shadow-sm hover:shadow-lg ${action.hover} transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]`}
+            className={`group relative flex items-center gap-4 rounded-sm border bg-gradient-to-br ${action.bg} ${action.border} p-4 sm:p-5 text-left shadow-sm hover:shadow-lg ${action.hover} transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]`}
           >
             <div className={`shrink-0 h-10 w-10 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-110 ${action.iconBg}`}>
               <ActionIcon className="h-5 w-5" />
@@ -220,7 +220,7 @@ const CollectorDashboard = () => {
           <button
             type="button"
             onClick={() => navigate('/collector/performance')}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow hover:shadow-md transition active:scale-[0.98]"
+            className="inline-flex items-center gap-2 rounded-sm bg-gradient-to-r from-green-600 to-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow hover:shadow-md transition active:scale-[0.98]"
           >
             View performance
             <HiChevronRight className="h-4 w-4" />
@@ -228,7 +228,7 @@ const CollectorDashboard = () => {
           <button
             type="button"
             onClick={() => navigate('/collector/profile')}
-            className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${
+            className={`inline-flex items-center gap-2 rounded-sm border px-4 py-2.5 text-sm font-semibold transition ${
               dk('border-gray-600 text-slate-200 hover:bg-white/10', 'border-slate-200 text-slate-700 hover:bg-slate-50')
             }`}
           >

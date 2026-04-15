@@ -84,7 +84,7 @@ const EditReportModal = ({ isOpen, onClose, report, onUpdated }) => {
             <span className={`font-semibold text-sm sm:text-base ${dark ? 'text-white' : 'text-slate-900'}`}>Edit Report</span>
             {report.isEdited && <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">Edited</span>}
           </div>
-          <button type="button" onClick={onClose} className={`rounded-lg p-1.5 transition ${dark ? 'text-slate-400 hover:bg-white/10' : 'text-slate-400 hover:bg-slate-100'}`}>
+          <button type="button" onClick={onClose} className={`rounded-sm p-1.5 transition ${dark ? 'text-slate-400 hover:bg-white/10' : 'text-slate-400 hover:bg-slate-100'}`}>
             <HiX className="h-5 w-5" />
           </button>
         </div>
