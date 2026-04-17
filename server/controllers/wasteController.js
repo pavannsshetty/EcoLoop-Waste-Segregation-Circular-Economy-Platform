@@ -4,7 +4,7 @@ const { createNotification } = require('./notificationController');
 const { awardPoints }        = require('./rewardsController');
 
 const DAILY_REPORT_LIMIT  = 5;
-const MAX_ACTIVE_TASKS    = 10;   // Edge Case 9 — collector overload limit
+const MAX_ACTIVE_TASKS    = 10;   
 
 const haversineMeters = (lat1, lng1, lat2, lng2) => {
   const R = 6371000;
@@ -16,7 +16,6 @@ const haversineMeters = (lat1, lng1, lat2, lng2) => {
 
 const expectedHours = (severity) => ({ Low: 48, Medium: 24, High: 8 }[severity] || 24);
 
-// Edge Case 2 — find best collector for a report (village match → nearest → least loaded)
 const findBestCollector = async (village, location) => {
   const collectors = await Collector.find({ status: 'Active', availability: { $ne: 'Offline' } }).lean();
   if (!collectors.length) return null;
@@ -60,7 +59,6 @@ const createReport = async (req, res) => {
       return res.status(400).json({ message: 'All required fields must be provided.' });
     }
 
-    // Edge Case 8 — address completeness (map mode requires lat/lng; manual mode validated on frontend)
     const locState    = (location.state   || '').toLowerCase();
     const locDistrict = (location.district || location.city || '').toLowerCase();
     const locAddr     = (location.address  || '').toLowerCase();
@@ -87,7 +85,6 @@ const createReport = async (req, res) => {
       return res.status(429).json({ message: `Daily report limit (${DAILY_REPORT_LIMIT}) reached. Try again tomorrow.` });
     }
 
-    // Edge Case 2 — auto-assign to best collector
     const bestCollector = await findBestCollector(village, location);
 
     const report = await WasteReport.create({
@@ -95,7 +92,7 @@ const createReport = async (req, res) => {
       wasteType, severity: severity || 'Medium',
       wasteSeenAt: wasteSeenAt || 'Just now',
       description,
-      image: image || '',
+      image: req.file ? req.file.path : (image || ''),
       location: {
         type: 'Point',
         coordinates: [location.lng, location.lat],
@@ -204,7 +201,8 @@ const updateReport = async (req, res) => {
     if (landmark !== undefined) report.landmark     = landmark;
     if (landmarkType !== undefined) report.landmarkType = landmarkType;
     if (pickupTime)             report.pickupTime   = new Date(pickupTime);
-    if (image !== undefined)    report.image        = image;
+    if (req.file)               report.image        = req.file.path;
+    else if (image !== undefined) report.image      = image;
     if (location?.lat) {
       report.location = { ...report.location, ...location, type: 'Point', coordinates: [location.lng, location.lat] };
     }
@@ -261,7 +259,6 @@ const getMyReports = async (req, res) => {
   }
 };
 
-// Edge Case 10 — Escalate issue
 const escalateReport = async (req, res) => {
   try {
     const report = await WasteReport.findById(req.params.id);
@@ -275,14 +272,13 @@ const escalateReport = async (req, res) => {
     report.priority    = (report.priority || 0) + 10;
     await report.save();
 
-    // Notify admin via a system notification (userId = null handled gracefully)
     try {
       const { createNotification } = require('./notificationController');
       if (report.assignedCollector) {
         createNotification(report.assignedCollector, 'Task Escalated',
           `Report ${report._id} has been escalated by the citizen. Priority raised to High.`, 'escalation', report._id);
       }
-    } catch { /* non-critical */ }
+    } catch { }
 
     res.json({ message: 'Report escalated successfully.', report });
   } catch (err) {
@@ -290,10 +286,9 @@ const escalateReport = async (req, res) => {
   }
 };
 
-// Edge Case 6 — Citizen verification after resolution
 const citizenVerify = async (req, res) => {
   try {
-    const { verified } = req.body; // 'yes' | 'no'
+    const { verified } = req.body; 
     const report = await WasteReport.findById(req.params.id);
     if (!report) return res.status(404).json({ message: 'Report not found.' });
     if (report.userId.toString() !== req.user.id) return res.status(403).json({ message: 'Not authorized.' });
@@ -302,7 +297,6 @@ const citizenVerify = async (req, res) => {
     report.citizenVerified = verified === 'yes' ? 'yes' : 'no';
 
     if (verified === 'no') {
-      // Reopen the task
       report.status          = 'Reopened';
       report.assignedCollector = null;
       report.isLocked        = false;

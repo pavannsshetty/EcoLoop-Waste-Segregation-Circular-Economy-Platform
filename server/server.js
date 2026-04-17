@@ -21,7 +21,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
+
 
 app.use('/api/admin',         require('./routes/adminRoutes'));
 app.use('/api/auth',          require('./routes/authRoutes'));
@@ -32,7 +32,6 @@ app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/scrap',         require('./routes/scrapRoutes'));
 app.use('/api/rewards',       require('./routes/rewardsRoutes'));
 app.use('/api/leaderboard',   require('./routes/leaderboardRoutes'));
-app.use('/api/admin',         require('./routes/adminRoutes'));
 app.use('/api/collector',     require('./routes/collectorRoutes'));
 
 app.get('/', (req, res) => res.send('EcoLoop API is running...'));

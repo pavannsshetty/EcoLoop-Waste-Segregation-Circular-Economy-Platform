@@ -1,6 +1,6 @@
 const ScrapRequest = require('../models/ScrapRequest');
-const User         = require('../models/User');
-const Collector    = require('../models/Collector');
+const User = require('../models/User');
+const Collector = require('../models/Collector');
 const { awardPoints } = require('./rewardsController');
 const { createNotification } = require('./notificationController');
 
@@ -15,7 +15,6 @@ const POINTS_MAPPING = {
   'Other': 5
 };
 
-// Create a new scrap request
 const createScrapRequest = async (req, res) => {
   try {
     const { scrapType, quantity, image, location, pickupTime, description } = req.body;
@@ -32,7 +31,7 @@ const createScrapRequest = async (req, res) => {
       userEmail: user.email,
       scrapType,
       quantity,
-      image: image || '',
+      image: req.file ? req.file.path : (image || ''),
       location: {
         ...location,
         type: 'Point',
@@ -47,17 +46,13 @@ const createScrapRequest = async (req, res) => {
     });
 
     res.status(201).json({ message: 'Scrap pickup request submitted successfully.', scrapRequest });
-    
-    // Notify collectors (simplification: notify all or nearby)
-    // For now, we'll just create a system notification or log it
-    // In a real app, you'd filter by locality
+
     createNotification(userId, 'Scrap Request Submitted', `Your request for ${scrapType} pickup has been received.`, 'report', scrapRequest._id);
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }
 };
 
-// Get requests for a specific user
 const getUserScrapRequests = async (req, res) => {
   try {
     const requests = await ScrapRequest.find({ userId: req.params.userId }).sort({ createdAt: -1 });
@@ -67,7 +62,6 @@ const getUserScrapRequests = async (req, res) => {
   }
 };
 
-// Get all tasks for collectors (available or assigned to them)
 const getCollectorScrapTasks = async (req, res) => {
   try {
     const collectorId = req.user.id;
@@ -94,7 +88,6 @@ const getCollectorScrapTasks = async (req, res) => {
   }
 };
 
-// Assign collector to request
 const assignCollector = async (req, res) => {
   try {
     const { id } = req.params;
@@ -115,7 +108,6 @@ const assignCollector = async (req, res) => {
   }
 };
 
-// Update status (In Progress, Collected)
 const updateScrapStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -135,9 +127,7 @@ const updateScrapStatus = async (req, res) => {
 
     request.status = status;
     if (status === 'Collected') {
-      // Award points
       await awardPoints(request.userId, request.ecoPoints, 'Scrap Collected', request._id);
-      // Increment collector's completed tasks
       await Collector.findByIdAndUpdate(collectorId, { $inc: { completedTasks: 1 } });
       createNotification(request.userId, 'Scrap Collected', `Your ${request.scrapType} has been collected. You earned ${request.ecoPoints} Eco Points!`, 'status', request._id);
     } else if (status === 'In Progress') {
@@ -151,7 +141,6 @@ const updateScrapStatus = async (req, res) => {
   }
 };
 
-// Get scrap stats for a user
 const getUserStats = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -162,7 +151,6 @@ const getUserStats = async (req, res) => {
     
     completed.forEach(r => {
       points += (r.ecoPoints || 0);
-      // Try to extract number from quantity string (e.g. "10kg" -> 10)
       const weightMatch = r.quantity.match(/(\d+(\.\d+)?)/);
       if (weightMatch) totalWeight += parseFloat(weightMatch[0]);
     });
@@ -171,7 +159,7 @@ const getUserStats = async (req, res) => {
       totalWeight,
       pickups: completed.length,
       points,
-      co2Saved: (totalWeight * 0.5).toFixed(1) // Simplified calculation
+      co2Saved: (totalWeight * 0.5).toFixed(1)
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });

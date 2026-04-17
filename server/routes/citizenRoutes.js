@@ -4,33 +4,7 @@ const { protect } = require('../middleware/auth');
 const User    = require('../models/User');
 const WasteReport = require('../models/WasteReport');
 const EcoPointHistory = require('../models/EcoPointHistory');
-const multer = require('multer');
-const path   = require('path');
-const fs     = require('fs');
-
-// ── Multer Config (Identical to userRoutes for consistency) ──
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = 'uploads/profiles';
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, `profile-${req.user.id}-${Date.now()}${path.extname(file.originalname)}`);
-  }
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
-  fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png/;
-    const ext = allowed.test(path.extname(file.originalname).toLowerCase());
-    const mime = allowed.test(file.mimetype);
-    if (ext && mime) return cb(null, true);
-    cb(new Error('Only .png, .jpg and .jpeg format allowed!'));
-  }
-});
+const upload = require('../middleware/uploadMiddleware');
 
 router.get('/profile', protect, async (req, res) => {
   try {
@@ -66,8 +40,7 @@ router.get('/profile', protect, async (req, res) => {
 
 router.post('/upload-photo', protect, upload.single('photo'), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
-    const photoUrl = `/uploads/profiles/${req.file.filename}`;
+    const photoUrl = req.file.path;
     const user = await User.findByIdAndUpdate(req.user.id, { $set: { profilePhoto: photoUrl } }, { new: true }).select('-password');
     res.json({ message: 'Photo uploaded.', user, photoUrl });
   } catch (err) {

@@ -9,8 +9,9 @@ const {
   getUserStats
 } = require('../controllers/scrapController');
 const { protect } = require('../middleware/auth');
+const upload = require('../middleware/uploadMiddleware');
 
-router.post('/create',      protect, createScrapRequest);
+router.post('/create',      protect, upload.single('image'), createScrapRequest);
 router.get('/user/stats',   protect, getUserStats);
 router.get('/user/:userId', protect, getUserScrapRequests);
 router.get('/collector',    protect, getCollectorScrapTasks);

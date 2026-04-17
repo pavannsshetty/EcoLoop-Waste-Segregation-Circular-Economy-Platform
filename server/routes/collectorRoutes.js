@@ -4,6 +4,7 @@ const WasteReport = require('../models/WasteReport');
 const Collector   = require('../models/Collector');
 const { protect } = require('../middleware/auth');
 const { createNotification } = require('../controllers/notificationController');
+const upload = require('../middleware/uploadMiddleware');
 
 const collectorAuth = async (req, res, next) => {
   try {
@@ -63,12 +64,12 @@ router.get('/available', protect, collectorAuth, async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-router.put('/report/:id/status', protect, collectorAuth, async (req, res) => {
+router.put('/report/:id/status', protect, collectorAuth, upload.single('completionPhoto'), async (req, res) => {
   try {
     const { status, completionPhoto, completionNotes, delayReason } = req.body;
     const cid = req.user.id;
 
-    // Edge Case 5 — Task Locking: atomically accept only if still unassigned/unlocked
+    
     if (status === 'Assigned') {
       const locked = await WasteReport.findOneAndUpdate(
         {
@@ -103,7 +104,7 @@ router.put('/report/:id/status', protect, collectorAuth, async (req, res) => {
     const report = await WasteReport.findById(req.params.id);
     if (!report) return res.status(404).json({ message: 'Report not found.' });
 
-    // Only the assigned collector can progress the task
+    
     if (report.assignedCollector?.toString() !== cid.toString()) {
       return res.status(403).json({ message: 'You are not assigned to this task.' });
     }
@@ -119,7 +120,7 @@ router.put('/report/:id/status', protect, collectorAuth, async (req, res) => {
         `Collector has started working on your ${report.wasteType} waste report.`, 'status', report._id);
     }
     if (status === 'Resolved') {
-      report.completionPhoto   = completionPhoto || '';
+      report.completionPhoto   = req.file ? req.file.path : (completionPhoto || '');
       report.completionNotes   = completionNotes || '';
       report.completedAt       = new Date();
       report.citizenVerified   = 'pending';
@@ -148,7 +149,7 @@ router.put('/availability', protect, collectorAuth, async (req, res) => {
 
 router.get('/profile', protect, collectorAuth, async (req, res) => {
   try {
-    const collector = req.collector; // populated by collectorAuth middleware
+    const collector = req.collector; 
     if (!collector) return res.status(404).json({ message: 'Collector not found.' });
 
     res.json({
@@ -172,14 +173,15 @@ router.get('/profile', protect, collectorAuth, async (req, res) => {
   }
 });
 
-router.put('/profile', protect, collectorAuth, async (req, res) => {
+router.put('/profile', protect, collectorAuth, upload.single('photo'), async (req, res) => {
   try {
     const { name, mobile, email, photo } = req.body;
     const update = {};
     if (name  !== undefined) update.name  = name;
     if (mobile !== undefined) update.mobile = mobile;
     if (email !== undefined) update.email = email;
-    if (photo !== undefined) update.photo  = photo;
+    if (req.file)            update.photo  = req.file.path;
+    else if (photo !== undefined) update.photo  = photo;
 
     const collector = await Collector.findByIdAndUpdate(req.user.id, update, { returnDocument: 'after' }).select('-password');
     res.json({ message: 'Profile updated.', user: collector });

@@ -6,7 +6,9 @@ const activeUsers = new Map();
 const init = (server) => {
   io = new Server(server, {
     cors: {
-      origin: "*",
+      origin: [
+        "https://ecoloop-waste-segregation-circular-economy-platform.pages.dev"
+      ],
       methods: ["GET", "POST"]
     }
   });
