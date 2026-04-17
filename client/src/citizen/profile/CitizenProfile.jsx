@@ -41,11 +41,26 @@ const CitizenProfile = () => {
     email:    stored.email    || '',
     phone:    stored.phone    || '',
     locality: stored.locality || '',
+    village:  stored.village  || '',
   });
-  const [originalForm, setOriginalForm] = useState({ ...form });
   const [notifs, setNotifs] = useState({ reportUpdates: true, rewards: true, system: false });
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
   const [pwMsg,  setPwMsg]  = useState('');
+  const [originalForm, setOriginalForm] = useState({ ...form });
+
+  useEffect(() => {
+    if (ctxUser) {
+      const u = {
+        name:     ctxUser.name     || '',
+        email:    ctxUser.email    || '',
+        phone:    ctxUser.phone    || '',
+        locality: ctxUser.locality || '',
+        village:  ctxUser.village  || '',
+      };
+      setForm(u);
+      setOriginalForm(u);
+    }
+  }, [ctxUser]);
 
   const isChanged = JSON.stringify(form) !== JSON.stringify(originalForm) || file !== null || (avatar !== stored.profilePhoto && avatar !== null);
 
@@ -268,6 +283,7 @@ const CitizenProfile = () => {
               { k: 'email',    label: 'Email',           placeholder: 'your@email.com', disabled: true },
               { k: 'phone',    label: 'Mobile Number',   placeholder: '10-digit number' },
               { k: 'locality', label: 'Area / Locality', placeholder: 'Your area or locality' },
+              { k: 'village',  label: 'Village',         placeholder: 'Your village' },
             ].map(({ k, label, placeholder, disabled }) => (
               <div key={k}>
                 <label className={lbl}>{label}</label>

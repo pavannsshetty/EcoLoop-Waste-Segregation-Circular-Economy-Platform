@@ -134,7 +134,6 @@ const MyReports = () => {
                     <span className={`text-sm font-bold ${dk('text-slate-200','text-slate-900')}`}>{r.wasteType}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLES[r.status] || 'bg-slate-100 text-slate-600'}`}>{r.status}</span>
                     {r.severity && <span className={`text-xs px-2 py-0.5 rounded-full ${SEVERITY_STYLES[r.severity] || ''}`}>{r.severity}</span>}
-                    {r.anonymous && <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">Anonymous</span>}
                     <CleanupTimeBadge report={r} />
                   </div>
                   <p className={`text-xs line-clamp-2 ${dk('text-slate-400','text-slate-500')}`}>{r.description}</p>

@@ -24,6 +24,7 @@ router.get('/profile', protect, async (req, res) => {
       phone:        user.phone,
       role:         user.role,
       locality:     user.locality,
+      village:      user.village,
       ecoPoints:    user.ecoPoints    || 0,
       badges:       user.badges       || [],
       profilePhoto: user.profilePhoto || '',
@@ -53,12 +54,13 @@ router.post('/upload-photo', protect, upload.single('photo'), async (req, res) =
 
 router.put('/profile', protect, async (req, res) => {
   try {
-    const { name, phone, locality } = req.body;
+    const { name, phone, locality, village } = req.body;
     const update = {};
     
     if (name && name.trim())     update.name     = name.trim();
     if (phone && phone.trim())   update.phone    = phone.trim();
     if (locality && locality.trim()) update.locality = locality.trim();
+    if (village && village.trim())   update.village  = village.trim();
 
     if (Object.keys(update).length === 0) {
       return res.status(400).json({ message: 'No valid changes provided.' });

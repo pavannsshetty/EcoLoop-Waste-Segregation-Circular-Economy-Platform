@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 
 const wasteReportSchema = new mongoose.Schema({
   userId:      { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  anonymous:   { type: Boolean, default: false },
   wasteType:   { type: String, required: true, enum: ['Wet Waste', 'Dry Waste', 'E-Waste', 'Plastic Waste', 'Mixed Waste'] },
   severity:    { type: String, enum: ['Low', 'Medium', 'High'], default: 'Medium' },
   wasteSeenAt: { type: String, enum: ['Just now', 'Few hours ago', 'Days ago'], default: 'Just now' },

@@ -2,9 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import {
   HiX, HiPhotograph, HiClipboardList, HiLocationMarker,
   HiCamera, HiExclamation, HiCheckCircle,
-  HiThumbUp, HiEye, HiEyeOff, HiMap as HiMapIcon, HiPencil
+  HiMap as HiMapIcon, HiPencil
 } from 'react-icons/hi';
 import { API } from '../constants';
+import { useUser } from '../context/UserContext';
 import MapPicker from './MapPicker';
 
 const WASTE_TYPES = ['Wet Waste', 'Dry Waste', 'E-Waste', 'Plastic Waste', 'Mixed Waste'];
@@ -110,14 +111,13 @@ const DuplicateModal = ({ report, onContinue, onClose, dark }) => (
 );
 
 const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
+  const { user, refreshUser } = useUser();
   const cameraRef = useRef(null);
-  const [userVillage, setUserVillage] = useState('');
   const [form, setForm] = useState({
     wasteType: '', severity: 'Medium', wasteSeenAt: 'Just now',
     description: '', pickupDate: '', pickupTime: '',
     houseNo: '', street: '', landmark: '', wardNumber: '',
   });
-  const [anonymous,    setAnonymous]    = useState(false);
   const [locMethod,    setLocMethod]    = useState('map');
   const [location,     setLocation]     = useState(null);
   const [regionValid,  setRegionValid]  = useState(null);
@@ -132,11 +132,8 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => {
-    try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      if (user?.village) setUserVillage(user.village);
-    } catch {  }
-  }, [isOpen]);
+    if (isOpen) refreshUser();
+  }, [isOpen, refreshUser]);
 
   const handleLocationSelect = (loc) => {
     setLocation(loc);
@@ -187,12 +184,12 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
         : location;
       const body = {
         wasteType: form.wasteType, severity: form.severity, wasteSeenAt: form.wasteSeenAt,
-        description: form.description, anonymous,
+        description: form.description,
         image: imageFile ? `[image:${imageFile.name}]` : '',
         location: finalLoc, houseNo: form.houseNo, street: form.street, landmark: form.landmark,
         wardNumber: form.wardNumber,
         photoLocation: photoLoc || { lat: null, lng: null }, pickupTime,
-        village: userVillage,
+        village: user?.village || '',
       };
       const res  = await fetch(`${API}/api/waste/report`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -225,7 +222,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
 
   const handleClose = () => {
     setForm({ wasteType: '', severity: 'Medium', wasteSeenAt: 'Just now', description: '', pickupDate: '', pickupTime: '', houseNo: '', street: '', landmark: '', wardNumber: '' });
-    setAnonymous(false); setLocation(null); setImageFile(null); setPreview(''); setErrors({});
+    setLocation(null); setImageFile(null); setPreview(''); setErrors({});
     setPhotoLoc(null); setPhotoWarning(false);
     setDupData(null); setShowDup(false); setLocMethod('map');
     onClose();
@@ -262,6 +259,16 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
 
             <div className={card}>
               <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Waste Details</p>
+              {user?.village && (
+                <div className={`flex items-center gap-2 rounded-none border px-3 py-2.5 mb-2 ${dark ? 'bg-green-900/20 border-green-800' : 'bg-green-50 border-green-200'}`}>
+                  <HiLocationMarker className="h-4 w-4 text-green-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs font-medium ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Village (Auto-filled)</p>
+                    <p className={`text-sm font-semibold truncate ${dark ? 'text-green-300' : 'text-green-700'}`}>{user?.village}</p>
+                  </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${dark ? 'bg-green-900 text-green-400' : 'bg-green-100 text-green-600'}`}>From profile</span>
+                </div>
+              )}
               <div>
                 <label className={lbl}>Waste Type</label>
                 <select value={form.wasteType} onChange={e => set('wasteType', e.target.value)} className={`${inp} mt-1`}>
@@ -359,16 +366,6 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
               {locMethod === 'manual' && (
                 <div className="space-y-3">
                   <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Enter Exact Address</p>
-                  {userVillage && (
-                    <div className={`flex items-center gap-2 rounded-none border px-3 py-2.5 ${dark ? 'bg-green-900/20 border-green-800' : 'bg-green-50 border-green-200'}`}>
-                      <HiLocationMarker className="h-4 w-4 text-green-500 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-medium ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Village (Auto-filled)</p>
-                        <p className={`text-sm font-semibold truncate ${dark ? 'text-green-300' : 'text-green-700'}`}>{userVillage}</p>
-                      </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${dark ? 'bg-green-900 text-green-400' : 'bg-green-100 text-green-600'}`}>From profile</span>
-                    </div>
-                  )}
                   <div className="grid grid-cols-1 gap-3">
                     <div>
                       <label className={lbl}>House No / Building Name</label>
@@ -393,16 +390,12 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
                         placeholder="e.g. Ward 5" className={`${inp} mt-1`} />
                       {errors.wardNumber && <p className={errCls}>{errors.wardNumber}</p>}
                     </div>
-                  </div>
-                  {form.houseNo && form.street && form.city && form.state && form.pincode && (
-                    <div className={`flex items-start gap-2 rounded-none px-3 py-2 text-xs ${dark ? 'bg-slate-700 text-slate-300' : 'bg-green-50 text-green-700'}`}>
-                      <HiLocationMarker className="h-4 w-4 shrink-0 mt-0.5 text-green-500" />
-                      <span>
-                        {[form.houseNo, form.street, form.addrLandmark].filter(Boolean).join(', ')},&nbsp;
-                        {form.city}, {form.state} - {form.pincode}
-                      </span>
+                    <div>
+                      <label className={lbl}>Village (Auto-filled)</label>
+                      <input type="text" value={user?.village || ''} readOnly
+                        className={`${inp} mt-1 opacity-70 cursor-not-allowed`} />
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
               {errors.location && <p className={errCls}>{errors.location}</p>}
@@ -440,18 +433,6 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
               )}
             </div>
 
-            <div className={`flex items-center justify-between rounded-none border px-4 py-3 ${dark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-              <div className="flex items-center gap-2">
-                {anonymous ? <HiEyeOff className="h-4 w-4 text-slate-400" /> : <HiEye className="h-4 w-4 text-green-500" />}
-                <span className={`text-sm ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  {anonymous ? 'Reporting anonymously' : 'Reporting as yourself'}
-                </span>
-              </div>
-              <button type="button" onClick={() => setAnonymous(a => !a)}
-                className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors ${anonymous ? 'bg-green-600' : dark ? 'bg-slate-600' : 'bg-slate-300'}`}>
-                <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${anonymous ? 'translate-x-4' : 'translate-x-0'}`} />
-              </button>
-            </div>
 
             {errors.submit && (
               <div className="rounded-none bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-600">{errors.submit}</div>

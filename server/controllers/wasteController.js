@@ -51,7 +51,7 @@ const findBestCollector = async (village, location) => {
 const createReport = async (req, res) => {
   try {
     const { wasteType, severity, wasteSeenAt, description, image, location,
-            landmark, landmarkType, photoLocation, accuracy, pickupTime, anonymous,
+            landmark, landmarkType, photoLocation, accuracy, pickupTime,
             additionalInstructions, isBulk, village, houseNo, street, wardNumber } = req.body;
     const userId = req.user.id;
 
@@ -85,7 +85,7 @@ const createReport = async (req, res) => {
     const bestCollector = await findBestCollector(village, location);
 
     const report = await WasteReport.create({
-      userId, anonymous: !!anonymous,
+      userId,
       wasteType, severity: severity || 'Medium',
       wasteSeenAt: wasteSeenAt || 'Just now',
       description,
