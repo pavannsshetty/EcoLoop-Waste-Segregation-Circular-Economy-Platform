@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { HiLocationMarker, HiClock, HiRefresh, HiX, HiPhotograph, HiExclamation } from 'react-icons/hi';
+import { API } from '../../shared/constants';
 import CleanupTimeBadge from '../../shared/components/CleanupTimeBadge';
 import { useTheme } from '../../shared/context/ThemeContext';
 
@@ -51,8 +52,8 @@ const CompleteModal = ({ report, onClose, onDone, dk }) => {
     try {
       const token = localStorage.getItem('token');
       const api = report.taskType === 'scrap' 
-        ? `/api/scrap/update-status/${report._id}`
-        : `/api/collector/report/${report._id}/status`;
+        ? `${API}/api/scrap/update-status/${report._id}`
+: `${API}/api/collector/report/${report._id}/status`;
       
       const payload = report.taskType === 'scrap'
         ? { status: 'Collected' }
@@ -151,7 +152,7 @@ const DelayModal = ({ report, onClose, onDone, dk }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/collector/report/${report._id}/status`, {
+      const res = await fetch(`${API}/api/collector/report/${report._id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: 'Delayed', delayReason: reason }),
@@ -228,8 +229,8 @@ const AssignedReports = () => {
     setLoading(true);
     try {
       const [wasteRes, scrapRes] = await Promise.all([
-        fetch(`/api/collector/reports?filter=${filter}&sort=${sort}`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`/api/scrap/collector?status=${filter === 'all' ? '' : filter}`, { headers: { Authorization: `Bearer ${token}` } })
+        fetch(`${API}/api/collector/reports?filter=${filter}&sort=${sort}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API}/api/scrap/collector?status=${filter === 'all' ? '' : filter}`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
 
       let wasteData = [];
@@ -260,8 +261,8 @@ const AssignedReports = () => {
   const updateStatus = async (item, status) => {
     try {
       const api = item.taskType === 'scrap'
-        ? (status === 'Assigned' ? `/api/scrap/assign/${item._id}` : `/api/scrap/update-status/${item._id}`)
-        : `/api/collector/report/${item._id}/status`;
+        ? (status === 'Assigned' ? `${API}/api/scrap/assign/${item._id}` : `${API}/api/scrap/update-status/${item._id}`)
+: `${API}/api/collector/report/${item._id}/status`;
 
       const res = await fetch(api, {
         method: 'PUT',

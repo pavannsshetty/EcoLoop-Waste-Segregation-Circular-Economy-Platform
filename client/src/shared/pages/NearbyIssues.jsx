@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API } from '../constants';
 import { HiLocationMarker, HiRefresh, HiThumbUp, HiExclamation } from 'react-icons/hi';
 import CleanupTimeBadge from '../components/CleanupTimeBadge';
 import { useTheme } from '../context/ThemeContext';
@@ -41,7 +42,7 @@ const NearbyIssues = () => {
       const token = localStorage.getItem('token');
       const sev   = ['High', 'Medium', 'Low'].includes(fil) ? `&severity=${fil}` : '';
       const sta   = (fil === 'In Progress' || fil === 'Resolved') ? `&status=${fil}` : '';
-      const res   = await fetch(`/api/waste/nearby?lat=${lat}&lng=${lng}&radius=${rad}${sev}${sta}`, {
+      const res   = await fetch(`${API}/api/waste/nearby?lat=${lat}&lng=${lng}&radius=${rad}${sev}${sta}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) setReports(await res.json());
@@ -84,7 +85,7 @@ const NearbyIssues = () => {
   const handleUpvote = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      const res   = await fetch(`/api/waste/upvote/${id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      const res   = await fetch(`${API}/api/waste/upvote/${id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
       const data  = await res.json();
       if (res.ok) {
         setReports(rs => rs.map(r => r._id === id

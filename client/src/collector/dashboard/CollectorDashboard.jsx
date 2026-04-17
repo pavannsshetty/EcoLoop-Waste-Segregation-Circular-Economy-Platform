@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API } from '../../shared/constants';
 import { HiClipboardList, HiClock, HiCheckCircle, HiExclamation, HiRefresh, HiChevronRight, HiCollection, HiMap, HiInbox, HiLocationMarker } from 'react-icons/hi';
 import { useTheme } from '../../shared/context/ThemeContext';
 import { useUser } from '../../shared/context/UserContext';
@@ -62,7 +63,7 @@ const CollectorDashboard = () => {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/collector/stats', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API}/api/collector/stats`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const d = await res.json();
         setStats(d);
@@ -75,7 +76,7 @@ const CollectorDashboard = () => {
   const fetchVillageReports = async () => {
     setVillageLoading(true);
     try {
-      const res = await fetch('/api/collector/village-reports', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API}/api/collector/village-reports`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) setVillageData(await res.json());
     } catch {  }
     finally { setVillageLoading(false); }
@@ -91,7 +92,7 @@ const CollectorDashboard = () => {
   const updateAvailability = async (val) => {
     setAvail(val);
     try {
-      await fetch('/api/collector/availability', {
+      await fetch(`${API}/api/collector/availability`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ availability: val }),

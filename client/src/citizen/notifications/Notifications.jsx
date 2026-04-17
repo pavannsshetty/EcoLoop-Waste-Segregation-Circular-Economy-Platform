@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { HiBell, HiRefresh, HiClipboardList, HiThumbUp, HiExclamation } from 'react-icons/hi';
+import { API } from '../../shared/constants';
 import { useTheme } from '../../shared/context/ThemeContext';
 
 const TYPE_ICONS = { report: HiClipboardList, status: HiRefresh, support: HiThumbUp, delay: HiExclamation, system: HiBell };
@@ -33,7 +34,7 @@ const Notifications = () => {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API}/api/notifications`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) setNotifications(await res.json());
     } catch { }
     finally { setLoading(false); }
@@ -43,14 +44,14 @@ const Notifications = () => {
 
   const markRead = async (id) => {
     try {
-      await fetch(`/api/notifications/read/${id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
+      await fetch(`${API}/api/notifications/read/${id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
       setNotifications(ns => ns.map(n => n._id === id ? { ...n, isRead: true } : n));
     } catch { }
   };
 
   const markAllRead = async () => {
     try {
-      await fetch('/api/notifications/read-all', { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
+      await fetch(`${API}/api/notifications/read-all`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
       setNotifications(ns => ns.map(n => ({ ...n, isRead: true })));
     } catch { }
   };

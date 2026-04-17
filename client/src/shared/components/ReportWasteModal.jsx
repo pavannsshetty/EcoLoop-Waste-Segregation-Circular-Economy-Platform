@@ -4,6 +4,7 @@ import {
   HiCamera, HiExclamation, HiCheckCircle,
   HiThumbUp, HiEye, HiEyeOff, HiMap as HiMapIcon, HiPencil
 } from 'react-icons/hi';
+import { API } from '../constants';
 import MapPicker from './MapPicker';
 
 const WASTE_TYPES = ['Wet Waste', 'Dry Waste', 'E-Waste', 'Plastic Waste', 'Mixed Waste'];
@@ -199,7 +200,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
         photoLocation: photoLoc || { lat: null, lng: null }, pickupTime,
         village: userVillage,
       };
-      const res  = await fetch('/api/waste/report', {
+      const res  = await fetch(`${API}/api/waste/report`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       });
@@ -218,7 +219,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
     if (locMethod === 'map' && location) {
       try {
         const token = localStorage.getItem('token');
-        const res   = await fetch(`/api/waste/check-duplicate?lat=${location.lat}&lng=${location.lng}`, {
+        const res   = await fetch(`${API}/api/waste/check-duplicate?lat=${location.lat}&lng=${location.lng}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();

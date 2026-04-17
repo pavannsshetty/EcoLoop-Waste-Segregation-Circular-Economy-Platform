@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { HiX, HiSave, HiExclamation } from 'react-icons/hi';
+import { API } from '../constants';
 import MapPicker from './MapPicker';
 import { useTheme } from '../context/ThemeContext';
 
@@ -52,7 +53,7 @@ const EditReportModal = ({ isOpen, onClose, report, onUpdated }) => {
         pickupTime,
         location,
       };
-      const res  = await fetch(`/api/waste/report/${report._id}`, {
+      const res  = await fetch(`${API}/api/waste/report/${report._id}`, {
         method:  'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body:    JSON.stringify(body),

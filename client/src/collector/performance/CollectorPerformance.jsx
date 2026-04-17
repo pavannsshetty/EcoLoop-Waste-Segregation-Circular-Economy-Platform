@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { HiCheckCircle, HiClock, HiChartBar, HiStar } from 'react-icons/hi';
+import { API } from '../../shared/constants';
 import { useTheme } from '../../shared/context/ThemeContext';
 
 const CollectorPerformance = () => {
@@ -12,10 +13,10 @@ const CollectorPerformance = () => {
   useEffect(() => {
     const fetch_ = async () => {
       try {
-        const res = await fetch('/api/collector/stats', { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch(`${API}/api/collector/stats`, { headers: { Authorization: `Bearer ${token}` } });
         if (res.ok) setStats(await res.json());
       } catch {
-        /* ignore */
+        
       } finally {
         setLoading(false);
       }

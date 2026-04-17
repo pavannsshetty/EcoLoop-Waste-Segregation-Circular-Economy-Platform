@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { HiBell, HiX, HiCheckCircle, HiClipboardList, HiRefresh, HiThumbUp, HiExclamation } from 'react-icons/hi';
+import { API } from '../constants';
 
 const TYPE_ICONS = { report: HiClipboardList, status: HiRefresh, support: HiThumbUp, delay: HiExclamation, system: HiBell };
 
@@ -30,7 +31,7 @@ const NotificationBell = () => {
   const fetchUnread = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetch('/api/notifications/unread-count', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API}/api/notifications/unread-count`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) { const d = await res.json(); setUnread(d.count); }
     } catch { }
   }, [token]);
@@ -39,7 +40,7 @@ const NotificationBell = () => {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API}/api/notifications`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) setNotifications(await res.json());
     } catch { }
     finally { setLoading(false); }
@@ -91,7 +92,7 @@ const NotificationBell = () => {
 
   const markRead = async (id) => {
     try {
-      await fetch(`/api/notifications/read/${id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
+      await fetch(`${API}/api/notifications/read/${id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
       setNotifications(ns => ns.map(n => n._id === id ? { ...n, isRead: true } : n));
       setUnread(u => Math.max(0, u - 1));
     } catch { }
@@ -99,7 +100,7 @@ const NotificationBell = () => {
 
   const markAllRead = async () => {
     try {
-      await fetch('/api/notifications/read-all', { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
+      await fetch(`${API}/api/notifications/read-all`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
       setNotifications(ns => ns.map(n => ({ ...n, isRead: true })));
       setUnread(0);
     } catch { }

@@ -5,6 +5,7 @@ import {
   HiChevronRight, HiUser, HiTruck,
   HiClipboardList, HiCurrencyRupee
 } from 'react-icons/hi';
+import { API } from '../../shared/constants';
 import { useTheme } from '../../shared/context/ThemeContext';
 import { useUser } from '../../shared/context/UserContext';
 
@@ -31,7 +32,7 @@ const MyScrapRequests = () => {
     setError('');
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/scrap/user/${user._id}`, {
+      const res = await fetch(`${API}/api/scrap/user/${user._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {

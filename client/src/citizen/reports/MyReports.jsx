@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HiLocationMarker, HiClock, HiRefresh, HiThumbUp, HiExclamation, HiCheckCircle, HiX } from 'react-icons/hi';
+import { API } from '../../shared/constants';
 import { MdWaterDrop, MdRecycling, MdDevices, MdWarning } from 'react-icons/md';
 import CleanupTimeBadge from '../../shared/components/CleanupTimeBadge';
 import { useTheme } from '../../shared/context/ThemeContext';
@@ -45,7 +46,7 @@ const MyReports = () => {
     setLoading(true); setError('');
     try {
       const token = localStorage.getItem('token');
-      const res   = await fetch('/api/waste/my-reports', { headers: { Authorization: `Bearer ${token}` } });
+      const res   = await fetch(`${API}/api/waste/my-reports`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error('Failed to fetch reports.');
       setReports(await res.json());
     } catch (e) { setError(e.message); }
@@ -57,7 +58,7 @@ const MyReports = () => {
   const handleUpvote = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      const res   = await fetch(`/api/waste/upvote/${id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      const res   = await fetch(`${API}/api/waste/upvote/${id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
       const data  = await res.json();
       if (res.ok) {
         setReports(rs => rs.map(r => r._id === id ? { ...r, upvotes: Array(data.upvotes).fill(null) } : r));
@@ -68,7 +69,7 @@ const MyReports = () => {
   const handleEscalate = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      const res   = await fetch(`/api/waste/report/${id}/escalate`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      const res   = await fetch(`${API}/api/waste/report/${id}/escalate`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
       const data  = await res.json();
       if (res.ok) setReports(rs => rs.map(r => r._id === id ? { ...r, escalated: true, severity: 'High' } : r));
       else alert(data.message);
@@ -78,7 +79,7 @@ const MyReports = () => {
   const handleVerify = async (id, verified) => {
     try {
       const token = localStorage.getItem('token');
-      const res   = await fetch(`/api/waste/report/${id}/verify`, {
+      const res   = await fetch(`${API}/api/waste/report/${id}/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ verified }),

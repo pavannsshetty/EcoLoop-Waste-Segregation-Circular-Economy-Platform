@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API } from '../../shared/constants';
 import { HiChevronRight, HiPencil, HiTrash, HiEye, HiExclamation, HiClipboardList, HiStar, HiChartBar, HiCheckCircle, HiClock, HiRefresh, HiLocationMarker } from 'react-icons/hi';
 import EditReportModal from '../../shared/components/EditReportModal';
 import CleanupTimeBadge from '../../shared/components/CleanupTimeBadge';
@@ -87,7 +88,7 @@ const CitizenDashboard = () => {
     if (!token) return;
     setLoadingReports(true);
     try {
-      const res  = await fetch('/api/waste/my-reports', { headers: { Authorization: `Bearer ${token}` } });
+      const res  = await fetch(`${API}/api/waste/my-reports`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) setRecentReports(await res.json());
     } catch { }
     finally { setLoadingReports(false); }
@@ -98,7 +99,7 @@ const CitizenDashboard = () => {
     if (!token) return;
     setLoadingScrap(true);
     try {
-      const res = await fetch('/api/scrap/user/stats', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API}/api/scrap/user/stats`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) setScrapStats(await res.json());
     } catch { }
     finally { setLoadingScrap(false); }
@@ -126,7 +127,7 @@ const CitizenDashboard = () => {
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      const res   = await fetch(`/api/waste/report/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      const res   = await fetch(`${API}/api/waste/report/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         setRecentReports(rs => rs.filter(r => r._id !== id));
         toast.success('Report deleted successfully.');

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API } from '../../shared/constants';
 import { HiPencil, HiSave, HiLogout, HiLockClosed, HiShieldCheck, HiCheckCircle, HiClipboardList, HiOfficeBuilding, HiSparkles, HiCalendar } from 'react-icons/hi';
 import { useTheme } from '../../shared/context/ThemeContext';
 import { useUser } from '../../shared/context/UserContext';
@@ -56,7 +57,7 @@ const CitizenProfile = () => {
       const token = localStorage.getItem('token');
       if (!token) { setLoadingStats(false); return; }
       try {
-        const res = await fetch('/api/waste/my-reports', { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch(`${API}/api/waste/my-reports`, { headers: { Authorization: `Bearer ${token}` } });
         if (res.ok) setReports(await res.json());
       } catch { }
       finally { setLoadingStats(false); }
@@ -118,7 +119,7 @@ const CitizenProfile = () => {
       if (file) {
         const formData = new FormData();
         formData.append('photo', file);
-        const photoRes = await fetch('/api/user/upload-photo', {
+        const photoRes = await fetch(`${API}/api/user/upload-photo`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: formData,
@@ -132,7 +133,7 @@ const CitizenProfile = () => {
         }
       }
 
-      const res = await fetch('/api/user/profile', {
+      const res = await fetch(`${API}/api/user/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ...form, profilePhoto: currentPhoto }),

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { HiRefresh, HiStar, HiSparkles, HiAcademicCap as HiCrown } from 'react-icons/hi';
+import { API } from '../../shared/constants';
 import { MdEmojiEvents, MdRecycling, MdEmojiNature } from 'react-icons/md';
 import { FaMedal, FaTrophy } from 'react-icons/fa';
 import { useTheme } from '../../shared/context/ThemeContext';
@@ -34,7 +35,7 @@ const Leaderboard = () => {
   const fetchData = async (f = filter) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/leaderboard?filter=${f}`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API}/api/leaderboard?filter=${f}`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) setData(await res.json());
     } catch { }
     finally { setLoading(false); }

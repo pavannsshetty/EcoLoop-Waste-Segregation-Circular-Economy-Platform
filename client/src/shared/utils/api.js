@@ -1,3 +1,3 @@
-const BASE = import.meta.env.VITE_API_URL || '';
+import { API } from '../constants';
 
-export const apiUrl = (path) => `${BASE}${path}`;
+export const apiUrl = (path) => `${API}${path}`;

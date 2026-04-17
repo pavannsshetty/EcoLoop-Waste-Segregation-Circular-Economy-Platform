@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { API } from '../constants';
 
 const UserContext = createContext({
   user: null,
@@ -22,10 +23,10 @@ export const UserProvider = ({ children }) => {
       const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
       const role = storedUser.role;
 
-      let url = '/api/user/profile';
-      if (role === 'Citizen') url = '/api/citizen/profile';
-      else if (role === 'Collector') url = '/api/collector/profile';
-      else if (role === 'GreenChampion') url = '/api/citizen/profile'; 
+      let url = `${API}/api/user/profile`;
+      if (role === 'Citizen') url = `${API}/api/citizen/profile`;
+      else if (role === 'Collector') url = `${API}/api/collector/profile`;
+      else if (role === 'GreenChampion') url = `${API}/api/citizen/profile`; 
 
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {

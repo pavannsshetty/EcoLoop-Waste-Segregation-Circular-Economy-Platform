@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API } from '../../shared/constants';
 import {
   HiX, HiPhotograph, HiLocationMarker,
   HiCheckCircle, HiExclamation, HiTruck, HiClipboardList
@@ -48,7 +49,7 @@ const SellScrap = () => {
     setErrors({});
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/scrap/create', {
+      const res = await fetch(`${API}/api/scrap/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ...form, location, image: imageFile ? `[image:${imageFile.name}]` : '' }),
