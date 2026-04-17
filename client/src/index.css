@@ -7,13 +7,13 @@
     --transition-speed: 0.3s;
     --ease-premium: cubic-bezier(0.4, 0, 0.2, 1);
 
-    /* Dark mode palette — matches Settings page */
-    --dark-bg-primary:   #0B0F13;   /* root body */
-    --dark-bg-secondary: #0f1a14;   /* page sections */
-    --dark-card:         rgba(255,255,255,0.05); /* bg-white/5 */
+    
+    --dark-bg-primary:   #0B0F13;   
+    --dark-bg-secondary: #0f1a14;   
+    --dark-card:         rgba(255,255,255,0.05); 
     --dark-card-hover:   rgba(255,255,255,0.08);
-    --dark-border:       #374151;   /* gray-700 */
-    --dark-border-light: #1f2937;   /* gray-800 */
+    --dark-border:       #374151;   
+    --dark-border-light: #1f2937;   
   }
 
   * {
@@ -49,7 +49,7 @@
     @apply bg-slate-900/40 backdrop-blur-md border border-white/5;
   }
 
-  /* Unified dark card — matches Settings page style */
+  
   .dark-surface {
     background-color: var(--dark-card);
     border-color: var(--dark-border);

@@ -7,15 +7,12 @@ const OtpInput = ({ length = 4, onComplete, dark }) => {
   const handleChange = (index, value) => {
     if (isNaN(value)) return;
     const newOtp = [...otp];
-    // allow only one character
     newOtp[index] = value.substring(value.length - 1);
     setOtp(newOtp);
 
-    // submit if all filled
     const combinedOtp = newOtp.join("");
     if (combinedOtp.length === length) onComplete(combinedOtp);
 
-    // move to next input
     if (value && index < length - 1) {
       inputRefs.current[index + 1].focus();
     }
@@ -35,7 +32,6 @@ const OtpInput = ({ length = 4, onComplete, dark }) => {
     setOtp(newOtp);
     onComplete(data);
     
-    // Focus last or next available
     const nextIdx = Math.min(newOtp.length, length - 1);
     inputRefs.current[nextIdx].focus();
   };

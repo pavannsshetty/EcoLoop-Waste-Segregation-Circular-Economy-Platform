@@ -12,17 +12,14 @@ export const Skeleton = ({ className = '', circle = false }) => {
 export const DashboardSkeleton = () => {
   return (
     <div className="space-y-6 animate-pulse">
-      {/* Hero Skeleton */}
       <div className="h-48 w-full rounded-2xl bg-slate-200 dark:bg-slate-800" />
       
-      {/* Stats Grid Skeleton */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map(i => (
           <div key={i} className="h-24 rounded-2xl bg-slate-200 dark:bg-slate-800" />
         ))}
       </div>
       
-      {/* Activity Section Skeleton */}
       <div className="space-y-4">
         <div className="h-6 w-32 rounded bg-slate-200 dark:bg-slate-800" />
         <div className="space-y-3">

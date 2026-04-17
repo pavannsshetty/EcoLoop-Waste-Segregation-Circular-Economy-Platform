@@ -44,6 +44,11 @@ const userSchema = new mongoose.Schema(
     },
 
     // ── Citizen-specific ───────────────────────────────────────────
+    village: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     pickupRequests: [
       {
         type: mongoose.Schema.Types.ObjectId,

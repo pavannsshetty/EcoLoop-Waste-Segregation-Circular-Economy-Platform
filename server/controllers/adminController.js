@@ -24,14 +24,62 @@ const generateCollectorId = async () => {
 
 const addCollector = async (req, res) => {
   try {
-    const { name, teamLeader, mobile, email, city, area, ward, collectorId, password, status, teamSize } = req.body;
-    if (!name || !mobile || !city || !area || !ward || !password) {
+    const {
+      name, teamLeader, mobile, email, city, area, villages, ward,
+      collectorId, password, status, collectorType, teamSize,
+      vehicleType, vehicleNumber, workingShift, forceReassign,
+    } = req.body;
+
+    if (!name || !mobile || !password || !collectorType || !vehicleType || !workingShift) {
       return res.status(400).json({ message: 'Required fields missing.' });
     }
+    if (!villages || !Array.isArray(villages) || villages.length === 0) {
+      return res.status(400).json({ message: 'At least one village is required.' });
+    }
+    if (villages.length > 5) {
+      return res.status(400).json({ message: 'You can assign up to 5 villages only.' });
+    }
+    if (!/^\d{10}$/.test(mobile)) return res.status(400).json({ message: 'Mobile must be 10 digits.' });
+
+    const dupMobile = await Collector.findOne({ mobile });
+    if (dupMobile) return res.status(409).json({ message: 'Mobile number already registered.' });
+
     const existing = await Collector.findOne({ collectorId });
     if (existing) return res.status(409).json({ message: 'Collector ID already exists.' });
 
-    const collector = await Collector.create({ collectorId, name, teamLeader: teamLeader || '', mobile, email: email || '', city, area, ward, password, status: status || 'Active', teamSize: teamSize || 1 });
+    // Check each village for conflicts with active collectors
+    const conflicts = [];
+    for (const v of villages) {
+      const taken = await Collector.findOne({ villages: v, status: 'Active' });
+      if (taken) conflicts.push({ village: v, name: taken.name, collectorId: taken.collectorId });
+    }
+
+    if (conflicts.length > 0 && !forceReassign) {
+      return res.status(409).json({
+        message: `Some villages are already assigned.`,
+        conflict: true,
+        conflicts,
+      });
+    }
+
+    // If force reassign — remove conflicting villages from existing collectors
+    if (forceReassign && conflicts.length > 0) {
+      for (const c of conflicts) {
+        await Collector.findOneAndUpdate(
+          { collectorId: c.collectorId },
+          { $pull: { villages: { $in: villages } } }
+        );
+      }
+    }
+
+    const collector = await Collector.create({
+      collectorId, name, teamLeader: teamLeader || '', mobile,
+      email: email || '', city: city || '', area: area || '',
+      village: villages[0], villages, ward: ward || '',
+      password, status: status || 'Active',
+      collectorType, teamSize: collectorType === 'Team' ? (teamSize || 1) : 1,
+      vehicleType, vehicleNumber: vehicleNumber || '', workingShift,
+    });
     res.status(201).json({ message: 'Collector added successfully.', collector });
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });

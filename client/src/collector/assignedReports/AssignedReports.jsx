@@ -162,7 +162,7 @@ const DelayModal = ({ report, onClose, onDone, dk }) => {
         onClose();
       }
     } catch {
-      /* ignore */
+      
     } finally {
       setLoading(false);
     }
@@ -243,12 +243,11 @@ const AssignedReports = () => {
         ...scrapData.map(r => ({ ...r, taskType: 'scrap' }))
       ];
 
-      // Re-apply sorting if necessary
       if (sort === 'date') combined.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
       setReports(combined);
     } catch {
-      /* ignore */
+      
     } finally {
       setLoading(false);
     }
@@ -256,7 +255,6 @@ const AssignedReports = () => {
 
   useEffect(() => {
     fetchReports();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch when filter/sort changes
   }, [filter, sort]);
 
   const updateStatus = async (item, status) => {
@@ -276,7 +274,7 @@ const AssignedReports = () => {
         setReports((rs) => rs.map((r) => (r._id === item._id ? { ...updated, taskType: item.taskType } : r)));
       }
     } catch {
-      /* ignore */
+      
     }
   };
 
@@ -349,6 +347,12 @@ const AssignedReports = () => {
                   <HiLocationMarker className="h-3 w-3 text-green-500 shrink-0" />
                   <span className="truncate">{r.location?.displayAddress || r.location?.address}</span>
                 </p>
+                {r.village && (
+                  <p className={`text-xs flex items-center gap-1 mt-0.5 font-medium ${dk('text-green-400', 'text-green-700')}`}>
+                    <HiLocationMarker className="h-3 w-3 shrink-0" />
+                    {r.village}
+                  </p>
+                )}
                 <p className={`text-xs flex items-center gap-1 mt-0.5 ${dk('text-slate-500', 'text-slate-400')}`}>
                   <HiClock className="h-3 w-3 shrink-0" /> {fmt(r.createdAt)}
                 </p>

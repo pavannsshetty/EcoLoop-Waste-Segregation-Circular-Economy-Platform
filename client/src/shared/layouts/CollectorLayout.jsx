@@ -21,7 +21,6 @@ import { ToastContainer, useToast } from '../components/Toast';
 import { useTheme } from '../context/ThemeContext';
 import { useUser } from '../context/UserContext';
 
-// Icons are now handled directly via react-icons imports below
 
 const NAV_MAIN = [
   { path: '/collector/dashboard', Icon: () => <HiChartBar className="h-5 w-5" />, label: 'Dashboard' },
@@ -141,7 +140,6 @@ const CollectorLayout = () => {
             }`}
           >
             <EcoLoopLogo height={38} dark={dark} />
-            <span className={`text-[10px] font-semibold uppercase tracking-wide ${sectionLbl} hidden sm:inline`}>Collector</span>
           </div>
           <button
             type="button"
@@ -180,13 +178,13 @@ const CollectorLayout = () => {
           <button
             type="button"
             onClick={logout}
-            title={collapsed ? 'Sign Out' : undefined}
+            title={collapsed ? 'Log Out' : undefined}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-medium transition group ${
               dark ? 'text-slate-400 hover:bg-red-900/30 hover:text-red-400' : 'text-slate-500 hover:bg-red-50 hover:text-red-500'
             }`}
           >
             <HiLogout className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110" />
-            <span className={`whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>Sign Out</span>
+            <span className={`whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>Log Out</span>
           </button>
         </div>
       </aside>

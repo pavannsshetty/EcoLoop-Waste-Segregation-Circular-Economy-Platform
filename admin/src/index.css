@@ -11,3 +11,8 @@
     @apply bg-black text-slate-100;
   }
 }
+
+@keyframes shrinkWidth {
+  from { width: 100%; }
+  to   { width: 0%; }
+}

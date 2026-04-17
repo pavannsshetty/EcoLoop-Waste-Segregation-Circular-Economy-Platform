@@ -44,6 +44,7 @@ const ToastItem = ({ id, type = 'info', message, onRemove }) => {
         className="shrink-0 text-slate-400 hover:text-slate-600 transition mt-0.5">
         <HiX className="h-4 w-4" />
       </button>
+      {/* Progress bar */}
       <div
         className={`absolute bottom-0 left-0 h-0.5 rounded-b-xl ${v.bar}`}
         style={{ animation: `shrinkWidth ${DURATION}ms linear forwards` }}
@@ -87,6 +88,7 @@ export const useToast = () => {
     warning: msg => add(msg, 'warning'),
   });
 
+  // Keep the methods up-to-date with the latest `add` (stable, but just in case)
   toast.current.success = msg => add(msg, 'success');
   toast.current.error   = msg => add(msg, 'error');
   toast.current.info    = msg => add(msg, 'info');

@@ -167,24 +167,6 @@ const MyScrapRequests = () => {
           ))}
         </div>
       )}
-      
-      <div className={`p-4 rounded-sm border flex items-center justify-between transition-colors duration-200 ${dk('bg-green-900/20 border-green-800', 'bg-green-50 border-green-200')}`}>
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-green-600 flex items-center justify-center text-white">
-             <HiCurrencyRupee className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-green-800">Need to sell more scrap?</p>
-            <p className="text-xs text-green-600">Turn your waste into wealth!</p>
-          </div>
-        </div>
-        <button 
-          onClick={() => navigate('/citizen/sell-scrap')}
-          className="bg-white text-green-600 text-xs font-bold px-4 py-2 rounded-sm border border-green-200 hover:bg-green-50 transition"
-        >
-          New Request
-        </button>
-      </div>
     </div>
   );
 };

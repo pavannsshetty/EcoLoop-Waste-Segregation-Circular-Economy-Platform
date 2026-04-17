@@ -19,14 +19,13 @@ export const UserProvider = ({ children }) => {
     if (!token) { setUser(null); setLoading(false); return; }
 
     try {
-      // Decode or get role from stored user if available to decide which API to call
       const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
       const role = storedUser.role;
 
       let url = '/api/user/profile';
       if (role === 'Citizen') url = '/api/citizen/profile';
       else if (role === 'Collector') url = '/api/collector/profile';
-      else if (role === 'GreenChampion') url = '/api/citizen/profile'; // Green champions share user model for now
+      else if (role === 'GreenChampion') url = '/api/citizen/profile'; 
 
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {

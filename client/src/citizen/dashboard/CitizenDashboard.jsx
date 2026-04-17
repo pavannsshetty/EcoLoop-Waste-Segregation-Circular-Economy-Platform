@@ -4,7 +4,7 @@ import { HiChevronRight, HiPencil, HiTrash, HiEye, HiExclamation, HiClipboardLis
 import EditReportModal from '../../shared/components/EditReportModal';
 import CleanupTimeBadge from '../../shared/components/CleanupTimeBadge';
 import ConfirmationModal from '../../shared/components/ConfirmationModal';
-import { DashboardSkeleton } from '../../shared/components/SkeletonLoader';
+import { DashboardSkeleton, Skeleton } from '../../shared/components/SkeletonLoader';
 import { ToastContainer, useToast } from '../../shared/components/Toast';
 import { useTheme } from '../../shared/context/ThemeContext';
 import { useUser } from '../../shared/context/UserContext';
@@ -71,6 +71,7 @@ const CitizenDashboard = () => {
   const dk = (d, l) => dark ? d : l;
   const user = ctxUser || JSON.parse(localStorage.getItem('user') || '{}');
   const [tab,           setTab]           = useState('home');
+  const [pageLoading,   setPageLoading]   = useState(true);
   const [editReport,    setEditReport]    = useState(null);
   const [recentReports, setRecentReports] = useState([]);
   const [loadingReports, setLoadingReports] = useState(false);
@@ -106,6 +107,8 @@ const CitizenDashboard = () => {
   useEffect(() => { 
     fetchReports();
     fetchScrapStats();
+    const t = setTimeout(() => setPageLoading(false), 1000);
+    return () => clearTimeout(t);
   }, [fetchReports, fetchScrapStats]);
 
   const handleReportSuccess = (report) => {
@@ -165,6 +168,11 @@ const CitizenDashboard = () => {
                 </div>
               </div>
 
+              {pageLoading ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[1,2,3,4].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+                </div>
+              ) : (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
                   {
@@ -204,29 +212,23 @@ const CitizenDashboard = () => {
                   <div key={label}
                     className={`group relative rounded-xl border p-4 bg-gradient-to-br ${gradient} ${border} text-white overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-black/10`}
                   >
-                    {/* dot pattern overlay */}
                     <div className="absolute inset-0 rounded-xl opacity-[0.07] pointer-events-none"
                       style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '12px 12px' }} />
 
-                    {/* trend badge */}
                     {trend && (
                       <span className="absolute top-3 right-3 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/20 text-white">
                         {trend}
                       </span>
                     )}
 
-                    {/* icon */}
                     <div className="relative z-10 h-9 w-9 rounded-lg bg-white/20 flex items-center justify-center mb-3">
                       <Icon className="h-[18px] w-[18px] text-white" />
                     </div>
 
-                    {/* value */}
                     <p className="relative z-10 text-2xl font-bold tracking-tight leading-none text-white">{value}</p>
 
-                    {/* label */}
                     <p className="relative z-10 text-xs mt-1.5 text-white/75">{label}</p>
 
-                    {/* streak progress bar */}
                     {streakBar && (
                       <div className="relative z-10 mt-2.5 h-1 w-full rounded-full bg-white/20 overflow-hidden">
                         <div className="h-full rounded-full bg-white transition-all duration-700"
@@ -236,7 +238,16 @@ const CitizenDashboard = () => {
                   </div>
                 ))}
               </div>
+              )}
 
+              {pageLoading ? (
+                <div className="pt-2 space-y-3">
+                  <Skeleton className="h-4 w-40 rounded" />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[1,2,3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}
+                  </div>
+                </div>
+              ) : (
               <div className="pt-2">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="h-1 w-4 rounded-full bg-green-500" />
@@ -244,7 +255,6 @@ const CitizenDashboard = () => {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 
-                  {/* Points Earned */}
                   <div className="group relative rounded-xl border border-yellow-500/30 p-4 flex items-center gap-4 bg-gradient-to-br from-yellow-400 to-orange-500 text-white overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-md">
                     <div className="absolute inset-0 rounded-xl opacity-[0.07] pointer-events-none"
                       style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '12px 12px' }} />
@@ -258,7 +268,6 @@ const CitizenDashboard = () => {
                     <span className="relative z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/20 text-white shrink-0">+pts</span>
                   </div>
 
-                  {/* Recycled Total */}
                   <div className="group relative rounded-xl border border-green-600/30 p-4 flex items-center gap-4 bg-gradient-to-br from-green-500 to-teal-600 text-white overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-md">
                     <div className="absolute inset-0 rounded-xl opacity-[0.07] pointer-events-none"
                       style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '12px 12px' }} />
@@ -277,7 +286,6 @@ const CitizenDashboard = () => {
                     </div>
                   </div>
 
-                  {/* CO₂ Abatement */}
                   <div className="group relative rounded-xl border border-emerald-600/30 p-4 bg-gradient-to-br from-emerald-600 to-teal-500 text-white overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-md">
                     <div className="absolute inset-0 rounded-xl opacity-[0.06] pointer-events-none"
                       style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '12px 12px' }} />
@@ -297,11 +305,12 @@ const CitizenDashboard = () => {
 
                 </div>
               </div>
+              )}
 
-
-              {loadingReports ? (
-                <div className="pt-4">
-                  <DashboardSkeleton />
+              {loadingReports || pageLoading ? (
+                <div className="space-y-3 pt-2">
+                  <Skeleton className="h-5 w-36 rounded" />
+                  {[1,2,3].map(i => <Skeleton key={i} className="h-28 rounded-sm" />)}
                 </div>
               ) : recentReports.length > 0 && (
                 <>
@@ -356,12 +365,10 @@ const CitizenDashboard = () => {
                                   <span>{fmtDate}</span>
                                 </div>
 
-                                {/* Progress Stepper */}
                                 <div className="flex items-center gap-2 w-full max-w-sm">
                                   {statusSteps.map((step, idx) => (
                                     <div key={step} className="flex-1 flex flex-col gap-1">
                                       <div className={`h-1.5 rounded-full transition-all duration-500 ${idx <= currentStepIdx ? 'bg-green-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
-                                      {/* <span className={`text-[8px] font-bold uppercase truncate ${idx <= currentStepIdx ? 'text-green-600' : 'text-slate-400'}`}>{step}</span> */}
                                     </div>
                                   ))}
                                 </div>
@@ -387,7 +394,6 @@ const CitizenDashboard = () => {
                               </div>
                             </div>
                             
-                            {/* Clickable Card Background */}
                             <div onClick={() => navigate('/citizen/my-reports')} className="absolute inset-0 z-0 cursor-pointer group-active:bg-black/5 transition-colors" />
                           </div>
                         );
@@ -503,12 +509,10 @@ const CitizenDashboard = () => {
       />
       <ToastContainer toasts={toasts} onRemove={remove} />
 
-      {/* View Report Modal */}
       {viewReport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setViewReport(null)}>
           <div onClick={e => e.stopPropagation()}
             className={`relative w-full max-w-lg rounded-sm shadow-2xl overflow-hidden ${dk('bg-slate-900 border border-gray-700', 'bg-white')}`}>
-            {/* Header */}
             <div className={`flex items-center justify-between px-5 py-4 border-b ${dk('border-gray-700', 'border-slate-100')}`}>
               <div className="flex items-center gap-2">
                 <HiClipboardList className="h-5 w-5 text-green-500" />
@@ -518,9 +522,7 @@ const CitizenDashboard = () => {
                 ✕
               </button>
             </div>
-            {/* Body */}
             <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
-              {/* Status + Type */}
               <div className="flex items-center gap-3 flex-wrap">
                 <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${
                   viewReport.status === 'Resolved'    ? 'bg-green-100 text-green-700 border-green-200' :
@@ -533,7 +535,6 @@ const CitizenDashboard = () => {
                 )}
               </div>
 
-              {/* Fields */}
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: 'Date Submitted', value: viewReport.createdAt ? new Date(viewReport.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—' },
@@ -548,7 +549,6 @@ const CitizenDashboard = () => {
                 ))}
               </div>
 
-              {/* Location */}
               <div className={`rounded-sm border p-3 ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`}>
                 <p className={`text-[10px] font-bold uppercase tracking-wide mb-1 ${dk('text-slate-500', 'text-slate-400')}`}>Location</p>
                 <div className="flex items-start gap-1.5">
@@ -557,7 +557,6 @@ const CitizenDashboard = () => {
                 </div>
               </div>
 
-              {/* Description */}
               {viewReport.description && (
                 <div className={`rounded-sm border p-3 ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`}>
                   <p className={`text-[10px] font-bold uppercase tracking-wide mb-1 ${dk('text-slate-500', 'text-slate-400')}`}>Description</p>
@@ -565,7 +564,6 @@ const CitizenDashboard = () => {
                 </div>
               )}
 
-              {/* Pickup Schedule */}
               {viewReport.pickupTime && (
                 <div className={`rounded-sm border p-3 ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`}>
                   <p className={`text-[10px] font-bold uppercase tracking-wide mb-1 ${dk('text-slate-500', 'text-slate-400')}`}>Scheduled Pickup</p>
@@ -576,7 +574,6 @@ const CitizenDashboard = () => {
               )}
             </div>
 
-            {/* Footer */}
             <div className={`px-5 py-3 border-t flex justify-end ${dk('border-gray-700', 'border-slate-100')}`}>
               <button onClick={() => setViewReport(null)}
                 className={`text-sm font-bold px-4 py-2 rounded-sm transition ${dk('bg-white/10 text-slate-200 hover:bg-white/20', 'bg-slate-100 text-slate-700 hover:bg-slate-200')}`}>

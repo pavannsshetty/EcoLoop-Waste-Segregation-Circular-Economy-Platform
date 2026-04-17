@@ -30,9 +30,17 @@ const wasteReportSchema = new mongoose.Schema({
   photoLocation: { lat: { type: Number, default: null }, lng: { type: Number, default: null } },
   accuracy:      { type: Number, default: null },
   pickupTime:    { type: Date, required: true },
-  status:        { type: String, enum: ['Submitted', 'Assigned', 'In Progress', 'Resolved', 'Delayed'], default: 'Submitted' },
+  status:        { type: String, enum: ['Submitted', 'Assigned', 'In Progress', 'Resolved', 'Delayed', 'Reopened'], default: 'Submitted' },
   upvotes:       [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   assignedCollector: { type: mongoose.Schema.Types.ObjectId, ref: 'Collector', default: null },
+  isLocked:          { type: Boolean, default: false },
+  lockedAt:          { type: Date, default: null },
+  priority:          { type: Number, default: 0 },           // higher = more urgent
+  isBulk:            { type: Boolean, default: false },
+  additionalInstructions: { type: String, default: '' },
+  citizenVerified:   { type: String, enum: ['pending', 'yes', 'no', null], default: null },
+  escalated:         { type: Boolean, default: false },
+  escalatedAt:       { type: Date, default: null },
   completionPhoto:   { type: String, default: '' },
   completionNotes:   { type: String, default: '' },
   completedAt:       { type: Date, default: null },
@@ -42,8 +50,11 @@ const wasteReportSchema = new mongoose.Schema({
   deadline:    { type: Date, default: null },
   resolvedAt:  { type: Date, default: null },
   isEdited:    { type: Boolean, default: false },
+  village:     { type: String, default: '' },
 }, { timestamps: true });
 
 wasteReportSchema.index({ location: '2dsphere' });
+wasteReportSchema.index({ 'location.area': 1, status: 1 });
+wasteReportSchema.index({ status: 1 });
 
 module.exports = mongoose.model('WasteReport', wasteReportSchema);

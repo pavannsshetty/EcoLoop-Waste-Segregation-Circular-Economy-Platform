@@ -10,7 +10,6 @@ import { ToastContainer, useToast } from '../components/Toast';
 import { useTheme } from '../context/ThemeContext';
 import { useUser } from '../context/UserContext';
 
-// Icons are now handled directly via react-icons imports below
 
 const NAV_MAIN = [
   { path: '/citizen/dashboard',     Icon: () => <HiChartBar className="h-5 w-5" />,             label: 'Dashboard'     },
@@ -75,7 +74,11 @@ const CitizenLayout = () => {
   const sideW    = collapsed ? 'lg:w-20' : 'lg:w-64';
   const mainML   = collapsed ? 'lg:ml-20' : 'lg:ml-64';
 
-  const logout = () => { clearUser(); navigate('/'); };
+  const logout = () => {
+    clearUser();
+    toast.success('Logged out successfully!');
+    setTimeout(() => navigate('/'), 1000);
+  };
 
   const handleNav = (path) => {
     navigate(path);
@@ -130,7 +133,7 @@ const CitizenLayout = () => {
           <button onClick={logout} title={collapsed ? 'Sign Out' : undefined}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm transition group ${dark ? 'text-slate-400 hover:bg-red-900/30 hover:text-red-400' : 'text-slate-500 hover:bg-red-50 hover:text-red-500'}`}>
             <HiLogout className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110" />
-            <span className={`whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>Sign Out</span>
+            <span className={`whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>Log Out</span>
           </button>
         </div>
       </aside>

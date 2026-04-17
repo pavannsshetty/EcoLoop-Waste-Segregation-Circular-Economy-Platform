@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { apiUrl } from '../utils/api';
@@ -7,8 +7,81 @@ import {
   HiLocationMarker, HiIdentification,
   HiEye, HiEyeOff, HiCheckCircle, HiXCircle,
   HiArrowLeft, HiUserGroup, HiTruck, HiSparkles,
-  HiInformationCircle,
+  HiInformationCircle, HiChevronDown,
 } from 'react-icons/hi';
+
+const VILLAGES = [
+  'Ajri','Albadi','Aloor','Amasebail','Ampar','Anagalli','Asodu','Badakere','Balkur','Basrur',
+  'Beejadi','Bellal','Beloor','Belve','Bijoor','Byndoor','Chittoor','Devalkunda','Edmoge',
+  'Gangolli','Golihole','Gopadi','Gujjadi','Gulvadi','Hadavu','Hekladi','Halady',
+  'Hallady - Harkadi','Hallihole','Halnad','Hangaloor','Harady','Hardally - Mandally',
+  'Harkoor','Hattiangadi','Hemmadi','Hengavalli','Heranjal','Heroor','Heskathoor',
+  'Hombady - Mandadi','Hosadu','Hosangadi','Hosoor','Idurkunhadi','Jadkal','Japthi',
+  'Kalavara','Kalthodu','Kamalashile','Kambadakone','Kandavara','Kanyana','Karkunje',
+  'Kattabelthoor','Kavrady','Kedoor','Kenchanoor','Keradi','Kergal','Kirimanjeshwar',
+  'Kodladi','Kollur','Koni','Korgi','Kulanje','Kumbashi','Kundabarandadi','Machattu',
+  'Madammakki','Maravanthe','Molahalli','Mudoor','Nada','Nandanavana','Navunda','Noojadi',
+  'Paduvari','Rattadi','Senapur','Shankaranarayana','Shedimane','Shiroor','Siddapur',
+  'Tallur','Thagarasi','Thekkatte','Trashi','Ulloor','Ulthoor','Uppinakudru','Uppunda',
+  'Vakwadi','Vandse','Yedthare','Yedyadi - Mathyadi','Yeljith',
+].sort((a, b) => a.localeCompare(b));
+
+const VillageDropdown = ({ value, onChange, error, touched, dark }) => {
+  const [query, setQuery] = useState('');
+  const [open, setOpen]   = useState(false);
+  const ref = useRef(null);
+  const filtered = VILLAGES.filter(v => v.toLowerCase().includes(query.toLowerCase()));
+  const hasError = touched && error;
+  const isOk     = touched && !error && value;
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const select = (v) => { onChange(v); setQuery(v); setOpen(false); };
+
+  return (
+    <div ref={ref} className="relative flex flex-col gap-1">
+      <div className="relative">
+        <span className={`pointer-events-none absolute inset-y-0 left-3 flex items-center ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+          <HiLocationMarker className="h-4 w-4" />
+        </span>
+        <input
+          type="text"
+          value={open ? query : value}
+          onFocus={() => { setOpen(true); setQuery(''); }}
+          onChange={(e) => { setQuery(e.target.value); onChange(''); }}
+          placeholder="Search your village..."
+          autoComplete="off"
+          className={[
+            'w-full rounded-lg border py-3 pl-9 pr-9 text-sm shadow-sm transition focus:outline-none focus:ring-2',
+            dark ? 'bg-white/5 text-slate-100 placeholder-slate-500' : 'bg-white text-slate-900 placeholder-slate-400',
+            hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/30'
+              : isOk  ? 'border-green-500 focus:border-green-500 focus:ring-green-500/30'
+              : dark  ? 'border-gray-700 focus:border-green-500 focus:ring-green-500/30'
+              :         'border-slate-300 focus:border-green-500 focus:ring-green-500/30',
+          ].join(' ')}
+        />
+        <HiChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-transform pointer-events-none ${open ? 'rotate-180' : ''} ${dark ? 'text-slate-500' : 'text-slate-400'}`} />
+      </div>
+      {open && (
+        <ul className={`absolute top-full z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-xl border shadow-lg text-sm ${dark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
+          {filtered.length === 0
+            ? <li className={`px-4 py-2.5 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>No villages found</li>
+            : filtered.map(v => (
+              <li key={v} onMouseDown={() => select(v)}
+                className={`px-4 py-2.5 cursor-pointer transition ${value === v ? 'bg-green-600 text-white' : dark ? 'hover:bg-slate-700' : 'hover:bg-slate-50'}`}
+              >{v}</li>
+            ))
+          }
+        </ul>
+      )}
+      {hasError && <p className="text-xs text-red-400">{error}</p>}
+    </div>
+  );
+};
 
 const validators = {
   email: v => {
@@ -142,7 +215,7 @@ const ROLES = [
 ];
 
 const MOCK_REGISTERED = ['test@example.com', 'user@gmail.com'];
-const initFields  = () => ({ fullName: '', email: '', identifier: '', mobile: '', collectorId: '', password: '', confirmPassword: '', address: '', assignedArea: '', areaLocality: '' });
+const initFields  = () => ({ fullName: '', email: '', identifier: '', mobile: '', collectorId: '', password: '', confirmPassword: '', address: '', assignedArea: '', areaLocality: '', village: '' });
 const initTouched = () => Object.fromEntries(Object.keys(initFields()).map(k => [k, false]));
 
 const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
@@ -164,7 +237,8 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
     password:        validators.password(fields.password) || (fields.password && screen === 'register' && !pwdRules.every(r => r.test(fields.password)) ? 'Password does not meet all requirements' : ''),
     confirmPassword: validators.confirmPassword(fields.confirmPassword, fields.password),
     address:         validators.address(fields.address),
-  }), [fields, screen]);
+    village:         (screen === 'register' && userRole === 'Citizen' && !fields.village) ? 'Village is required' : '',
+  }), [fields, screen, userRole]);
 
   const errors = getErrors();
   const handleChange = field => e => { setFields(f => ({ ...f, [field]: e.target.value })); setTouched(t => ({ ...t, [field]: true })); };
@@ -204,7 +278,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
     const relevantErrors = screen === 'register'
       ? (() => {
           const base = [currentErrors.email, currentErrors.mobile, currentErrors.password, currentErrors.confirmPassword];
-          if (userRole === 'Citizen' || userRole === 'Green Champion') base.push(/* areaLocality optional */ '');
+          if (userRole === 'Citizen') base.push(!fields.village ? 'Village is required' : '');
           return base;
         })()
       : screen === 'login'
@@ -222,7 +296,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
         const body = {
           name: fields.fullName, email: fields.email, password: fields.password, phone: fields.mobile,
           role: userRole === 'Green Champion' ? 'GreenChampion' : userRole,
-          ...(userRole === 'Citizen'        && { locality: fields.areaLocality }),
+          ...(userRole === 'Citizen'        && { village: fields.village }),
           ...(userRole === 'Green Champion' && { locality: fields.areaLocality }),
         };
         const res  = await fetch(apiUrl('/api/auth/register'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -256,7 +330,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
 
   const fp = field => ({ value: fields[field], onChange: handleChange(field), onBlur: handleBlur(field), error: errors[field], touched: touched[field], dark });
 
-  const headerTitle = { 'role-select': 'Get Started', register: `Register as ${userRole}`, login: `Sign in — ${userRole}`, forgot: 'Reset Password' }[screen];
+  const headerTitle = { 'role-select': 'Get Started', register: `Register as ${userRole}`, login: `Login — ${userRole}`, forgot: 'Reset Password' }[screen];
   const dlg     = dark ? 'bg-black/90 border border-gray-800 text-slate-100' : 'bg-white text-slate-900';
   const hdr     = dark ? 'border-gray-800' : 'border-slate-100';
   const muted   = dark ? 'text-slate-400' : 'text-slate-500';
@@ -311,14 +385,14 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
             <div className="space-y-4">
               <button type="button" onClick={() => reset('login')}
                 className={`flex items-center gap-1 text-sm transition hover:text-green-500 ${muted}`}>
-                <HiArrowLeft className="h-4 w-4" /> Back to Sign in
+                <HiArrowLeft className="h-4 w-4" /> Back to Login
               </button>
               {forgotSent ? (
                 <div className={`rounded-xl border p-5 text-center space-y-2 ${dark ? 'bg-green-900/30 border-green-700' : 'bg-green-50 border-green-200'}`}>
                   <HiCheckCircle className="h-9 w-9 text-green-500 mx-auto" />
                   <p className={`text-sm font-semibold ${dark ? 'text-green-400' : 'text-green-700'}`}>Password reset successfully!</p>
-                  <p className={`text-xs ${dark ? 'text-green-500' : 'text-green-600'}`}>You can now sign in with your new password.</p>
-                  <button type="button" onClick={() => reset('login')} className="text-sm font-medium text-green-500 hover:underline">Go to Sign in</button>
+                  <p className={`text-xs ${dark ? 'text-green-500' : 'text-green-600'}`}>You can now log in with your new password.</p>
+                  <button type="button" onClick={() => reset('login')} className="text-sm font-medium text-green-500 hover:underline">Go to Login</button>
                 </div>
               ) : (
                 <form noValidate autoComplete="off" className="space-y-4" onSubmit={e => {
@@ -326,7 +400,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
                   setTouched(t => ({ ...t, email: true, password: true }));
                   if (!validators.email(fields.email) && fields.password && pwdRules.every(r => r.test(fields.password))) {
                     setForgotSent(true);
-                    toast.success('Password reset successfully! You can now sign in.');
+                    toast.success('Password reset successfully! You can now log in.');
                   } else if (validators.email(fields.email)) {
                     toast.error('Enter a valid registered email.');
                   } else {
@@ -341,7 +415,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
                       value={fields.password} onChange={handleChange('password')} onBlur={handleBlur('password')} error={errors.password} touched={touched.password} />
                     <PasswordStrength value={fields.password} dark={dark} />
                   </div>
-                  <button type="submit" className="w-full rounded-sm bg-green-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500">
+                  <button type="submit" style={{ backgroundColor: '#0EB02D' }} className="w-full rounded-sm px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-green-500">
                     Reset Password
                   </button>
                 </form>
@@ -361,7 +435,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
                     {screen === 'login' ? 'No account? ' : 'Have an account? '}
                     <button type="button" onClick={() => reset(screen === 'login' ? 'register' : 'login')}
                       className="font-medium text-green-500 hover:underline">
-                      {screen === 'login' ? 'Register' : 'Sign in'}
+                      {screen === 'login' ? 'Register' : 'Login'}
                     </button>
                   </p>
                 )}
@@ -394,8 +468,14 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
                     onChange={e => { const v = e.target.value.replace(/\D/g,'').slice(0,10); setFields(f=>({...f,mobile:v})); setTouched(t=>({...t,mobile:true})); }} />
                   <div><InputField id="password" label="Password" type="password" placeholder="Create a password" icon={HiLockClosed} {...fp('password')} /><PasswordStrength value={fields.password} dark={dark} /></div>
                   <InputField id="confirmPassword" label="Confirm Password" type="password" placeholder="Re-enter your password" icon={HiLockClosed} {...fp('confirmPassword')} />
-                  <InputField id="areaLocality" label="Area / Locality" placeholder="Enter your area or locality" icon={HiLocationMarker}
-                    value={fields.areaLocality} onChange={handleChange('areaLocality')} onBlur={handleBlur('areaLocality')} dark={dark} />
+                  <div className="flex flex-col gap-1">
+                    <label className={`text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-700'}`}>Village <span className="text-red-400">*</span></label>
+                    <VillageDropdown
+                      value={fields.village}
+                      onChange={v => { setFields(f => ({ ...f, village: v })); setTouched(t => ({ ...t, village: true })); }}
+                      error={errors.village} touched={touched.village} dark={dark}
+                    />
+                  </div>
                 </>)}
 
                 {screen === 'register' && userRole === 'Green Champion' && (<>
@@ -446,10 +526,11 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
 
                 <div className="pt-1">
                   <button type="submit" disabled={loading}
-                    className={`w-full rounded-sm px-4 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 ${dark ? 'bg-green-600 hover:bg-green-500' : 'bg-green-600 hover:bg-green-500'}`}>
+                    style={{ backgroundColor: '#0EB02D' }}
+                    className="w-full rounded-sm px-4 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 hover:opacity-90">
                     {loading
                       ? <span className="flex items-center justify-center gap-2"><svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Please wait...</span>
-                      : screen === 'login' ? `Sign In as ${userRole}` : `Register as ${userRole}`
+                      : screen === 'login' ? `Login as ${userRole}` : `Register as ${userRole}`
                     }
                   </button>
                 </div>

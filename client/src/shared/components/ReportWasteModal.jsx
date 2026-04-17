@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   HiX, HiPhotograph, HiClipboardList, HiLocationMarker,
   HiCamera, HiExclamation, HiCheckCircle,
@@ -110,6 +110,7 @@ const DuplicateModal = ({ report, onContinue, onClose, dark }) => (
 
 const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   const cameraRef = useRef(null);
+  const [userVillage, setUserVillage] = useState('');
   const [form, setForm] = useState({
     wasteType: '', severity: 'Medium', wasteSeenAt: 'Just now',
     description: '', pickupDate: '', pickupTime: '',
@@ -128,6 +129,13 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   const [loading,      setLoading]      = useState(false);
   const [dupData,      setDupData]      = useState(null);
   const [showDup,      setShowDup]      = useState(false);
+
+  useEffect(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (user?.village) setUserVillage(user.village);
+    } catch {  }
+  }, [isOpen]);
 
   const handleLocationSelect = (loc) => {
     setLocation(loc);
@@ -189,6 +197,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
         image: imageFile ? `[image:${imageFile.name}]` : '',
         location: finalLoc, landmark: form.landmark, landmarkType: form.landmarkType,
         photoLocation: photoLoc || { lat: null, lng: null }, pickupTime,
+        village: userVillage,
       };
       const res  = await fetch('/api/waste/report', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -340,6 +349,16 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Location</p>
               </div>
+              {userVillage && (
+                <div className={`flex items-center gap-2 rounded-none border px-3 py-2.5 ${dark ? 'bg-green-900/20 border-green-800' : 'bg-green-50 border-green-200'}`}>
+                  <HiLocationMarker className="h-4 w-4 text-green-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs font-medium ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Village (Auto-filled)</p>
+                    <p className={`text-sm font-semibold truncate ${dark ? 'text-green-300' : 'text-green-700'}`}>{userVillage}</p>
+                  </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${dark ? 'bg-green-900 text-green-400' : 'bg-green-100 text-green-600'}`}>From profile</span>
+                </div>
+              )}
               <div className="flex gap-2 flex-wrap">
                 {LOC_METHODS.map(m => (
                   <button key={m.id} type="button" onClick={() => setLocMethod(m.id)}

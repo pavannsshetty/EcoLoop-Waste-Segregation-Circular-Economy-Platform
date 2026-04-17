@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HiLocationMarker, HiClock, HiRefresh, HiThumbUp } from 'react-icons/hi';
+import { HiLocationMarker, HiClock, HiRefresh, HiThumbUp, HiExclamation, HiCheckCircle, HiX } from 'react-icons/hi';
 import { MdWaterDrop, MdRecycling, MdDevices, MdWarning } from 'react-icons/md';
 import CleanupTimeBadge from '../../shared/components/CleanupTimeBadge';
 import { useTheme } from '../../shared/context/ThemeContext';
 import { useUser } from '../../shared/context/UserContext';
 
 const STATUS_STYLES = {
-  Submitted:   'bg-yellow-100 text-yellow-700',
+  Submitted:     'bg-yellow-100 text-yellow-700',
   'In Progress': 'bg-blue-100 text-blue-700',
-  Resolved:    'bg-green-100 text-green-700',
+  Resolved:      'bg-green-100 text-green-700',
+  Reopened:      'bg-orange-100 text-orange-700',
+  Delayed:       'bg-red-100 text-red-700',
 };
 
 const SEVERITY_STYLES = {
@@ -60,6 +62,30 @@ const MyReports = () => {
       if (res.ok) {
         setReports(rs => rs.map(r => r._id === id ? { ...r, upvotes: Array(data.upvotes).fill(null) } : r));
       }
+    } catch { }
+  };
+
+  const handleEscalate = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res   = await fetch(`/api/waste/report/${id}/escalate`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      const data  = await res.json();
+      if (res.ok) setReports(rs => rs.map(r => r._id === id ? { ...r, escalated: true, severity: 'High' } : r));
+      else alert(data.message);
+    } catch { }
+  };
+
+  const handleVerify = async (id, verified) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res   = await fetch(`/api/waste/report/${id}/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ verified }),
+      });
+      const data = await res.json();
+      if (res.ok) setReports(rs => rs.map(r => r._id === id ? { ...r, ...data.report } : r));
+      else alert(data.message);
     } catch { }
   };
 
@@ -141,6 +167,30 @@ const MyReports = () => {
                     <HiThumbUp className="h-3.5 w-3.5" />
                     {r.upvotes?.length || 0}
                   </button>
+                  {!r.escalated && ['Submitted','Assigned','In Progress','Delayed'].includes(r.status) && (
+                    <button onClick={() => handleEscalate(r._id)}
+                      className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-sm border border-orange-300 text-orange-600 hover:bg-orange-50 transition">
+                      <HiExclamation className="h-3.5 w-3.5" /> Escalate
+                    </button>
+                  )}
+                  {r.escalated && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 font-semibold">Escalated</span>
+                  )}
+                  {r.status === 'Resolved' && r.citizenVerified === 'pending' && (
+                    <div className="flex flex-col gap-1 mt-1">
+                      <p className="text-[10px] text-slate-500">Was this resolved?</p>
+                      <div className="flex gap-1">
+                        <button onClick={() => handleVerify(r._id, 'yes')}
+                          className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm bg-green-600 text-white hover:bg-green-500 transition">
+                          <HiCheckCircle className="h-3 w-3" /> Yes
+                        </button>
+                        <button onClick={() => handleVerify(r._id, 'no')}
+                          className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm bg-red-500 text-white hover:bg-red-400 transition">
+                          <HiX className="h-3 w-3" /> No
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

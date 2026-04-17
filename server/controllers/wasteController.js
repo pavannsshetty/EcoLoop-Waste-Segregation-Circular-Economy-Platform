@@ -1,8 +1,10 @@
 const WasteReport = require('../models/WasteReport');
+const Collector   = require('../models/Collector');
 const { createNotification } = require('./notificationController');
 const { awardPoints }        = require('./rewardsController');
 
-const DAILY_REPORT_LIMIT = 5;
+const DAILY_REPORT_LIMIT  = 5;
+const MAX_ACTIVE_TASKS    = 10;   // Edge Case 9 — collector overload limit
 
 const haversineMeters = (lat1, lng1, lat2, lng2) => {
   const R = 6371000;
@@ -14,26 +16,61 @@ const haversineMeters = (lat1, lng1, lat2, lng2) => {
 
 const expectedHours = (severity) => ({ Low: 48, Medium: 24, High: 8 }[severity] || 24);
 
+// Edge Case 2 — find best collector for a report (village match → nearest → least loaded)
+const findBestCollector = async (village, location) => {
+  const collectors = await Collector.find({ status: 'Active', availability: { $ne: 'Offline' } }).lean();
+  if (!collectors.length) return null;
+
+  const activeCounts = await Promise.all(
+    collectors.map(c =>
+      WasteReport.countDocuments({ assignedCollector: c._id, status: { $in: ['Assigned', 'In Progress'] } })
+    )
+  );
+
+  const eligible = collectors.filter((_, i) => activeCounts[i] < MAX_ACTIVE_TASKS);
+  if (!eligible.length) return null;
+
+  const villageNorm = (village || '').trim().toLowerCase();
+
+  if (villageNorm) {
+    const villageMatches = eligible.filter(c =>
+      Array.isArray(c.villages) && c.villages.some(v => v.trim().toLowerCase() === villageNorm)
+    );
+    if (villageMatches.length) {
+      const counts = villageMatches.map(c => activeCounts[collectors.indexOf(c)]);
+      return villageMatches[counts.indexOf(Math.min(...counts))];
+    }
+  }
+
+  const city = (location?.city || '').toLowerCase();
+  const cityMatches = eligible.filter(c => (c.city || '').toLowerCase().includes(city));
+  const pool = cityMatches.length ? cityMatches : eligible;
+  const poolCounts = pool.map(c => activeCounts[collectors.indexOf(c)]);
+  return pool[poolCounts.indexOf(Math.min(...poolCounts))];
+};
+
 const createReport = async (req, res) => {
   try {
     const { wasteType, severity, wasteSeenAt, description, image, location,
-            landmark, landmarkType, photoLocation, accuracy, pickupTime, anonymous } = req.body;
+            landmark, landmarkType, photoLocation, accuracy, pickupTime, anonymous,
+            additionalInstructions, isBulk, village } = req.body;
     const userId = req.user.id;
 
     if (!wasteType || !description || !location?.lat || !location?.lng || !location?.address || !pickupTime) {
       return res.status(400).json({ message: 'All required fields must be provided.' });
     }
 
-    const locState   = (location.state   || '').toLowerCase();
+    // Edge Case 8 — address completeness (map mode requires lat/lng; manual mode validated on frontend)
+    const locState    = (location.state   || '').toLowerCase();
     const locDistrict = (location.district || location.city || '').toLowerCase();
-    const locAddr    = (location.address  || '').toLowerCase();
+    const locAddr     = (location.address  || '').toLowerCase();
     const inKarnataka = locState.includes('karnataka') || locAddr.includes('karnataka');
     const inUdupi     = locDistrict.includes('udupi') || locAddr.includes('udupi') || locAddr.includes('kundapura');
     if (!inKarnataka || !inUdupi) {
       return res.status(400).json({ message: 'Reports allowed only in Kundapura Taluk, Udupi, Karnataka.' });
     }
 
-    const taluk   = (location.taluk    || location.district || '').toLowerCase();
+    const taluk    = (location.taluk    || location.district || '').toLowerCase();
     const district = (location.district || '').toLowerCase();
     const state    = (location.state    || '').toLowerCase();
     const addr     = (location.address  || '').toLowerCase();
@@ -49,6 +86,9 @@ const createReport = async (req, res) => {
     if (todayCount >= DAILY_REPORT_LIMIT) {
       return res.status(429).json({ message: `Daily report limit (${DAILY_REPORT_LIMIT}) reached. Try again tomorrow.` });
     }
+
+    // Edge Case 2 — auto-assign to best collector
+    const bestCollector = await findBestCollector(village, location);
 
     const report = await WasteReport.create({
       userId, anonymous: !!anonymous,
@@ -69,18 +109,32 @@ const createReport = async (req, res) => {
         lat: location.lat, lng: location.lng,
       },
       landmark: landmark || '', landmarkType: landmarkType || '',
+      additionalInstructions: additionalInstructions || '',
+      isBulk: !!isBulk,
       photoLocation: photoLocation || { lat: null, lng: null },
       accuracy: accuracy || null,
       pickupTime,
-      status: 'Submitted',
+      village: village || '',
+      status: bestCollector ? 'Assigned' : 'Submitted',
+      assignedCollector: bestCollector ? bestCollector._id : null,
+      isLocked: !!bestCollector,
+      lockedAt: bestCollector ? new Date() : null,
       expectedCleanupHours: expectedHours(severity || 'Medium'),
       deadline: new Date(Date.now() + expectedHours(severity || 'Medium') * 60 * 60 * 1000),
     });
 
     res.status(201).json({ message: 'Report submitted successfully.', report });
-    createNotification(userId, 'Report Submitted', `Your ${wasteType} waste report has been submitted. Expected cleanup: ${expectedHours(severity || 'Medium')}h.`, 'report', report._id);
-    
-    // Emit to agents/collectors that a new report is available
+
+    createNotification(userId, 'Report Submitted',
+      `Your ${wasteType} waste report has been submitted. Expected cleanup: ${expectedHours(severity || 'Medium')}h.`,
+      'report', report._id);
+
+    if (bestCollector) {
+      createNotification(bestCollector._id, 'New Task Assigned',
+        `A ${wasteType} waste report has been assigned to you in ${location.area || location.city}.`,
+        'report', report._id);
+    }
+
     const { emitToAll } = require('../socket');
     emitToAll('report_created', report);
 
@@ -207,4 +261,64 @@ const getMyReports = async (req, res) => {
   }
 };
 
-module.exports = { createReport, checkDuplicate, upvoteReport, updateReport, deleteReport, getNearbyReports, getMyReports };
+// Edge Case 10 — Escalate issue
+const escalateReport = async (req, res) => {
+  try {
+    const report = await WasteReport.findById(req.params.id);
+    if (!report) return res.status(404).json({ message: 'Report not found.' });
+    if (report.userId.toString() !== req.user.id) return res.status(403).json({ message: 'Not authorized.' });
+    if (report.escalated) return res.status(400).json({ message: 'Already escalated.' });
+
+    report.escalated   = true;
+    report.escalatedAt = new Date();
+    report.severity    = 'High';
+    report.priority    = (report.priority || 0) + 10;
+    await report.save();
+
+    // Notify admin via a system notification (userId = null handled gracefully)
+    try {
+      const { createNotification } = require('./notificationController');
+      if (report.assignedCollector) {
+        createNotification(report.assignedCollector, 'Task Escalated',
+          `Report ${report._id} has been escalated by the citizen. Priority raised to High.`, 'escalation', report._id);
+      }
+    } catch { /* non-critical */ }
+
+    res.json({ message: 'Report escalated successfully.', report });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+// Edge Case 6 — Citizen verification after resolution
+const citizenVerify = async (req, res) => {
+  try {
+    const { verified } = req.body; // 'yes' | 'no'
+    const report = await WasteReport.findById(req.params.id);
+    if (!report) return res.status(404).json({ message: 'Report not found.' });
+    if (report.userId.toString() !== req.user.id) return res.status(403).json({ message: 'Not authorized.' });
+    if (report.status !== 'Resolved') return res.status(400).json({ message: 'Report is not resolved yet.' });
+
+    report.citizenVerified = verified === 'yes' ? 'yes' : 'no';
+
+    if (verified === 'no') {
+      // Reopen the task
+      report.status          = 'Reopened';
+      report.assignedCollector = null;
+      report.isLocked        = false;
+      report.lockedAt        = null;
+      report.priority        = (report.priority || 0) + 5;
+      await report.save();
+      createNotification(report.userId, 'Report Reopened',
+        `Your ${report.wasteType} waste report has been reopened for re-inspection.`, 'report', report._id);
+    } else {
+      await report.save();
+    }
+
+    res.json({ message: verified === 'yes' ? 'Thank you for confirming!' : 'Report reopened for re-inspection.', report });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+module.exports = { createReport, checkDuplicate, upvoteReport, updateReport, deleteReport, getNearbyReports, getMyReports, escalateReport, citizenVerify };

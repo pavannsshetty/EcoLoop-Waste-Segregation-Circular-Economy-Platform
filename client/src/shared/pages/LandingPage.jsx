@@ -61,13 +61,15 @@ const LandingPage = () => {
                 <HiSparkles className="h-3.5 w-3.5" /> Join the Circular Economy Revolution
               </div>
 
-              <h1 className="font-extrabold tracking-tight leading-tight text-4xl sm:text-5xl lg:text-6xl">
-                <span className={`block ${dk('text-white', 'text-slate-900')}`}>Close the Loop.</span>
-                <span className="block" style={{ color: '#0EB02D' }}>Save the Planet.</span>
+              <h1 className="tracking-tight leading-tight text-4xl sm:text-5xl lg:text-6xl" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>
+                <span className={`block ${dk('text-white', 'text-slate-900')}`}>Sort Your Waste.</span>
+                <span className={`block ${dk('text-white', 'text-slate-900')}`}>
+                  Support <span style={{ color: '#16a34a' }}>Recycling.</span> Build a <span style={{ color: '#16a34a' }}>Cleaner India.</span>
+                </span>
               </h1>
 
-              <p className={`text-base sm:text-lg leading-relaxed ${dk('text-slate-300', 'text-slate-600')}`}>
-                The unified platform connecting citizens, collectors, recyclers, and municipalities to transform waste management through technology and collaboration.
+              <p className={`text-lg sm:text-xl leading-loose ${dk('text-slate-300', 'text-slate-600')}`} style={{ fontFamily: "'Tilt Neon', cursive", lineHeight: '1.9' }}>
+                A platform that connects citizens, collectors, green champions, and municipalities to manage waste better, keep areas clean, and support recycling.
               </p>
 
               <button onClick={() => setIsAuthModalOpen(true)}

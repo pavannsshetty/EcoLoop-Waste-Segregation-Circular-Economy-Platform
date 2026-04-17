@@ -63,7 +63,7 @@ const verifyOtp = async (req, res) => {
 // POST /api/auth/register
 const register = async (req, res) => {
   try {
-    const { name, email, password, phone, role, locality } = req.body;
+    const { name, email, password, phone, role, locality, village } = req.body;
 
     if (role === 'Collector') {
       return res.status(403).json({ message: 'Collector accounts are issued by the administrator.' });
@@ -74,8 +74,13 @@ const register = async (req, res) => {
       return res.status(409).json({ message: 'Email or phone already registered.' });
     }
 
+    if (role === 'Citizen' && !village) {
+      return res.status(400).json({ message: 'Village is required for Citizen registration.' });
+    }
+
     const userData = { name, email, password, phone, role, isVerified: true };
     if (locality) userData.locality = locality;
+    if (village)  userData.village  = village;
 
     const user  = await User.create(userData);
     const token = signToken(user._id);

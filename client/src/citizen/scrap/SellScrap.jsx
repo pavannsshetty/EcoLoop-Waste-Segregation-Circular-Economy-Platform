@@ -90,7 +90,6 @@ const SellScrap = () => {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
       <div className={`relative z-10 w-full sm:max-w-2xl rounded-none sm:rounded-none shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] ${dk('bg-black/90 border border-gray-800', 'bg-white')}`}>
 
-        {/* Header */}
         <div className={`flex items-center justify-between px-4 sm:px-6 py-3.5 border-b shrink-0 ${dk('border-slate-700', 'border-slate-100')}`}>
           <div className="flex items-center gap-2">
             <HiClipboardList className="h-5 w-5 text-green-500" />
@@ -101,10 +100,8 @@ const SellScrap = () => {
           </button>
         </div>
 
-        {/* Scrollable body */}
         <form onSubmit={handleSubmit} noValidate className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 space-y-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 
-          {/* Scrap Details */}
           <div className={card}>
             <p className={`text-xs font-bold uppercase tracking-wide ${dk('text-slate-400', 'text-slate-500')}`}>Scrap Details</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -149,7 +146,6 @@ const SellScrap = () => {
             </div>
           </div>
 
-          {/* Photo */}
           <div className={card}>
             <p className={`text-xs font-bold uppercase tracking-wide ${dk('text-slate-400', 'text-slate-500')}`}>Photo (Optional)</p>
             <label className={`flex flex-col items-center justify-center gap-2 rounded-none border-2 border-dashed cursor-pointer transition py-6 ${
@@ -163,7 +159,6 @@ const SellScrap = () => {
             </label>
           </div>
 
-          {/* Location */}
           <div className={card}>
             <div className="flex items-center justify-between">
               <p className={`text-xs font-bold uppercase tracking-wide ${dk('text-slate-400', 'text-slate-500')}`}>Pickup Location</p>
@@ -185,7 +180,6 @@ const SellScrap = () => {
             </div>
           )}
 
-          {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3 pt-1 pb-2">
             <button type="button" onClick={handleClose}
               className={`w-full sm:w-auto flex-1 rounded-none border px-4 py-2.5 text-sm transition ${

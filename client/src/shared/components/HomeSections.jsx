@@ -23,7 +23,6 @@ const SectionHeader = ({ tag, title, sub }) => (
   </div>
 );
 
-// ── 1. How It Works ──────────────────────────────────────────────────────────
 const STEPS = [
   { Icon: HiClipboardList, step: '01', title: 'Segregate Waste',   desc: 'Sort your waste into wet, dry, e-waste, and hazardous categories at home.' },
   { Icon: HiCalendar,      step: '02', title: 'Schedule Pickup',    desc: 'Request a pickup through EcoLoop and choose a convenient time slot.' },
@@ -49,7 +48,6 @@ export const HowItWorks = () => (
   </Section>
 );
 
-// ── 2. Waste Categories ──────────────────────────────────────────────────────
 const CATEGORIES = [
   { Icon: MdWaterDrop, color: 'bg-green-50 border-green-200',  badge: 'bg-green-100 text-green-700',  title: 'Wet Waste',       desc: 'Food scraps, vegetable peels, tea leaves. Compostable and biodegradable.' },
   { Icon: MdRecycling, color: 'bg-blue-50 border-blue-200',    badge: 'bg-blue-100 text-blue-700',    title: 'Dry Waste',       desc: 'Paper, cardboard, plastic bottles, glass. Recyclable materials.' },
@@ -74,7 +72,6 @@ export const WasteCategories = () => (
   </Section>
 );
 
-// ── 3. Schedule Pickup ───────────────────────────────────────────────────────
 export const SchedulePickup = ({ onGetStarted }) => (
   <Section id="schedule" className="bg-white">
     <div className="max-w-3xl mx-auto text-center">
@@ -99,7 +96,6 @@ export const SchedulePickup = ({ onGetStarted }) => (
   </Section>
 );
 
-// ── 4. EcoPoints / Rewards ───────────────────────────────────────────────────
 const REWARDS = [
   { Icon: HiClipboardList, pts: '+10 pts', action: 'Segregate waste correctly' },
   { Icon: HiCalendar,      pts: '+15 pts', action: 'Schedule a pickup' },
@@ -134,7 +130,6 @@ export const EcoPoints = ({ onGetStarted }) => (
   </Section>
 );
 
-// ── 5. Impact Statistics ─────────────────────────────────────────────────────
 const STATS = [
   { value: '50,000+', label: 'Citizens Joined',    Icon: HiUsers },
   { value: '1,200+',  label: 'Active Collectors',  Icon: HiTruck },
@@ -159,7 +154,6 @@ export const ImpactStats = () => (
   </Section>
 );
 
-// ── 6. Nearby Recycling Bins ─────────────────────────────────────────────────
 export const NearbyBins = ({ onGetStarted }) => (
   <Section id="nearby" className="bg-white">
     <div className="max-w-5xl mx-auto">
@@ -185,7 +179,7 @@ export const NearbyBins = ({ onGetStarted }) => (
           <div className="text-center space-y-2">
             <HiMap className="h-10 w-10 mx-auto text-slate-300" />
             <p className="text-sm font-medium">Interactive map coming soon</p>
-            <p className="text-xs">Sign in to access live bin locations</p>
+            <p className="text-xs">Login to access live bin locations</p>
           </div>
         </div>
       </div>
@@ -193,7 +187,6 @@ export const NearbyBins = ({ onGetStarted }) => (
   </Section>
 );
 
-// ── 7. Report Garbage ────────────────────────────────────────────────────────
 export const ReportGarbage = ({ onGetStarted }) => (
   <Section id="report" className="bg-[#F7FDF8]">
     <div className="max-w-3xl mx-auto text-center">
@@ -218,7 +211,6 @@ export const ReportGarbage = ({ onGetStarted }) => (
   </Section>
 );
 
-// ── 8. Testimonials ──────────────────────────────────────────────────────────
 const TESTIMONIALS = [
   { name: 'Priya Sharma',   role: 'Citizen, Pune',       avatar: 'PS', text: 'EcoLoop made waste segregation so easy. I earn EcoPoints every week and my colony is visibly cleaner!' },
   { name: 'Rajan Mehta',    role: 'Citizen, Ahmedabad',  avatar: 'RM', text: 'Scheduling a pickup takes 30 seconds. The collector always arrives on time. Highly recommended.' },
@@ -250,7 +242,6 @@ export const Testimonials = () => (
   </Section>
 );
 
-// ── 9. Footer ────────────────────────────────────────────────────────────────
 export const Footer = ({ onGetStarted }) => (
   <footer className="bg-slate-900 text-slate-400 pt-12 pb-6 px-4 sm:px-6 lg:px-8">
     <div className="max-w-5xl mx-auto">

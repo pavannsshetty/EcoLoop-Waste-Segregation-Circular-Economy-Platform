@@ -1,12 +1,12 @@
 const { Server } = require('socket.io');
 
 let io;
-const activeUsers = new Map(); // userId -> socketId
+const activeUsers = new Map();
 
 const init = (server) => {
   io = new Server(server, {
     cors: {
-      origin: "*", // Adjust as needed for production
+      origin: "*",
       methods: ["GET", "POST"]
     }
   });
@@ -23,7 +23,6 @@ const init = (server) => {
     });
 
     socket.on('disconnect', () => {
-      // Find and remove from activeUsers
       for (const [userId, socketId] of activeUsers.entries()) {
         if (socketId === socket.id) {
           activeUsers.delete(userId);

@@ -54,14 +54,11 @@ const NotificationBell = () => {
       const handleNotification = (newNotification) => {
         setNotifications(prev => [newNotification, ...prev]);
         setUnread(prev => prev + 1);
-        // Optional: show a toast or sound here
       };
 
       const handleReportCreated = (report) => {
-        // Only for collectors - we can check user role if needed, 
-        // but simple notification message is fine
         const notif = {
-          _id: Date.now().toString(), // Temp ID
+          _id: Date.now().toString(), 
           title: 'New Waste Reported',
           message: `A new ${report.wasteType} report was submitted nearby.`,
           type: 'report',
