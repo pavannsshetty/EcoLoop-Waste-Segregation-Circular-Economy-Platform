@@ -115,8 +115,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   const [form, setForm] = useState({
     wasteType: '', severity: 'Medium', wasteSeenAt: 'Just now',
     description: '', pickupDate: '', pickupTime: '',
-    landmark: '', landmarkType: '', manualAddress: '',
-    houseNo: '', street: '', addrLandmark: '', city: '', state: '', pincode: '',
+    houseNo: '', street: '', landmark: '', wardNumber: '',
   });
   const [anonymous,    setAnonymous]    = useState(false);
   const [locMethod,    setLocMethod]    = useState('map');
@@ -164,10 +163,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
     if (locMethod === 'manual') {
       if (!form.houseNo.trim())  e.houseNo  = 'House No / Building Name is required.';
       if (!form.street.trim())   e.street   = 'Street / Area is required.';
-      if (!form.city.trim())     e.city     = 'City / Town is required.';
-      if (!form.state.trim())    e.state    = 'State is required.';
-      if (!form.pincode.trim())  e.pincode  = 'Pincode is required.';
-      else if (!/^\d{6}$/.test(form.pincode.trim())) e.pincode = 'Enter a valid 6-digit pincode.';
+      if (!form.wardNumber.trim()) e.wardNumber = 'Ward Number is required.';
     }
     if (!form.pickupDate)         e.pickupDate  = 'Select a pickup date.';
     if (!form.pickupTime)         e.pickupTime  = 'Select a pickup time.';
@@ -178,17 +174,13 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
     setLoading(true);
     try {
       const token      = localStorage.getItem('token');
-      const pickupTime = new Date(`${form.pickupDate}T${form.pickupTime}`).toISOString();
       const finalLoc   = locMethod === 'manual'
         ? (() => {
-            const parts = [form.houseNo, form.street, form.addrLandmark, form.city, form.state].filter(Boolean);
-            const full  = `${parts.join(', ')} - ${form.pincode}`.trim();
+            const parts = [form.houseNo, form.street, form.landmark].filter(Boolean);
+            const full  = `${parts.join(', ')}`.trim();
             return {
               lat: 0, lng: 0,
               address: full, displayAddress: full,
-              houseNo: form.houseNo, street: form.street,
-              addrLandmark: form.addrLandmark,
-              city: form.city, state: form.state, pincode: form.pincode,
             };
           })()
         : location;
@@ -196,7 +188,8 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
         wasteType: form.wasteType, severity: form.severity, wasteSeenAt: form.wasteSeenAt,
         description: form.description, anonymous,
         image: imageFile ? `[image:${imageFile.name}]` : '',
-        location: finalLoc, landmark: form.landmark, landmarkType: form.landmarkType,
+        location: finalLoc, houseNo: form.houseNo, street: form.street, landmark: form.landmark,
+        wardNumber: form.wardNumber,
         photoLocation: photoLoc || { lat: null, lng: null }, pickupTime,
         village: userVillage,
       };
@@ -230,7 +223,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   };
 
   const handleClose = () => {
-    setForm({ wasteType: '', severity: 'Medium', wasteSeenAt: 'Just now', description: '', pickupDate: '', pickupTime: '', landmark: '', landmarkType: '', manualAddress: '', houseNo: '', street: '', addrLandmark: '', city: '', state: '', pincode: '' });
+    setForm({ wasteType: '', severity: 'Medium', wasteSeenAt: 'Just now', description: '', pickupDate: '', pickupTime: '', houseNo: '', street: '', landmark: '', wardNumber: '' });
     setAnonymous(false); setLocation(null); setImageFile(null); setPreview(''); setErrors({});
     setPhotoLoc(null); setPhotoWarning(false);
     setDupData(null); setShowDup(false); setLocMethod('map');
@@ -250,21 +243,21 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
     <>
       {showDup && <DuplicateModal report={dupData} dark={dark} onClose={() => setShowDup(false)} onContinue={() => { setShowDup(false); doSubmit(); }} />}
 
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
-        <div className={`relative z-10 w-full sm:max-w-2xl rounded-none sm:rounded-none shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] ${dark ? 'bg-black/90 border border-gray-800' : 'bg-white'}`}>
+      <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4 overflow-x-hidden">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto" onClick={handleClose} />
+        <div className={`relative z-20 w-full max-w-md sm:max-w-2xl rounded-none sm:rounded-none shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] pointer-events-auto ${dark ? 'bg-black/90 border border-gray-800' : 'bg-white'}`}>
 
-          <div className={`flex items-center justify-between px-4 sm:px-6 py-3.5 border-b shrink-0 ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
+          <div className={`flex items-center justify-between px-3 sm:px-6 py-3.5 border-b shrink-0 ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
             <div className="flex items-center gap-2">
               <HiClipboardList className="h-5 w-5 text-green-500" />
-              <span className={`font-bold text-sm sm:text-base ${dark ? 'text-white' : 'text-slate-900'}`}>Report Waste</span>
+              <span className={`font-bold text-base sm:text-lg lg:text-xl ${dark ? 'text-white' : 'text-slate-900'}`}>Report Waste</span>
             </div>
             <button type="button" onClick={handleClose} className={`rounded-none p-1.5 transition ${dark ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-400 hover:bg-slate-100'}`}>
               <HiX className="h-5 w-5" />
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} noValidate className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 space-y-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <form onSubmit={handleSubmit} noValidate className="overflow-y-auto flex-1 px-3 sm:px-6 py-4 space-y-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pointer-events-auto">
 
             <div className={card}>
               <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Waste Details</p>
@@ -307,7 +300,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
 
               <div>
                 <label className={lbl}>Description</label>
-                <textarea rows={3} value={form.description} onChange={e => set('description', e.target.value)}
+                <textarea rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   placeholder="Describe the waste problem..." className={`${inp} mt-1 resize-none`} />
                 {errors.description && <p className={errCls}>{errors.description}</p>}
               </div>
@@ -375,41 +368,29 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
               {locMethod === 'manual' && (
                 <div className="space-y-3">
                   <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Enter Exact Address</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3">
                     <div>
-                      <label className={lbl}>House No / Building Name <span className="text-red-400">*</span></label>
-                      <input type="text" value={form.houseNo} onChange={e => set('houseNo', e.target.value)}
+                      <label className={lbl}>House No / Building Name</label>
+                      <input type="text" value={form.houseNo} onChange={e => setForm(f => ({ ...f, houseNo: e.target.value }))}
                         placeholder="e.g. 12A, Sri Nilaya" className={`${inp} mt-1`} />
                       {errors.houseNo && <p className={errCls}>{errors.houseNo}</p>}
                     </div>
                     <div>
-                      <label className={lbl}>Street / Area / Locality <span className="text-red-400">*</span></label>
-                      <input type="text" value={form.street} onChange={e => set('street', e.target.value)}
+                      <label className={lbl}>Street / Area / Locality</label>
+                      <input type="text" value={form.street} onChange={e => setForm(f => ({ ...f, street: e.target.value }))}
                         placeholder="e.g. MG Road, Kundapura" className={`${inp} mt-1`} />
                       {errors.street && <p className={errCls}>{errors.street}</p>}
                     </div>
                     <div>
                       <label className={lbl}>Landmark <span className={`text-xs ${dark ? 'text-slate-500' : 'text-slate-400'}`}>(optional)</span></label>
-                      <input type="text" value={form.addrLandmark} onChange={e => set('addrLandmark', e.target.value)}
+                      <input type="text" value={form.landmark} onChange={e => setForm(f => ({ ...f, landmark: e.target.value }))}
                         placeholder="e.g. Near Bus Stand" className={`${inp} mt-1`} />
                     </div>
                     <div>
-                      <label className={lbl}>City / Town <span className="text-red-400">*</span></label>
-                      <input type="text" value={form.city} onChange={e => set('city', e.target.value)}
-                        placeholder="e.g. Kundapura" className={`${inp} mt-1`} />
-                      {errors.city && <p className={errCls}>{errors.city}</p>}
-                    </div>
-                    <div>
-                      <label className={lbl}>State <span className="text-red-400">*</span></label>
-                      <input type="text" value={form.state} onChange={e => set('state', e.target.value)}
-                        placeholder="e.g. Karnataka" className={`${inp} mt-1`} />
-                      {errors.state && <p className={errCls}>{errors.state}</p>}
-                    </div>
-                    <div>
-                      <label className={lbl}>Pincode <span className="text-red-400">*</span></label>
-                      <input type="text" value={form.pincode} onChange={e => set('pincode', e.target.value)}
-                        placeholder="e.g. 576201" maxLength={6} className={`${inp} mt-1`} />
-                      {errors.pincode && <p className={errCls}>{errors.pincode}</p>}
+                      <label className={lbl}>Ward Number</label>
+                      <input type="text" value={form.wardNumber} onChange={e => setForm(f => ({ ...f, wardNumber: e.target.value }))}
+                        placeholder="e.g. Ward 5" className={`${inp} mt-1`} />
+                      {errors.wardNumber && <p className={errCls}>{errors.wardNumber}</p>}
                     </div>
                   </div>
                   {form.houseNo && form.street && form.city && form.state && form.pincode && (
@@ -425,9 +406,12 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
               )}
               {errors.location && <p className={errCls}>{errors.location}</p>}
               {location && locMethod === 'map' && (
-                <div className={`flex items-center gap-1.5 text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  <HiLocationMarker className="h-3.5 w-3.5 text-green-500 shrink-0" />
-                  <span className="truncate">{location.displayAddress || location.address}</span>
+                <div className={`flex flex-col gap-1 rounded-none px-3 py-2 text-xs ${dark ? 'bg-slate-700 text-slate-300' : 'bg-green-50 text-green-700'}`}>
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <HiLocationMarker className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                    <span className="truncate">Selected Location</span>
+                  </div>
+                  <span className="opacity-80 leading-relaxed">{location.displayAddress || location.address}</span>
                 </div>
               )}
             </div>

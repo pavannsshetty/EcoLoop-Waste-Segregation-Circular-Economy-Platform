@@ -52,19 +52,16 @@ const createReport = async (req, res) => {
   try {
     const { wasteType, severity, wasteSeenAt, description, image, location,
             landmark, landmarkType, photoLocation, accuracy, pickupTime, anonymous,
-            additionalInstructions, isBulk, village } = req.body;
+            additionalInstructions, isBulk, village, houseNo, street, wardNumber } = req.body;
     const userId = req.user.id;
 
-    if (!wasteType || !description || !location?.lat || !location?.lng || !location?.address || !pickupTime) {
+    if (!wasteType || !description || !location?.lat || !location?.lng || !location?.address || !pickupTime || !houseNo || !street || !wardNumber) {
       return res.status(400).json({ message: 'All required fields must be provided.' });
     }
 
-    const locState    = (location.state   || '').toLowerCase();
-    const locDistrict = (location.district || location.city || '').toLowerCase();
     const locAddr     = (location.address  || '').toLowerCase();
-    const inKarnataka = locState.includes('karnataka') || locAddr.includes('karnataka');
-    const inUdupi     = locDistrict.includes('udupi') || locAddr.includes('udupi') || locAddr.includes('kundapura');
-    if (!inKarnataka || !inUdupi) {
+    const inUdupi     = locAddr.includes('udupi') || locAddr.includes('kundapura');
+    if (!inUdupi) {
       return res.status(400).json({ message: 'Reports allowed only in Kundapura Taluk, Udupi, Karnataka.' });
     }
 
@@ -98,14 +95,9 @@ const createReport = async (req, res) => {
         coordinates: [location.lng, location.lat],
         address: location.address,
         displayAddress: location.displayAddress || '',
-        houseNo: location.houseNo || '', street: location.street || '',
-        addrLandmark: location.addrLandmark || '',
-        area: location.area || '', city: location.city || '',
-        district: location.district || '', state: location.state || '',
-        pincode: location.pincode || '', country: location.country || '',
         lat: location.lat, lng: location.lng,
       },
-      landmark: landmark || '', landmarkType: landmarkType || '',
+      houseNo, street, landmark, landmarkType, wardNumber,
       additionalInstructions: additionalInstructions || '',
       isBulk: !!isBulk,
       photoLocation: photoLocation || { lat: null, lng: null },
@@ -194,13 +186,16 @@ const updateReport = async (req, res) => {
     if (report.userId.toString() !== userId) return res.status(403).json({ message: 'Not authorized.' });
     if (report.status !== 'Submitted') return res.status(400).json({ message: 'Report cannot be edited after processing started.' });
 
-    const { wasteType, severity, description, landmark, landmarkType, pickupTime, location, image } = req.body;
+    const { wasteType, severity, description, landmark, landmarkType, pickupTime, location, image, houseNo, street, wardNumber } = req.body;
     if (wasteType)              report.wasteType    = wasteType;
     if (severity)               report.severity     = severity;
     if (description)            report.description  = description;
     if (landmark !== undefined) report.landmark     = landmark;
     if (landmarkType !== undefined) report.landmarkType = landmarkType;
     if (pickupTime)             report.pickupTime   = new Date(pickupTime);
+    if (houseNo)                report.houseNo      = houseNo;
+    if (street)                 report.street       = street;
+    if (wardNumber)             report.wardNumber   = wardNumber;
     if (req.file)               report.image        = req.file.path;
     else if (image !== undefined) report.image      = image;
     if (location?.lat) {
