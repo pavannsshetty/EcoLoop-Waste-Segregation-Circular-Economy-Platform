@@ -129,6 +129,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   const [loading,      setLoading]      = useState(false);
   const [dupData,      setDupData]      = useState(null);
   const [showDup,      setShowDup]      = useState(false);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => {
     try {
@@ -243,21 +244,21 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
     <>
       {showDup && <DuplicateModal report={dupData} dark={dark} onClose={() => setShowDup(false)} onContinue={() => { setShowDup(false); doSubmit(); }} />}
 
-      <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4 overflow-x-hidden">
+      <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center sm:p-4 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto" onClick={handleClose} />
-        <div className={`relative z-20 w-full max-w-md sm:max-w-2xl rounded-none sm:rounded-none shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] pointer-events-auto ${dark ? 'bg-black/90 border border-gray-800' : 'bg-white'}`}>
+        <div className={`relative z-10 w-full max-w-md sm:max-w-2xl rounded-none sm:rounded-none shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[90vh] pointer-events-auto ${dark ? 'bg-black/90 border border-gray-800' : 'bg-white'}`}>
 
           <div className={`flex items-center justify-between px-3 sm:px-6 py-3.5 border-b shrink-0 ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
             <div className="flex items-center gap-2">
               <HiClipboardList className="h-5 w-5 text-green-500" />
-              <span className={`font-bold text-base sm:text-lg lg:text-xl ${dark ? 'text-white' : 'text-slate-900'}`}>Report Waste</span>
+              <span className={`font-bold text-lg sm:text-xl ${dark ? 'text-white' : 'text-slate-900'}`}>Report Waste</span>
             </div>
             <button type="button" onClick={handleClose} className={`rounded-none p-1.5 transition ${dark ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-400 hover:bg-slate-100'}`}>
               <HiX className="h-5 w-5" />
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} noValidate className="overflow-y-auto flex-1 px-3 sm:px-6 py-4 space-y-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pointer-events-auto">
+          <form onSubmit={handleSubmit} noValidate className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 space-y-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pointer-events-auto">
 
             <div className={card}>
               <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Waste Details</p>
@@ -343,16 +344,6 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Location</p>
               </div>
-              {userVillage && (
-                <div className={`flex items-center gap-2 rounded-none border px-3 py-2.5 ${dark ? 'bg-green-900/20 border-green-800' : 'bg-green-50 border-green-200'}`}>
-                  <HiLocationMarker className="h-4 w-4 text-green-500 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-medium ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Village (Auto-filled)</p>
-                    <p className={`text-sm font-semibold truncate ${dark ? 'text-green-300' : 'text-green-700'}`}>{userVillage}</p>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${dark ? 'bg-green-900 text-green-400' : 'bg-green-100 text-green-600'}`}>From profile</span>
-                </div>
-              )}
               <div className="flex gap-2 flex-wrap">
                 {LOC_METHODS.map(m => (
                   <button key={m.id} type="button" onClick={() => setLocMethod(m.id)}
@@ -368,6 +359,16 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
               {locMethod === 'manual' && (
                 <div className="space-y-3">
                   <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Enter Exact Address</p>
+                  {userVillage && (
+                    <div className={`flex items-center gap-2 rounded-none border px-3 py-2.5 ${dark ? 'bg-green-900/20 border-green-800' : 'bg-green-50 border-green-200'}`}>
+                      <HiLocationMarker className="h-4 w-4 text-green-500 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs font-medium ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Village (Auto-filled)</p>
+                        <p className={`text-sm font-semibold truncate ${dark ? 'text-green-300' : 'text-green-700'}`}>{userVillage}</p>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${dark ? 'bg-green-900 text-green-400' : 'bg-green-100 text-green-600'}`}>From profile</span>
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 gap-3">
                     <div>
                       <label className={lbl}>House No / Building Name</label>
