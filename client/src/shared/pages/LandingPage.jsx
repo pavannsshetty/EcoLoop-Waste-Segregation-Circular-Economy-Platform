@@ -26,7 +26,7 @@ const LandingPage = () => {
 
   return (
     <div
-      className="w-full h-screen overflow-hidden relative flex flex-col"
+      className="w-full min-h-screen overflow-y-auto relative flex flex-col"
       style={dark
         ? { background: '#000000' }
         : { background: 'linear-gradient(to bottom, #ffffff 0%, #ecfdf5 50%, #d1fae5 100%)' }
@@ -57,11 +57,11 @@ const LandingPage = () => {
           <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-16 flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 py-6">
 
             <div className="flex-1 text-center lg:text-left space-y-5 max-w-xl mx-auto lg:mx-0">
-              <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest ${dk('bg-green-900/50', 'bg-green-100')}`} style={{ color: '#0EB02D' }}>
-                <HiSparkles className="h-3.5 w-3.5" /> Join the Circular Economy Revolution
+              <div className={`inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest ${dk('bg-green-900/50', 'bg-green-100')}`} style={{ color: '#0EB02D' }}>
+                <HiSparkles className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">Join the Circular Economy Revolution</span>
               </div>
 
-              <h1 className="tracking-tight leading-tight text-4xl sm:text-5xl lg:text-6xl" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>
+              <h1 className="tracking-tight leading-tight text-3xl sm:text-5xl lg:text-6xl" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>
                 <span className={`block ${dk('text-white', 'text-slate-900')}`}>Sort Your Waste.</span>
                 <span className={`block ${dk('text-white', 'text-slate-900')}`}>
                   Support <span style={{ color: '#16a34a' }}>Recycling.</span> Build a <span style={{ color: '#16a34a' }}>Cleaner India.</span>
@@ -81,8 +81,8 @@ const LandingPage = () => {
               </button>
             </div>
 
-            <div className="flex-1 w-full max-w-[460px] mx-auto lg:mx-0">
-              <div className="grid grid-cols-2 gap-6">
+            <div className="flex-1 w-full max-w-[400px] lg:max-w-[460px] mx-auto lg:mx-0">
+              <div className="grid grid-cols-2 gap-4 sm:gap-6">
                 {ROLES.map(({ img, title }) => (
                   <img key={title} src={img} alt={title} loading="lazy"
                     className="w-full h-auto object-contain" />

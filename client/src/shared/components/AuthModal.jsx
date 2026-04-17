@@ -469,7 +469,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
                   <div><InputField id="password" label="Password" type="password" placeholder="Create a password" icon={HiLockClosed} {...fp('password')} /><PasswordStrength value={fields.password} dark={dark} /></div>
                   <InputField id="confirmPassword" label="Confirm Password" type="password" placeholder="Re-enter your password" icon={HiLockClosed} {...fp('confirmPassword')} />
                   <div className="flex flex-col gap-1">
-                    <label className={`text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-700'}`}>Village <span className="text-red-400">*</span></label>
+                    <label className={`text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-700'}`}>Village</label>
                     <VillageDropdown
                       value={fields.village}
                       onChange={v => { setFields(f => ({ ...f, village: v })); setTouched(t => ({ ...t, village: true })); }}
