@@ -283,7 +283,7 @@ const CitizenProfile = () => {
               { k: 'email',    label: 'Email',           placeholder: 'your@email.com', disabled: true },
               { k: 'phone',    label: 'Mobile Number',   placeholder: '10-digit number' },
               { k: 'locality', label: 'Area / Locality', placeholder: 'Your area or locality' },
-              { k: 'village',  label: 'Village',         placeholder: 'Your village' },
+              { k: 'village',  label: 'Village',         placeholder: 'Your village', disabled: true },
             ].map(({ k, label, placeholder, disabled }) => (
               <div key={k}>
                 <label className={lbl}>{label}</label>

@@ -259,16 +259,6 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
 
             <div className={card}>
               <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Waste Details</p>
-              {user?.village && (
-                <div className={`flex items-center gap-2 rounded-none border px-3 py-2.5 mb-2 ${dark ? 'bg-green-900/20 border-green-800' : 'bg-green-50 border-green-200'}`}>
-                  <HiLocationMarker className="h-4 w-4 text-green-500 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-medium ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Village (Auto-filled)</p>
-                    <p className={`text-sm font-semibold truncate ${dark ? 'text-green-300' : 'text-green-700'}`}>{user?.village}</p>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${dark ? 'bg-green-900 text-green-400' : 'bg-green-100 text-green-600'}`}>From profile</span>
-                </div>
-              )}
               <div>
                 <label className={lbl}>Waste Type</label>
                 <select value={form.wasteType} onChange={e => set('wasteType', e.target.value)} className={`${inp} mt-1`}>
@@ -391,7 +381,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
                       {errors.wardNumber && <p className={errCls}>{errors.wardNumber}</p>}
                     </div>
                     <div>
-                      <label className={lbl}>Village (Auto-filled)</label>
+                      <label className={lbl}>Village</label>
                       <input type="text" value={user?.village || ''} readOnly
                         className={`${inp} mt-1 opacity-70 cursor-not-allowed`} />
                     </div>

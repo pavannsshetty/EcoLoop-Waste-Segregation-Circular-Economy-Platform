@@ -158,10 +158,7 @@ const CitizenDashboard = () => {
                     <p className="text-green-100 text-xs font-bold uppercase tracking-widest mb-2 opacity-80">Welcome back,</p>
                     <h2 className="text-white text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight drop-shadow-sm">{user.name || 'Citizen'}</h2>
                     <p className="text-green-50 text-sm mt-3 max-w-sm leading-relaxed opacity-90">
-                      {user.village 
-                        ? <>Welcome to your dashboard in <span className="font-bold underline">{user.village}</span>.</>
-                        : "Your contributions are making your community cleaner and greener."
-                      }
+                      Your contributions are making your city cleaner and greener.
                     </p>
                     <button onClick={() => navigate('/citizen/report-waste')}
                       className="mt-6 inline-flex items-center gap-2 bg-white text-green-700 text-sm font-bold px-6 py-3 rounded-none shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 group cta-pulse">
