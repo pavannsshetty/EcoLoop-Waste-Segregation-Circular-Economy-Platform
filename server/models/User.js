@@ -3,7 +3,6 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema(
   {
-    // ── Common fields ──────────────────────────────────────────────
     name: {
       type: String,
       required: [true, 'Name is required'],
@@ -21,14 +20,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Password is required'],
       minlength: [8, 'Password must be at least 8 characters'],
-      select: false, // never returned in queries by default
+      select: false,
     },
     phone: {
       type: String,
       trim: true,
       match: [/^\d{10}$/, 'Phone must be exactly 10 digits'],
     },
-
     role: {
       type: String,
       enum: ['Citizen', 'Collector', 'GreenChampion'],
@@ -42,8 +40,6 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-
-    // ── Citizen-specific ───────────────────────────────────────────
     village: {
       type: String,
       trim: true,
@@ -55,12 +51,10 @@ const userSchema = new mongoose.Schema(
         ref: 'PickupRequest',
       },
     ],
-
-    // ── Collector-specific ─────────────────────────────────────────
     collectorId: {
       type: String,
       trim: true,
-      sparse: true, // allows null but enforces uniqueness when set
+      sparse: true,
       unique: true,
     },
     assignedAreas: [
@@ -69,8 +63,6 @@ const userSchema = new mongoose.Schema(
         trim: true,
       },
     ],
-
-    // ── GreenChampion-specific ─────────────────────────────────────
     locality: {
       type: String,
       trim: true,
@@ -92,23 +84,31 @@ const userSchema = new mongoose.Schema(
     lastActiveDate: { type: Date,   default: null },
   },
   {
-    timestamps: true, // createdAt, updatedAt
+    timestamps: true,
   }
 );
 
-// ── Hash password before save ──────────────────────────────────────
 userSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
   const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-// ── Instance method: compare password ─────────────────────────────
 userSchema.methods.matchPassword = async function (enteredPassword) {
+  // Handle legacy plain-text passwords (e.g. manually inserted via DB tools)
+  const isBcrypt = this.password && this.password.startsWith('$2');
+  if (!isBcrypt) {
+    if (enteredPassword !== this.password) return false;
+    // Re-hash and save so future logins use bcrypt
+    // Directly set the hashed value to avoid double-hashing via pre('save')
+    const salt = await bcrypt.genSalt(12);
+    const hashed = await bcrypt.hash(enteredPassword, salt);
+    await this.constructor.updateOne({ _id: this._id }, { password: hashed });
+    return true;
+  }
   return bcrypt.compare(enteredPassword, this.password);
 };
 
-// ── Remove sensitive fields from JSON output ───────────────────────
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;

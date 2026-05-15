@@ -88,8 +88,11 @@ const CollectorLayout = () => {
   const mainML = collapsed ? 'lg:ml-20' : 'lg:ml-64';
 
   const logout = () => {
-    clearUser();
-    navigate('/');
+    toast.success('Logged out successfully! Redirecting...');
+    setTimeout(() => {
+      clearUser();
+      navigate('/');
+    }, 2000);
   };
 
   const handleNav = (path) => {

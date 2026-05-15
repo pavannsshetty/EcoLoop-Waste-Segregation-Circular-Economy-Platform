@@ -23,7 +23,8 @@ const DashboardPlaceholder = () => {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    navigate('/');
+    alert('Logged out successfully! Redirecting...');
+    setTimeout(() => navigate('/'), 2000);
   };
 
   return (

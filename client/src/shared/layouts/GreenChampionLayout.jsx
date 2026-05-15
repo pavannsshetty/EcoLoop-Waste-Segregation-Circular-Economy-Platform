@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { HiLogout, HiMenu, HiX, HiUser, HiCog, HiMoon, HiSun, HiSparkles, HiSpeakerphone, HiUserGroup } from 'react-icons/hi';
 import EcoLoopLogo from '../components/EcoLoopLogo';
+import { ToastContainer, useToast } from '../components/Toast';
 import DarkBg from '../components/DarkBg';
 import { useTheme } from '../context/ThemeContext';
 import { useUser } from '../context/UserContext';
@@ -45,6 +46,7 @@ const NavItem = ({ item, collapsed, dark, onClick }) => {
 
 const GreenChampionLayout = () => {
   const navigate = useNavigate();
+  const { toasts, toast, remove } = useToast();
   const { dark, toggleDark } = useTheme();
   const { user: ctxUser, clearUser } = useUser();
   const user = ctxUser || JSON.parse(localStorage.getItem('user') || '{}');
@@ -55,8 +57,11 @@ const GreenChampionLayout = () => {
   const sideW = collapsed ? 'lg:w-20' : 'lg:w-64';
   const mainML = collapsed ? 'lg:ml-20' : 'lg:ml-64';
   const logout = () => {
-    clearUser();
-    navigate('/');
+    toast.success('Logged out successfully! Redirecting...');
+    setTimeout(() => {
+      clearUser();
+      navigate('/');
+    }, 2000);
   };
   const handleNav = (path) => {
     navigate(path);
@@ -174,6 +179,7 @@ const GreenChampionLayout = () => {
           <Outlet />
         </main>
       </div>
+      <ToastContainer toasts={toasts} onRemove={remove} />
     </div>
   );
 };

@@ -129,6 +129,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   const [loading,      setLoading]      = useState(false);
   const [dupData,      setDupData]      = useState(null);
   const [showDup,      setShowDup]      = useState(false);
+
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => {
@@ -171,42 +172,52 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   const doSubmit = async () => {
     setLoading(true);
     try {
-      const token      = localStorage.getItem('token');
-      const finalLoc   = locMethod === 'manual'
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      
+      // Append form fields
+      Object.keys(form).forEach(key => {
+        formData.append(key, form[key]);
+      });
+      
+      // Append location
+      const finalLoc = locMethod === 'manual'
         ? (() => {
             const parts = [form.houseNo, form.street, form.landmark].filter(Boolean);
             const full  = `${parts.join(', ')}`.trim();
-            return {
-              lat: 0, lng: 0,
-              address: full, displayAddress: full,
-            };
+            return { lat: 0, lng: 0, address: full, displayAddress: full };
           })()
         : location;
-      const body = {
-        wasteType: form.wasteType, severity: form.severity, wasteSeenAt: form.wasteSeenAt,
-        description: form.description,
-        image: imageFile ? `[image:${imageFile.name}]` : '',
-        location: finalLoc, houseNo: form.houseNo, street: form.street, landmark: form.landmark,
-        wardNumber: form.wardNumber,
-        photoLocation: photoLoc || { lat: null, lng: null }, pickupTime,
-        village: user?.village || '',
-      };
-      const res  = await fetch(`${API}/api/waste/report`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(body),
+      
+      formData.append('location', JSON.stringify(finalLoc));
+      formData.append('photoLocation', JSON.stringify(photoLoc || { lat: null, lng: null }));
+      formData.append('village', user?.village || '');
+      
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
+
+      const res = await fetch(`${API}/api/waste/report`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
       });
+      
       const data = await res.json();
       if (!res.ok) { setErrors({ submit: data.message || 'Submission failed.' }); return; }
       onSuccess(data.report);
       handleClose();
-    } catch { setErrors({ submit: 'Network error. Please try again.' });
+    } catch (err) { 
+      setErrors({ submit: 'Network error. Please try again.' });
     } finally { setLoading(false); }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
+
     if (locMethod === 'map' && location) {
       try {
         const token = localStorage.getItem('token');
