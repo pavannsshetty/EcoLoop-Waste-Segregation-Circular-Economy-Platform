@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { HiLogout, HiMenu, HiX, HiBell, HiCog, HiQuestionMarkCircle, HiUser, HiMap, HiStar, HiMoon, HiSun, HiClock, HiChartBar, HiClipboardList, HiTrendingUp } from 'react-icons/hi';
+import { HiLogout, HiMenu, HiX, HiBell, HiCog, HiQuestionMarkCircle, HiUser, HiMap, HiStar, HiMoon, HiSun, HiClock, HiChartBar, HiClipboardList, HiTrendingUp, HiShoppingCart, HiUserGroup } from 'react-icons/hi';
 import { MdOutlineReportProblem, MdRecycling } from 'react-icons/md';
-import { FaTrophy, FaMedal, FaTruck } from 'react-icons/fa';
+import { FaTrophy, FaMedal } from 'react-icons/fa';
 import EcoLoopLogo from '../components/EcoLoopLogo';
 import NotificationBell from '../components/NotificationBell';
 import DarkBg from '../components/DarkBg';
@@ -18,6 +18,7 @@ const NAV_MAIN = [
   { path: '/citizen/my-rewards',    Icon: () => <FaTrophy className="h-5 w-5" />,               label: 'My Rewards'    },
   { path: '/citizen/nearby-issues', Icon: () => <HiMap className="h-5 w-5" />,                  label: 'Nearby Issues' },
   { path: '/citizen/leaderboard',   Icon: () => <FaMedal className="h-5 w-5" />,                label: 'Leaderboard'   },
+  { path: '/citizen/community',     Icon: () => <HiUserGroup className="h-5 w-5" />,           label: 'Community Hub' },
 ];
 const NAV_ACTIVITY = [
   { path: '/citizen/notifications', Icon: () => <HiBell className="h-5 w-5" />, label: 'Notifications' },
@@ -25,7 +26,7 @@ const NAV_ACTIVITY = [
 const NAV_CIRCULAR = [
   { path: '/citizen/sell-scrap',     Icon: () => <MdRecycling className="h-5 w-5" />,    label: 'Sell Scrap'     },
   { path: '/citizen/scrap-requests', Icon: () => <HiClipboardList className="h-5 w-5" />, label: 'My Scrap Requests' },
-  { path: '/citizen/scrap-status',   Icon: () => <FaTruck className="h-5 w-5" />,         label: 'Scrap Pickup Status' },
+  { path: '/citizen/eco-shopping',   Icon: () => <HiShoppingCart className="h-5 w-5" />,  label: 'Eco-Shopping'     },
 ];
 const NAV_USER = [
   { path: '/citizen/profile',      Icon: () => <HiUser className="h-5 w-5" />,              label: 'Profile'       },
@@ -48,7 +49,7 @@ const NavItem = ({ item, collapsed, dark, onClick }) => {
         <item.Icon />
       </span>
       <span className={`whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>{item.label}</span>
-      {active && !collapsed && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" />}
+      {active && !collapsed && <span className="ml-auto h-1.5 w-1.5 rounded-sm bg-green-500 shrink-0" />}
     </button>
   );
 };
@@ -62,7 +63,8 @@ const CitizenLayout = () => {
 
   useEffect(() => {
     if (!userLoading) {
-      if (!user || (user.role !== 'Citizen' && user.role !== 'GreenChampion')) {
+      const r = user?.role?.toLowerCase().replace('_', '');
+      if (!user || (r !== 'citizen' && r !== 'greenchampion')) {
         navigate('/');
       }
     }
@@ -100,7 +102,7 @@ const CitizenLayout = () => {
 
       {mobileOpen && <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} />}
 
-      <aside className={`fixed top-0 left-0 h-full z-50 flex flex-col border-r shadow-lg transition-all duration-300 ease-in-out ${sidebarBg} ${mobileOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64'} lg:translate-x-0 ${sideW} rounded-none`}>
+      <aside className={`fixed top-0 left-0 h-full z-50 flex flex-col border-r shadow-lg transition-all duration-300 ease-in-out ${sidebarBg} ${mobileOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64'} lg:translate-x-0 ${sideW} rounded-sm`}>
         <div className={`h-16 flex items-center border-b shrink-0 px-4 ${dark ? 'border-white/10' : 'border-slate-200'} ${collapsed ? 'justify-center' : 'justify-between'}`}>
           <div className={`flex items-center gap-2 overflow-hidden transition-all duration-300 ${collapsed ? 'w-0 opacity-0 lg:w-auto lg:opacity-100' : ''}`}>
             <EcoLoopLogo height={38} dark={dark} />
@@ -143,7 +145,7 @@ const CitizenLayout = () => {
       <div className={`relative z-10 transition-all duration-300 ease-in-out ${mainML} flex flex-col min-h-screen`}>
         <header className={`h-16 backdrop-blur-sm border-b sticky top-0 z-30 flex items-center px-4 sm:px-6 gap-4 shadow-sm ${headerBg}`}>
           <button onClick={() => setMobileOpen(o => !o)}
-            className={`flex items-center justify-center h-9 w-9 rounded-none transition lg:hidden ${dark ? 'text-slate-400 hover:bg-white/10 hover:text-green-400' : 'text-slate-500 hover:bg-slate-100 hover:text-green-600'}`}>
+            className={`flex items-center justify-center h-9 w-9 rounded-sm transition lg:hidden ${dark ? 'text-slate-400 hover:bg-white/10 hover:text-green-400' : 'text-slate-500 hover:bg-slate-100 hover:text-green-600'}`}>
             {mobileOpen ? <HiX className="h-5 w-5" /> : <HiMenu className="h-5 w-5" />}
           </button>
           <div className="flex-1 min-w-0">
@@ -155,10 +157,10 @@ const CitizenLayout = () => {
             </p>
           </div>
           <button onClick={toggleDark} aria-label="Toggle dark mode"
-            className={`flex items-center justify-center h-9 w-9 rounded-none transition ${dark ? 'text-yellow-400 hover:bg-white/10' : 'text-slate-500 hover:bg-slate-100'}`}>
+            className={`flex items-center justify-center h-9 w-9 rounded-sm transition ${dark ? 'text-yellow-400 hover:bg-white/10' : 'text-slate-500 hover:bg-slate-100'}`}>
             {dark ? <HiSun className="h-5 w-5" /> : <HiMoon className="h-5 w-5" />}
           </button>
-          <div className="h-9 w-9 rounded-full overflow-hidden bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
+          <div className="h-9 w-9 rounded-sm overflow-hidden bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
             {user.profilePhoto
               ? <img src={user.profilePhoto} alt="avatar" className="h-full w-full object-cover" />
               : (user.name || 'C')[0].toUpperCase()

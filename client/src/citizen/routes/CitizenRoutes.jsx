@@ -7,11 +7,14 @@ import NearbyIssues from '../../shared/pages/NearbyIssues';
 import Notifications from '../notifications/Notifications';
 import Leaderboard from '../leaderboard/Leaderboard';
 import CitizenProfile from '../profile/CitizenProfile';
+import CompleteProfile from '../profile/CompleteProfile';
 import Settings from '../settings/Settings';
 import HelpSupport from '../helpSupport/HelpSupport';
 import SellScrap from '../scrap/SellScrap';
 import MyScrapRequests from '../scrap/MyScrapRequests';
 import ReportWastePage from '../reports/ReportWastePage';
+import EcoShoppingPage from '../ecoShopping/EcoShoppingPage';
+import CommunityHub from '../community/CommunityHub';
 
 const citizenRoutes = (
   <Route path="/citizen" element={<CitizenLayout />}>
@@ -28,7 +31,8 @@ const citizenRoutes = (
     <Route path="help-support" element={<HelpSupport />} />
     <Route path="sell-scrap" element={<SellScrap />} />
     <Route path="scrap-requests" element={<MyScrapRequests />} />
-    <Route path="scrap-status" element={<MyScrapRequests />} /> {/* Reuse for now or create specific status page later */}
+    <Route path="eco-shopping" element={<EcoShoppingPage />} />
+    <Route path="community" element={<CommunityHub />} />
   </Route>
 );
 

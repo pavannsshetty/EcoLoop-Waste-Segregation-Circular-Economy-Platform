@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { API } from '../../shared/constants';
-import { HiPencil, HiSave, HiLogout, HiLockClosed, HiShieldCheck, HiCheckCircle, HiClipboardList, HiOfficeBuilding, HiSparkles, HiCalendar } from 'react-icons/hi';
+import { HiLocationMarker, HiPencil, HiSave, HiLogout, HiLockClosed, HiShieldCheck, HiCheckCircle, HiClipboardList, HiOfficeBuilding, HiSparkles, HiCalendar, HiExclamationCircle } from 'react-icons/hi';
 import { useTheme } from '../../shared/context/ThemeContext';
 import { useUser } from '../../shared/context/UserContext';
+import VillageDropdown from '../../shared/components/VillageDropdown';
+import { fetchVillages } from '../../shared/services/villageService';
 
 import Female1 from '../../assets/Avatar/Female1.png';
 import Female2 from '../../assets/Avatar/Female2.png';
@@ -29,7 +32,8 @@ const CitizenProfile = () => {
   const dk = (d, l) => dark ? d : l;
   const stored = ctxUser || JSON.parse(localStorage.getItem('user') || '{}');
 
-  const [editing,          setEditing]          = useState(false);
+  const [editPersonal, setEditPersonal] = useState(false);
+  const [editAddress, setEditAddress] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [avatar, setAvatar] = useState(stored.profilePhoto || null);
   const [preview, setPreview] = useState(null);
@@ -42,11 +46,20 @@ const CitizenProfile = () => {
     phone:    stored.phone    || '',
     locality: stored.locality || '',
     village:  stored.village  || '',
+    houseNo:  stored.houseNo || '',
+    streetArea: stored.streetArea || '',
+    landmark: stored.landmark || '',
+    addressType: stored.addressType || '',
   });
   const [notifs, setNotifs] = useState({ reportUpdates: true, rewards: true, system: false });
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
   const [pwMsg,  setPwMsg]  = useState('');
   const [originalForm, setOriginalForm] = useState({ ...form });
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showVillageRequest, setShowVillageRequest] = useState(false);
+  const [villages, setVillages] = useState([]);
+  const [villageRequest, setVillageRequest] = useState({ requestedVillage: '', reason: '' });
+  const [requestMsg, setRequestMsg] = useState('');
 
   useEffect(() => {
     if (ctxUser) {
@@ -56,6 +69,10 @@ const CitizenProfile = () => {
         phone:    ctxUser.phone    || '',
         locality: ctxUser.locality || '',
         village:  ctxUser.village  || '',
+        houseNo:  ctxUser.houseNo || '',
+        streetArea: ctxUser.streetArea || '',
+        landmark: ctxUser.landmark || '',
+        addressType: ctxUser.addressType || '',
       };
       setForm(u);
       setOriginalForm(u);
@@ -93,6 +110,7 @@ const CitizenProfile = () => {
   ];
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const sensitiveChanged = form.email !== originalForm.email || form.phone !== originalForm.phone;
 
   const handleFileChange = (e) => {
     const f = e.target.files[0];
@@ -129,6 +147,19 @@ const CitizenProfile = () => {
   const saveProfile = async () => {
     const token = localStorage.getItem('token');
     try {
+      const phoneChanged = form.phone !== originalForm.phone;
+      const emailChanged = form.email !== originalForm.email;
+      if (phoneChanged && !/^\d{10}$/.test(form.phone.trim())) {
+        setSaveMsg('Phone number must contain exactly 10 digits.');
+        setSaveType('error');
+        return;
+      }
+      if ((phoneChanged || emailChanged) && !confirmPassword) {
+        setSaveMsg(phoneChanged ? 'Incorrect password.' : 'Email updates require verification.');
+        setSaveType('error');
+        return;
+      }
+
       let currentPhoto = avatar;
       
       if (file) {
@@ -148,20 +179,41 @@ const CitizenProfile = () => {
         }
       }
 
+      if (emailChanged) {
+        const emailRes = await fetch(`${API}/api/user/email-change-request`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ email: form.email, currentPassword: confirmPassword }),
+        });
+        const emailData = await emailRes.json();
+        if (!emailRes.ok) throw new Error(emailData.message || 'Email updates require verification.');
+      }
+
+      const profilePayload = {
+        ...form,
+        email: originalForm.email,
+        profilePhoto: currentPhoto,
+        ...(phoneChanged ? { currentPassword: confirmPassword } : {}),
+      };
+
       const res = await fetch(`${API}/api/user/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...form, profilePhoto: currentPhoto }),
+        body: JSON.stringify(profilePayload),
       });
 
       if (res.ok) {
         const data = await res.json();
         updateUser(data.user);
-        setOriginalForm({ ...form });
+        const updatedForm = { ...form, email: data.user.email || originalForm.email };
+        setForm(updatedForm);
+        setOriginalForm(updatedForm);
         setFile(null);
         setPreview(null);
-        setEditing(false);
-        setSaveMsg('Profile updated successfully!');
+        setConfirmPassword('');
+        setEditPersonal(false);
+        setEditAddress(false);
+        setSaveMsg(emailChanged ? 'Email updates require verification.' : 'Profile updated successfully!');
         setSaveType('success');
         setTimeout(() => setSaveMsg(''), 3000);
       } else {
@@ -172,6 +224,40 @@ const CitizenProfile = () => {
       setSaveMsg(err.message || 'Error updating profile');
       setSaveType('error');
       setTimeout(() => setSaveMsg(''), 5000);
+    }
+  };
+
+  useEffect(() => {
+    if (!showVillageRequest) return;
+    fetchVillages()
+      .then(data => setVillages(data.filter(v => v.name !== form.village)))
+      .catch(() => setVillages([]));
+  }, [showVillageRequest, form.village]);
+
+  const submitVillageRequest = async (e) => {
+    e.preventDefault();
+    setRequestMsg('');
+    if (!villageRequest.requestedVillage) {
+      setRequestMsg('Requested village is required.');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API}/api/user/village-change-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(villageRequest),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Unable to submit request.');
+      setRequestMsg('Village change request submitted.');
+      setVillageRequest({ requestedVillage: '', reason: '' });
+      setTimeout(() => {
+        setShowVillageRequest(false);
+        setRequestMsg('');
+      }, 1200);
+    } catch (err) {
+      setRequestMsg(err.message || 'Unable to submit request.');
     }
   };
 
@@ -216,10 +302,18 @@ const CitizenProfile = () => {
               <p className="text-green-100 text-sm mt-0.5">Citizen</p>
               <p className="text-green-200 text-xs mt-1">Member since {memberSince}</p>
             </div>
-            <button onClick={() => { setEditing(!editing); if(editing) { setForm({...originalForm}); setFile(null); setPreview(null); setAvatar(stored.profilePhoto); } }}
-              className={`shrink-0 flex items-center gap-2 text-sm font-bold px-4 py-2 rounded-xl shadow transition active:scale-95 ${editing ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-white text-green-700 hover:bg-green-50'}`}>
-              <HiPencil className="h-4 w-4" />{editing ? 'Cancel' : 'Edit Profile'}
-            </button>
+            {(file || (avatar !== null && avatar !== stored.profilePhoto)) && (
+              <div className="shrink-0 flex items-center gap-2">
+                <button onClick={() => { setFile(null); setPreview(null); setAvatar(stored.profilePhoto); }}
+                  className="text-sm font-bold px-4 py-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition active:scale-95 shadow">
+                  Revert
+                </button>
+                <button onClick={saveProfile}
+                  className="flex items-center gap-1.5 bg-green-600 text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-green-500 transition active:scale-95 shadow">
+                  <HiSave className="h-4 w-4" /> Save Photo
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -262,17 +356,30 @@ const CitizenProfile = () => {
 
         <div className={`rounded-sm border p-5 sm:p-6 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <h2 className={`text-sm font-bold ${dk('text-slate-200','text-slate-700')}`}>Personal Information</h2>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <h2 className={`text-sm font-bold ${dk('text-slate-200','text-slate-700')}`}>Personal Information</h2>
               {saveMsg && (
                 <span className={`flex items-center gap-1 text-xs ${saveType === 'error' ? 'text-red-500' : 'text-green-600'}`}>
                   {saveType !== 'error' && <HiCheckCircle className="h-4 w-4" />}{saveMsg}
                 </span>
               )}
-              {editing && (
-                <button onClick={saveProfile} disabled={!isChanged}
-                  className="flex items-center gap-1.5 bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-green-500 transition active:scale-95">
-                  <HiSave className="h-3.5 w-3.5" /> Save Changes
+            </div>
+            <div className="flex items-center gap-2">
+              {editPersonal ? (
+                <>
+                  <button onClick={() => { setEditPersonal(false); setForm({...originalForm}); }}
+                    className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition active:scale-95 ${dk('bg-red-500/20 text-red-500 hover:bg-red-500/30','bg-red-50 text-red-600 hover:bg-red-100')}`}>
+                    Cancel
+                  </button>
+                  <button onClick={saveProfile} disabled={!isChanged}
+                    className="flex items-center gap-1.5 bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-green-500 transition active:scale-95">
+                    <HiSave className="h-3.5 w-3.5" /> Save Changes
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => setEditPersonal(true)}
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition active:scale-95 ${dk('bg-white/10 text-slate-200 hover:bg-white/20','bg-white border text-slate-700 hover:bg-slate-50')}`}>
+                  <HiPencil className="h-3.5 w-3.5" /> Edit
                 </button>
               )}
             </div>
@@ -280,19 +387,164 @@ const CitizenProfile = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
               { k: 'name',     label: 'Full Name',       placeholder: 'Your full name'  },
-              { k: 'email',    label: 'Email',           placeholder: 'your@email.com', disabled: true },
+              { k: 'email',    label: 'Email',           placeholder: 'your@email.com' },
               { k: 'phone',    label: 'Mobile Number',   placeholder: '10-digit number' },
-              { k: 'locality', label: 'Area / Locality', placeholder: 'Your area or locality' },
-              { k: 'village',  label: 'Village',         placeholder: 'Your village', disabled: true },
             ].map(({ k, label, placeholder, disabled }) => (
               <div key={k}>
                 <label className={lbl}>{label}</label>
                 <input type="text" value={form[k]} onChange={e => set(k, e.target.value)}
-                  placeholder={placeholder} disabled={disabled || !editing} className={inp} />
+                  placeholder={placeholder} disabled={disabled || !editPersonal} className={inp} />
               </div>
             ))}
+            {editPersonal && sensitiveChanged && (
+              <div className="sm:col-span-2">
+                <label className={lbl}>Current Password</label>
+                <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm password for email or phone changes" className={inp} />
+                {form.email !== originalForm.email && (
+                  <p className="text-xs text-amber-600 mt-1">Email updates require verification.</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Home Location & Address Section */}
+        <div className={`rounded-sm border p-5 sm:p-6 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-3">
+              <h2 className={`text-sm font-bold ${dk('text-slate-200','text-slate-700')}`}>Home Location & Address</h2>
+              {saveMsg && (
+                <span className={`flex items-center gap-1 text-xs ${saveType === 'error' ? 'text-red-500' : 'text-green-600'}`}>
+                  {saveType !== 'error' && <HiCheckCircle className="h-4 w-4" />}{saveMsg}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {editAddress ? (
+                <>
+                  <button onClick={() => { setEditAddress(false); setForm({...originalForm}); }}
+                    className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition active:scale-95 ${dk('bg-red-500/20 text-red-500 hover:bg-red-500/30','bg-red-50 text-red-600 hover:bg-red-100')}`}>
+                    Cancel
+                  </button>
+                  <button onClick={saveProfile} disabled={!isChanged}
+                    className="flex items-center gap-1.5 bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-green-500 transition active:scale-95">
+                    <HiSave className="h-3.5 w-3.5" /> Save Changes
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => setEditAddress(true)}
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition active:scale-95 ${dk('bg-white/10 text-slate-200 hover:bg-white/20','bg-white border text-slate-700 hover:bg-slate-50')}`}>
+                  <HiPencil className="h-3.5 w-3.5" /> Edit
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={lbl}>Registered Village</label>
+              <div className="space-y-2">
+                <input type="text" value={form.village ? `${form.village} Village` : ''} readOnly className={`${inp} opacity-80`} />
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-sm ${dk('bg-green-900/30 text-green-400','bg-green-50 text-green-700')}`}>
+                    <HiShieldCheck className="h-3.5 w-3.5" /> Verified Service Area
+                  </span>
+                  <button type="button" onClick={() => setShowVillageRequest(true)}
+                    className={`text-xs font-bold px-3 py-1.5 rounded-sm transition ${dk('bg-white/10 text-slate-200 hover:bg-white/20','bg-white border text-slate-700 hover:bg-slate-50')}`}>
+                    Request Village Change
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label className={lbl}>House No / Door No</label>
+              <input type="text" value={form.houseNo} onChange={e => set('houseNo', e.target.value)}
+                placeholder="e.g. 1-24/A" disabled={!editAddress} className={inp} />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={lbl}>Street / Area / Ward</label>
+              <input type="text" value={form.streetArea} onChange={e => set('streetArea', e.target.value)}
+                placeholder="Street name, Area" disabled={!editAddress} className={inp} />
+            </div>
+            <div>
+              <label className={lbl}>Landmark <span className="font-normal opacity-50 text-xs">(optional)</span></label>
+              <input type="text" value={form.landmark} onChange={e => set('landmark', e.target.value)}
+                placeholder="e.g. Near Big Temple" disabled={!editAddress} className={inp} />
+            </div>
+            <div>
+              <label className={lbl}>Address Type</label>
+              <select value={form.addressType} onChange={e => set('addressType', e.target.value)}
+                disabled={!editAddress} className={`${inp} appearance-none`}>
+                <option value="">Select Type</option>
+                <option value="Home">Home</option>
+                <option value="Shop">Shop</option>
+                <option value="Apartment">Apartment</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {showVillageRequest && createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <button
+              type="button"
+              aria-label="Close village change request"
+              onClick={() => setShowVillageRequest(false)}
+              className={`absolute inset-0 h-full w-full cursor-default ${dk('bg-black/75','bg-slate-950/55')} backdrop-blur-[2px]`}
+            />
+            <form onSubmit={submitVillageRequest} className={`relative z-10 w-full max-w-md max-h-[92vh] overflow-y-auto rounded-sm border shadow-2xl p-5 space-y-4 ${dk('bg-slate-900 border-slate-700','bg-white border-slate-200')}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className={`text-sm font-bold ${dk('text-slate-100','text-slate-800')}`}>Request Village Change</h3>
+                  <p className={`text-xs mt-1 ${dk('text-slate-400','text-slate-500')}`}>Admin approval is required before service area changes.</p>
+                </div>
+                <button type="button" onClick={() => setShowVillageRequest(false)} className={`text-sm font-bold ${dk('text-slate-400 hover:text-slate-200','text-slate-400 hover:text-slate-700')}`}>X</button>
+              </div>
+
+              <div className={`flex gap-2 rounded-sm border px-3 py-2 text-xs ${dk('bg-amber-500/10 border-amber-500/30 text-amber-300','bg-amber-50 border-amber-200 text-amber-700')}`}>
+                <HiExclamationCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>Changing village may affect your service area, reports, and pickup availability.</span>
+              </div>
+
+              <div>
+                <label className={lbl}>Current Village</label>
+                <input type="text" value={form.village ? `${form.village} Village` : ''} readOnly className={inp} />
+              </div>
+              <div>
+                <label className={lbl}>Requested New Village</label>
+                <VillageDropdown
+                  value={villageRequest.requestedVillage}
+                  villages={villages}
+                  onChange={value => setVillageRequest(r => ({ ...r, requestedVillage: value }))}
+                  error={!villageRequest.requestedVillage ? 'Requested village is required.' : ''}
+                  touched={false}
+                  dark={dark}
+                  placeholder="Search requested village..."
+                />
+              </div>
+              <div>
+                <label className={lbl}>Reason for Change</label>
+                <textarea required rows={3} value={villageRequest.reason}
+                  onChange={e => setVillageRequest(r => ({ ...r, reason: e.target.value }))}
+                  placeholder="Briefly explain why your service area should change" className={`${inp} resize-none`} />
+              </div>
+              {requestMsg && (
+                <p className={`text-xs ${requestMsg.includes('submitted') ? 'text-green-600' : 'text-red-500'}`}>{requestMsg}</p>
+              )}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button type="button" onClick={() => setShowVillageRequest(false)}
+                  className={`flex-1 text-sm px-4 py-2.5 rounded-sm border ${dk('border-slate-700 text-slate-300 hover:bg-white/5','border-slate-200 text-slate-600 hover:bg-slate-50')}`}>
+                  Cancel
+                </button>
+                <button type="submit" className="flex-1 text-sm px-4 py-2.5 rounded-sm bg-green-600 text-white font-bold hover:bg-green-500">
+                  Submit Request
+                </button>
+              </div>
+            </form>
+          </div>,
+          document.body
+        )}
 
         <div className={`rounded-sm border p-5 sm:p-6 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
           <h2 className={`text-sm font-bold ${dk('text-slate-200','text-slate-700')}`}>Rewards & Achievements</h2>

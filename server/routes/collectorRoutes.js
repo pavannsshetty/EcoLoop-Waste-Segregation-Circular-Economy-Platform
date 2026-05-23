@@ -125,8 +125,12 @@ router.put('/report/:id/status', protect, collectorAuth, upload.single('completi
       report.completedAt       = new Date();
       report.citizenVerified   = 'pending';
       await Collector.findByIdAndUpdate(cid, { $inc: { completedTasks: 1 } });
-      if (report.userId) createNotification(report.userId, 'Report Resolved',
-        `Your ${report.wasteType} waste report has been resolved. Was the issue fixed?`, 'status', report._id);
+      if (report.userId) {
+        createNotification(report.userId, 'Report Resolved',
+          `Your ${report.wasteType} waste report has been resolved. Was the issue fixed?`, 'status', report._id);
+        const { awardPoints } = require('../controllers/rewardsController');
+        await awardPoints(report.userId, 15, 'Report Resolved', report._id);
+      }
     }
     if (status === 'Delayed') {
       report.delayReason = delayReason || '';

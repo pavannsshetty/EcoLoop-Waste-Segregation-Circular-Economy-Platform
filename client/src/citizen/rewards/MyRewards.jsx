@@ -68,9 +68,9 @@ const MyRewards = () => {
   const currentBadge = [...ALL_BADGES].reverse().find(b => ecoPoints >= b.threshold);
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <div className="px-4 sm:px-6 md:px-8 lg:px-10 pt-4 sm:pt-6 md:pt-8 lg:pt-10 pb-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className={`text-base font-bold ${dk('text-slate-200', 'text-slate-800')}`}>My Rewards</h1>
+        <h1 className={`text-lg font-bold tracking-tight ${dk('text-slate-200', 'text-slate-800')}`}>My Rewards</h1>
         <button onClick={fetchRewards} className={`transition ${dk('text-slate-400 hover:text-green-400', 'text-slate-400 hover:text-green-600')}`}>
           <HiRefresh className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
         </button>

@@ -25,11 +25,12 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       trim: true,
-      match: [/^\d{10}$/, 'Phone must be exactly 10 digits'],
+      unique: true,
+      match: [/^\d{10}$/, 'Phone number must contain exactly 10 digits.'],
     },
     role: {
       type: String,
-      enum: ['Citizen', 'Collector', 'GreenChampion'],
+      enum: ['citizen', 'collector', 'green_champion', 'admin'],
       required: [true, 'Role is required'],
     },
     isActive: {
@@ -45,6 +46,44 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    homeAddress: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    houseNo: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    streetArea: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    addressType: {
+      type: String,
+      enum: ['Home', 'Shop', 'Apartment', 'Other', ''],
+      default: '',
+    },
+    landmark: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    latitude: {
+      type: Number,
+      default: null,
+    },
+    longitude: {
+      type: Number,
+      default: null,
+    },
+    currentLocation: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     pickupRequests: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -56,6 +95,16 @@ const userSchema = new mongoose.Schema(
       trim: true,
       sparse: true,
       unique: true,
+    },
+    greenChampionId: {
+      type: String,
+      trim: true,
+      sparse: true,
+      unique: true,
+    },
+    isFirstLogin: {
+      type: Boolean,
+      default: true,
     },
     assignedAreas: [
       {
@@ -74,14 +123,28 @@ const userSchema = new mongoose.Schema(
       },
     ],
     rewards: {
-      points: { type: Number, default: 0 },
-      badges: [{ type: String }],
+      points:       { type: Number, default: 0 }, // Current redeemable points
+      totalEarned:  { type: Number, default: 0 }, // Lifetime points for leveling
+      monthlyPoints:{ type: Number, default: 0 }, // For monthly leaderboard
+      badges:       [{ type: String }],
+      level:        { 
+        type: String, 
+        enum: ['Green Beginner', 'Eco Warrior', 'Recycling Hero', 'Green Champion Supporter'], 
+        default: 'Green Beginner' 
+      },
     },
-    ecoPoints:      { type: Number, default: 0 },
-    badges:         [{ type: String }],
+    ecoPoints:      { type: Number, default: 0 }, // Legacy/Redundant but keep for compatibility
+    badges:         [{ type: String }], // Legacy/Redundant but keep for compatibility
     profilePhoto:   { type: String, default: '' },
+    lastNameUpdatedAt:  { type: Date, default: null },
+    lastEmailUpdatedAt: { type: Date, default: null },
+    lastPhoneUpdatedAt: { type: Date, default: null },
     streakCount:    { type: Number, default: 0 },
+    highestStreak:  { type: Number, default: 0 },
     lastActiveDate: { type: Date,   default: null },
+    streakRewardsTotal: { type: Number, default: 0 },
+    createdByAdmin: { type: Boolean, default: false },
+    accountStatus:  { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
   },
   {
     timestamps: true,

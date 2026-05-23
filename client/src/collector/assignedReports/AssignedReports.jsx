@@ -336,8 +336,13 @@ const AssignedReports = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${r.taskType === 'scrap' ? 'bg-purple-600 text-white' : 'bg-blue-600 text-white'}`}>
-                    {r.taskType === 'scrap' ? 'Scrap Pickup' : 'Waste Cleaning'}
+                    {r.taskType === 'scrap' ? 'Scrap' : 'Waste'}
                   </span>
+                  {r.reportId && (
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-sm bg-green-50 text-green-600 border border-green-100">
+                      {r.reportId}
+                    </span>
+                  )}
                   <p className={`text-sm font-semibold ${dk('text-slate-100', 'text-slate-900')}`}>{r.taskType === 'scrap' ? r.scrapType : r.wasteType}</p>
                   {r.severity && (
                     <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${sevCls(r.severity, dk)}`}>{r.severity}</span>

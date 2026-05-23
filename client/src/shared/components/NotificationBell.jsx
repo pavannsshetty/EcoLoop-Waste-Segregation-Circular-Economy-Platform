@@ -112,7 +112,7 @@ const NotificationBell = () => {
         className="relative flex items-center justify-center h-9 w-9 rounded-sm text-slate-500 hover:bg-slate-100 hover:text-green-600 transition">
         <HiBell className="h-5 w-5" />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-sm bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
@@ -124,7 +124,7 @@ const NotificationBell = () => {
         }`}>
           <div className={`flex items-center justify-between px-6 py-4 border-b ${dark ? 'border-gray-800' : 'border-slate-50'}`}>
             <div className="flex items-center gap-3">
-              <div className={`h-8 w-8 rounded-xl flex items-center justify-center ${dark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-600'}`}>
+              <div className={`h-8 w-8 rounded-sm flex items-center justify-center ${dark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-600'}`}>
                 <HiBell className="h-4 w-4" />
               </div>
               <div>
@@ -145,11 +145,11 @@ const NotificationBell = () => {
           <div className="max-h-[420px] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="h-6 w-6 rounded-full border-2 border-green-500 border-t-transparent animate-spin" />
+                <div className="h-6 w-6 rounded-sm border-2 border-green-500 border-t-transparent animate-spin" />
               </div>
             ) : notifications.length === 0 ? (
               <div className="text-center py-16 flex flex-col items-center gap-3">
-                <div className={`h-12 w-12 rounded-full flex items-center justify-center ${dark ? 'bg-white/5' : 'bg-slate-50'}`}>
+                <div className={`h-12 w-12 rounded-sm flex items-center justify-center ${dark ? 'bg-white/5' : 'bg-slate-50'}`}>
                   <HiBell className="h-6 w-6 text-slate-300" />
                 </div>
                 <p className="text-xs text-slate-400">All caught up! No notifications yet.</p>
@@ -165,7 +165,7 @@ const NotificationBell = () => {
                           ? dark ? 'bg-green-500/5 hover:bg-green-500/10' : 'bg-green-50/50 hover:bg-green-50' 
                           : dark ? 'hover:bg-white/5' : 'hover:bg-slate-50'
                       }`}>
-                      <div className={`h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 ${
+                       <div className={`h-10 w-10 rounded-sm flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 ${
                         !n.isRead 
                           ? dark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-600'
                           : dark ? 'bg-white/5 text-slate-500' : 'bg-slate-100 text-slate-400'
@@ -175,7 +175,7 @@ const NotificationBell = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <p className={`text-xs font-bold tracking-tight truncate ${!n.isRead ? (dark ? 'text-white' : 'text-slate-900') : 'text-slate-500'}`}>{n.title}</p>
-                          {!n.isRead && <div className="h-1.5 w-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />}
+                          {!n.isRead && <div className="h-1.5 w-1.5 rounded-sm bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />}
                         </div>
                         <p className={`text-xs mt-1 leading-relaxed line-clamp-2 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{n.message}</p>
                         <p className="text-[10px] uppercase tracking-wider text-slate-400 mt-2">{timeAgo(n.createdAt)}</p>

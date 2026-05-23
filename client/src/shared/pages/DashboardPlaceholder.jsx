@@ -15,9 +15,10 @@ const DashboardPlaceholder = () => {
   const label = ROLE_LABELS[user.role] || 'Dashboard';
 
   useEffect(() => {
-    if (user.role === 'Citizen')        navigate('/citizen/dashboard', { replace: true });
-    if (user.role === 'Collector')      navigate('/collector/dashboard', { replace: true });
-    if (user.role === 'GreenChampion')  navigate('/green-champion/dashboard', { replace: true });
+    const r = user?.role?.toLowerCase().replace('_', '');
+    if (r === 'citizen')       navigate('/citizen/dashboard', { replace: true });
+    else if (r === 'collector')     navigate('/collector/dashboard', { replace: true });
+    else if (r === 'greenchampion') navigate('/green-champion/dashboard', { replace: true });
   }, []);
 
   const logout = () => {

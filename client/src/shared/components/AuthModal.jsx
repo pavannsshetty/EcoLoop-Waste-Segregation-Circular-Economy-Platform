@@ -1,87 +1,16 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { apiUrl } from '../utils/api';
+import VillageDropdown from './VillageDropdown';
+import { fetchVillages } from '../services/villageService';
 import {
   HiX, HiUser, HiMail, HiPhone, HiLockClosed,
   HiLocationMarker, HiIdentification,
   HiEye, HiEyeOff, HiCheckCircle, HiXCircle,
   HiArrowLeft, HiUserGroup, HiTruck, HiSparkles,
-  HiInformationCircle, HiChevronDown,
+  HiInformationCircle,
 } from 'react-icons/hi';
-
-const VILLAGES = [
-  'Ajri','Albadi','Aloor','Amasebail','Ampar','Anagalli','Asodu','Badakere','Balkur','Basrur',
-  'Beejadi','Bellal','Beloor','Belve','Bijoor','Byndoor','Chittoor','Devalkunda','Edmoge',
-  'Gangolli','Golihole','Gopadi','Gujjadi','Gulvadi','Hadavu','Hekladi','Halady',
-  'Hallady - Harkadi','Hallihole','Halnad','Hangaloor','Harady','Hardally - Mandally',
-  'Harkoor','Hattiangadi','Hemmadi','Hengavalli','Heranjal','Heroor','Heskathoor',
-  'Hombady - Mandadi','Hosadu','Hosangadi','Hosoor','Idurkunhadi','Jadkal','Japthi',
-  'Kalavara','Kalthodu','Kamalashile','Kambadakone','Kandavara','Kanyana','Karkunje',
-  'Kattabelthoor','Kavrady','Kedoor','Kenchanoor','Keradi','Kergal','Kirimanjeshwar',
-  'Kodladi','Kollur','Koni','Korgi','Kulanje','Kumbashi','Kundabarandadi','Machattu',
-  'Madammakki','Maravanthe','Molahalli','Mudoor','Nada','Nandanavana','Navunda','Noojadi',
-  'Paduvari','Rattadi','Senapur','Shankaranarayana','Shedimane','Shiroor','Siddapur',
-  'Tallur','Thagarasi','Thekkatte','Trashi','Ulloor','Ulthoor','Uppinakudru','Uppunda',
-  'Vakwadi','Vandse','Yedthare','Yedyadi - Mathyadi','Yeljith',
-].sort((a, b) => a.localeCompare(b));
-
-const VillageDropdown = ({ value, onChange, error, touched, dark }) => {
-  const [query, setQuery] = useState('');
-  const [open, setOpen]   = useState(false);
-  const ref = useRef(null);
-  const filtered = VILLAGES.filter(v => v.toLowerCase().includes(query.toLowerCase()));
-  const hasError = touched && error;
-  const isOk     = touched && !error && value;
-
-  useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const select = (v) => { onChange(v); setQuery(v); setOpen(false); };
-
-  return (
-    <div ref={ref} className="relative flex flex-col gap-1">
-      <div className="relative">
-        <span className={`pointer-events-none absolute inset-y-0 left-3 flex items-center ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-          <HiLocationMarker className="h-4 w-4" />
-        </span>
-        <input
-          type="text"
-          value={open ? query : value}
-          onFocus={() => { setOpen(true); setQuery(''); }}
-          onChange={(e) => { setQuery(e.target.value); onChange(''); }}
-          placeholder="Search your village..."
-          autoComplete="off"
-          className={[
-            'w-full rounded-lg border py-3 pl-9 pr-9 text-sm shadow-sm transition focus:outline-none focus:ring-2',
-            dark ? 'bg-white/5 text-slate-100 placeholder-slate-500' : 'bg-white text-slate-900 placeholder-slate-400',
-            hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/30'
-              : isOk  ? 'border-green-500 focus:border-green-500 focus:ring-green-500/30'
-              : dark  ? 'border-gray-700 focus:border-green-500 focus:ring-green-500/30'
-              :         'border-slate-300 focus:border-green-500 focus:ring-green-500/30',
-          ].join(' ')}
-        />
-        <HiChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-transform pointer-events-none ${open ? 'rotate-180' : ''} ${dark ? 'text-slate-500' : 'text-slate-400'}`} />
-      </div>
-      {open && (
-        <ul className={`absolute top-full z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-xl border shadow-lg text-sm ${dark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
-          {filtered.length === 0
-            ? <li className={`px-4 py-2.5 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>No villages found</li>
-            : filtered.map(v => (
-              <li key={v} onMouseDown={() => select(v)}
-                className={`px-4 py-2.5 cursor-pointer transition ${value === v ? 'bg-green-600 text-white' : dark ? 'hover:bg-slate-700' : 'hover:bg-slate-50'}`}
-              >{v}</li>
-            ))
-          }
-        </ul>
-      )}
-      {hasError && <p className="text-xs text-red-400">{error}</p>}
-    </div>
-  );
-};
 
 const validators = {
   email: v => {
@@ -153,7 +82,7 @@ const InputField = ({ id, label, type = 'text', placeholder, icon: Icon, value =
           disabled={disabled}
           autoComplete={isPassword ? 'new-password' : 'off'}
           className={[
-            'w-full rounded-lg border py-3 text-sm shadow-sm transition focus:outline-none focus:ring-2',
+            'w-full rounded-sm border py-3 text-sm shadow-sm transition focus:outline-none focus:ring-2',
             dark ? 'bg-white/5 text-slate-100 placeholder-slate-500' : 'bg-white text-slate-900 placeholder-slate-400',
             Icon ? 'pl-9' : 'px-3.5',
             isPassword ? 'pr-10' : 'pr-3.5',
@@ -186,8 +115,8 @@ const PasswordStrength = ({ value, dark }) => {
   return (
     <div className="space-y-2 mt-1">
       <div className="flex items-center gap-2">
-        <div className={`flex-1 h-1.5 rounded-full overflow-hidden ${dark ? 'bg-white/10' : 'bg-slate-200'}`}>
-          <div className={`h-full rounded-full transition-all duration-300 ${s.color} ${s.width}`} />
+        <div className={`flex-1 h-1.5 rounded-sm overflow-hidden ${dark ? 'bg-white/10' : 'bg-slate-200'}`}>
+          <div className={`h-full rounded-sm transition-all duration-300 ${s.color} ${s.width}`} />
         </div>
         <span className={`text-xs font-medium ${s.label === 'Weak' ? 'text-red-400' : s.label === 'Medium' ? 'text-yellow-400' : 'text-green-400'}`}>
           {s.label}
@@ -227,6 +156,15 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
   const [touched,    setTouched]    = useState(initTouched());
   const [forgotSent, setForgotSent] = useState(false);
   const [loading,    setLoading]    = useState(false);
+  const [villages,   setVillages]   = useState([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchVillages()
+        .then(data => setVillages(data))
+        .catch(err => console.error('Error fetching villages:', err));
+    }
+  }, [isOpen]);
 
   const getErrors = useCallback(() => ({
     fullName:        validators.fullName(fields.fullName),
@@ -251,10 +189,13 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
   const handleClose = () => { reset('role-select', null); onClose(); };
   const selectRole  = role => reset('login', role);
 
-  const getRolePath = (role) => {
-    if (role === 'Citizen')       return '/citizen/dashboard';
-    if (role === 'Collector')     return '/collector/dashboard';
-    if (role === 'GreenChampion') return '/green-champion/dashboard';
+  const getRolePath = (userObj) => {
+    const titleRegex = userObj?.role?.toLowerCase().replace('_', '');
+    if (titleRegex === 'citizen') {
+      return (userObj.houseNo || userObj.streetArea) ? '/citizen/dashboard' : '/citizen/complete-profile';
+    }
+    if (titleRegex === 'collector')     return '/collector/dashboard';
+    if (titleRegex === 'greenchampion') return '/green-champion/dashboard';
     return '/citizen/dashboard';
   };
 
@@ -305,7 +246,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         toast.success(`Welcome, ${data.user.name}! Registration successful.`);
-        const path = getRolePath(data.user.role);
+        const path = getRolePath(data.user);
         setTimeout(() => { reset('role-select', null); onClose(); refreshUser(); navigate(path); }, 300);
 
       } else if (screen === 'login') {
@@ -321,7 +262,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         toast.success(`Welcome back, ${data.user.name}!`);
-        const path = getRolePath(data.user.role);
+        const path = getRolePath(data.user);
         setTimeout(() => { reset('role-select', null); onClose(); refreshUser(); navigate(path); }, 300);
       }
     } catch { toast.error('Something went wrong. Please try again.');
@@ -342,7 +283,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
 
-      <div className={`relative z-10 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl ${dlg}`}>
+      <div className={`relative z-10 w-full sm:max-w-lg rounded-sm shadow-2xl ${dlg}`}>
 
         <div className={`flex items-center justify-between border-b px-4 sm:px-6 py-3.5 sm:py-4 ${hdr}`}>
           <div className="flex items-center gap-2">
@@ -366,7 +307,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
                     className={`flex sm:flex-col items-center gap-3 sm:gap-2 rounded-sm border-2 px-4 sm:px-3 py-4 sm:py-5 text-left sm:text-center transition hover:border-green-500 hover:shadow-md group ${
                       dark ? 'border-gray-700 bg-white/5 hover:bg-green-900/30' : 'border-slate-200 bg-white hover:bg-green-50'
                     }`}>
-                    <span className={`flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full transition ${
+                    <span className={`flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-sm transition ${
                       dark ? 'bg-white/10 group-hover:bg-green-900' : 'bg-slate-100 group-hover:bg-green-100'
                     }`}>
                       <Icon className={`h-5 w-5 sm:h-6 sm:w-6 transition ${dark ? 'text-slate-400 group-hover:text-green-400' : 'text-slate-500 group-hover:text-green-600'}`} />
@@ -388,7 +329,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
                 <HiArrowLeft className="h-4 w-4" /> Back to Login
               </button>
               {forgotSent ? (
-                <div className={`rounded-xl border p-5 text-center space-y-2 ${dark ? 'bg-green-900/30 border-green-700' : 'bg-green-50 border-green-200'}`}>
+                <div className={`rounded-sm border p-5 text-center space-y-2 ${dark ? 'bg-green-900/30 border-green-700' : 'bg-green-50 border-green-200'}`}>
                   <HiCheckCircle className="h-9 w-9 text-green-500 mx-auto" />
                   <p className={`text-sm font-semibold ${dark ? 'text-green-400' : 'text-green-700'}`}>Password reset successfully!</p>
                   <p className={`text-xs ${dark ? 'text-green-500' : 'text-green-600'}`}>You can now log in with your new password.</p>
@@ -441,14 +382,14 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
                 )}
               </div>
 
-              <div className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 ${dark ? 'bg-white/5 border-gray-700' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`flex items-center gap-2 rounded-sm border px-4 py-2.5 ${dark ? 'bg-white/5 border-gray-700' : 'bg-slate-50 border-slate-200'}`}>
                 {(() => { const r = ROLES.find(r => r.key === userRole); const Icon = r?.icon; return Icon ? <Icon className="h-4 w-4 text-green-500" /> : null; })()}
                 <span className={`text-sm font-medium ${dark ? 'text-slate-200' : 'text-slate-700'}`}>{userRole}</span>
                 <span className={`ml-auto text-xs ${muted}`}>{screen === 'login' ? 'Login' : 'Registration'}</span>
               </div>
 
               {userRole === 'Collector' && (
-                <div className={`flex items-start gap-2.5 rounded-xl border px-4 py-3 ${dark ? 'bg-white/5 border-gray-700' : 'bg-blue-50 border-blue-200'}`}>
+                <div className={`flex items-start gap-2.5 rounded-sm border px-4 py-3 ${dark ? 'bg-white/5 border-gray-700' : 'bg-blue-50 border-blue-200'}`}>
                   <HiInformationCircle className={`h-5 w-5 shrink-0 mt-0.5 ${dark ? 'text-blue-400' : 'text-blue-500'}`} />
                   <p className={`text-xs leading-relaxed ${dark ? 'text-blue-300' : 'text-blue-700'}`}>
                     Collector accounts are issued by the municipality administrator. If you don't have credentials, please contact your local municipal office.
@@ -472,6 +413,7 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
                     <label className={`text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-700'}`}>Village</label>
                     <VillageDropdown
                       value={fields.village}
+                      villages={villages}
                       onChange={v => { setFields(f => ({ ...f, village: v })); setTouched(t => ({ ...t, village: true })); }}
                       error={errors.village} touched={touched.village} dark={dark}
                     />

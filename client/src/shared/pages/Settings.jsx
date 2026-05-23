@@ -17,10 +17,10 @@ const Settings = () => {
   const divider = dark ? 'border-gray-800' : 'border-slate-50';
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-2xl mx-auto">
+    <div className="flex-1 px-4 sm:px-6 md:px-8 lg:px-10 pt-4 sm:pt-6 md:pt-8 lg:pt-10 pb-6 space-y-6">
       <div>
-        <h1 className={`text-xl font-extrabold ${title}`}>Settings</h1>
-        <p className={`text-sm mt-0.5 ${sub}`}>Manage your preferences</p>
+        <h1 className={`text-lg font-bold tracking-tight ${title}`}>Settings</h1>
+        <p className={`text-sm font-medium mt-0.5 ${sub}`}>Manage your preferences</p>
       </div>
 
       <div className={`rounded-2xl border shadow-sm overflow-hidden ${card}`}>

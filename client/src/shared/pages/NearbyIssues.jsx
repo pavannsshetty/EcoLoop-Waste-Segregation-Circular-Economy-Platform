@@ -6,22 +6,22 @@ import CleanupTimeBadge from '../components/CleanupTimeBadge';
 import { useTheme } from '../context/ThemeContext';
 
 const STATUS_STYLES = {
-  Submitted:     'bg-yellow-100 text-yellow-700',
+  Submitted: 'bg-yellow-100 text-yellow-700',
   'In Progress': 'bg-blue-100 text-blue-700',
-  Resolved:      'bg-green-100 text-green-700',
+  Resolved: 'bg-green-100 text-green-700',
 };
 const SEVERITY_STYLES = {
-  High:   'bg-red-100 text-red-700',
+  High: 'bg-red-100 text-red-700',
   Medium: 'bg-yellow-100 text-yellow-700',
-  Low:    'bg-green-100 text-green-700',
+  Low: 'bg-green-100 text-green-700',
 };
 
 const RADIUS_OPTIONS = [{ label: '1 km', value: 1 }, { label: '3 km', value: 3 }, { label: '5 km', value: 5 }];
 const FILTER_OPTIONS = [
-  { label: 'All Reports',   value: 'all'         },
-  { label: 'High Priority', value: 'High'        },
-  { label: 'In Progress',   value: 'In Progress' },
-  { label: 'Resolved',      value: 'Resolved'    },
+  { label: 'All Reports', value: 'all' },
+  { label: 'High Priority', value: 'High' },
+  { label: 'In Progress', value: 'In Progress' },
+  { label: 'Resolved', value: 'Resolved' },
 ];
 
 const NearbyIssues = () => {
@@ -29,20 +29,20 @@ const NearbyIssues = () => {
   const { dark } = useTheme();
   const dk = (d, l) => dark ? d : l;
 
-  const [userPos,  setUserPos]  = useState(null);
-  const [reports,  setReports]  = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [radius,   setRadius]   = useState(3);
-  const [filter,   setFilter]   = useState('all');
+  const [userPos, setUserPos] = useState(null);
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [radius, setRadius] = useState(3);
+  const [filter, setFilter] = useState('all');
   const [locError, setLocError] = useState('');
 
   const fetchReports = useCallback(async (lat, lng, rad, fil) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const sev   = ['High', 'Medium', 'Low'].includes(fil) ? `&severity=${fil}` : '';
-      const sta   = (fil === 'In Progress' || fil === 'Resolved') ? `&status=${fil}` : '';
-      const res   = await fetch(`${API}/api/waste/nearby?lat=${lat}&lng=${lng}&radius=${rad}${sev}${sta}`, {
+      const sev = ['High', 'Medium', 'Low'].includes(fil) ? `&severity=${fil}` : '';
+      const sta = (fil === 'In Progress' || fil === 'Resolved') ? `&status=${fil}` : '';
+      const res = await fetch(`${API}/api/waste/nearby?lat=${lat}&lng=${lng}&radius=${rad}${sev}${sta}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) setReports(await res.json());
@@ -85,8 +85,8 @@ const NearbyIssues = () => {
   const handleUpvote = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      const res   = await fetch(`${API}/api/waste/upvote/${id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
-      const data  = await res.json();
+      const res = await fetch(`${API}/api/waste/upvote/${id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
       if (res.ok) {
         setReports(rs => rs.map(r => r._id === id
           ? { ...r, upvotes: Array(data.upvotes).fill(null), severity: data.severity }
@@ -103,28 +103,28 @@ const NearbyIssues = () => {
 
   const fmt = (iso) => iso ? new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
 
-  const card    = dk('bg-white/5 border-gray-700', 'bg-white border-slate-100');
+  const card = dk('bg-white/5 border-gray-700', 'bg-white border-slate-100');
   const textPri = dk('text-slate-200', 'text-slate-900');
   const textSec = dk('text-slate-400', 'text-slate-500');
 
   return (
-    <div className="p-4 sm:p-6 space-y-5">
+    <div className="px-4 sm:px-6 md:px-8 lg:px-10 pt-4 sm:pt-6 md:pt-8 lg:pt-10 pb-6 space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className={`text-xl font-bold ${textPri}`}>Nearby Waste Issues</h1>
-          <p className={`text-sm mt-0.5 ${textSec}`}>
+          <h1 className={`text-lg font-bold tracking-tight ${textPri}`}>Nearby Waste Issues</h1>
+          <p className={`text-sm font-medium mt-0.5 ${textSec}`}>
             {userPos ? `Showing reports within ${radius} km` : 'Detecting location...'}
           </p>
         </div>
         <button onClick={handleRefresh} disabled={loading}
-          className={`flex items-center gap-1.5 text-sm transition ${dk('text-slate-400 hover:text-green-400','text-slate-500 hover:text-green-600')} disabled:opacity-50`}>
+          className={`flex items-center gap-1.5 text-sm transition ${dk('text-slate-400 hover:text-green-400', 'text-slate-500 hover:text-green-600')} disabled:opacity-50`}>
           <HiRefresh className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
           <span className="hidden sm:inline">Refresh</span>
         </button>
       </div>
 
       {locError && (
-        <div className={`flex items-start gap-2 rounded-xl border px-4 py-2.5 text-xs ${dk('bg-yellow-900/20 border-yellow-700 text-yellow-400','bg-yellow-50 border-yellow-200 text-yellow-700')}`}>
+        <div className={`flex items-start gap-2 rounded-xl border px-4 py-2.5 text-xs ${dk('bg-yellow-900/20 border-yellow-700 text-yellow-400', 'bg-yellow-50 border-yellow-200 text-yellow-700')}`}>
           <HiExclamation className="h-4 w-4 shrink-0 mt-0.5" />
           {locError}
         </div>
@@ -132,14 +132,14 @@ const NearbyIssues = () => {
 
       <div className="flex flex-wrap gap-3 items-center">
         <select value={filter} onChange={e => handleFilterChange(e.target.value)}
-          className={`rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${dk('bg-slate-800 border-slate-600 text-slate-200','bg-white border-slate-200 text-slate-700')}`}>
+          className={`rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${dk('bg-slate-800 border-slate-600 text-slate-200', 'bg-white border-slate-200 text-slate-700')}`}>
           {FILTER_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
 
-        <div className={`flex items-center gap-1 rounded-xl p-1 ${dk('bg-white/5','bg-slate-100')}`}>
+        <div className={`flex items-center gap-1 rounded-xl p-1 ${dk('bg-white/5', 'bg-slate-100')}`}>
           {RADIUS_OPTIONS.map(o => (
             <button key={o.value} onClick={() => handleRadiusChange(o.value)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${radius === o.value ? 'bg-white text-green-700 shadow-sm' : dk('text-slate-400 hover:text-slate-200','text-slate-500 hover:text-slate-700')}`}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${radius === o.value ? 'bg-white text-green-700 shadow-sm' : dk('text-slate-400 hover:text-slate-200', 'text-slate-500 hover:text-slate-700')}`}>
               {o.label}
             </button>
           ))}
@@ -173,11 +173,10 @@ const NearbyIssues = () => {
                   <CleanupTimeBadge report={r} />
                 </div>
                 <button onClick={() => handleUpvote(r._id)}
-                  className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border transition shrink-0 ${
-                    isUpvoted(r)
+                  className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border transition shrink-0 ${isUpvoted(r)
                       ? 'border-green-500 bg-green-600 text-white'
-                      : dk('border-gray-600 text-slate-400 hover:border-green-500 hover:text-green-400','border-green-200 text-green-700 bg-green-50 hover:bg-green-100')
-                  }`}>
+                      : dk('border-gray-600 text-slate-400 hover:border-green-500 hover:text-green-400', 'border-green-200 text-green-700 bg-green-50 hover:bg-green-100')
+                    }`}>
                   <HiThumbUp className="h-3 w-3" />
                   {r.upvotes?.length || 0}
                 </button>

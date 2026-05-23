@@ -20,10 +20,14 @@ const VillageTaskCard = ({ report, dk, onNavigate, nearby = false }) => (
     <div className="flex items-start justify-between gap-2 flex-wrap">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-1">
+          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-sm bg-green-50 text-green-600 border border-green-100">
+            {report.reportId || 'ECO-HIDDEN'}
+          </span>
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-sm border ${SEV_COLOR[report.severity] || SEV_COLOR.Low}`}>
             {report.severity}
           </span>
           <span className={`text-xs font-semibold ${dk('text-slate-200', 'text-slate-800')}`}>{report.wasteType}</span>
+          {report.quantity && <span className={`text-[10px] px-1.5 py-0.5 rounded-sm border ${dk('border-slate-700 text-slate-400', 'border-slate-200 text-slate-500')}`}>{report.quantity}</span>}
           {nearby && <span className={`text-[10px] px-1.5 py-0.5 rounded-sm ${dk('bg-blue-900/40 text-blue-400', 'bg-blue-100 text-blue-600')}`}>Nearby</span>}
         </div>
         <p className={`text-xs truncate ${dk('text-slate-400', 'text-slate-500')}`}>
@@ -150,9 +154,7 @@ const CollectorDashboard = () => {
             <p className="text-green-100 text-xs font-bold uppercase tracking-widest mb-1 opacity-80">{greeting},</p>
             <h2 className="text-white text-2xl sm:text-3xl font-extrabold leading-tight">{user.name || 'Collector'}</h2>
             <p className="text-green-100 text-sm mt-2 max-w-md leading-relaxed">
-              {stats.collector
-                ? `${stats.collector.area}, ${stats.collector.city} — stay on top of your assignments.`
-                : 'Loading your service area…'}
+              Service Area: <span className="font-bold">{user.villages?.join(', ') || user.village || 'Kundapura Taluk'}</span>, Kundapura Taluk — stay on top of your assignments.
             </p>
             <div className="flex items-center gap-2 mt-4">
               <span className={`h-2.5 w-2.5 rounded-full ${AVAIL_DOT[avail]}`} />

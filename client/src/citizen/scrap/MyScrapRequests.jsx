@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   HiLocationMarker, HiClock, HiRefresh, 
-  HiChevronRight, HiUser, HiTruck,
+  HiUser, HiTruck,
   HiClipboardList, HiCurrencyRupee
 } from 'react-icons/hi';
 import { API } from '../../shared/constants';
@@ -56,11 +56,11 @@ const MyScrapRequests = () => {
   });
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+    <div className="flex-1 px-4 sm:px-6 md:px-8 lg:px-10 pt-4 sm:pt-6 md:pt-8 lg:pt-10 pb-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={`text-base font-bold ${dk('text-white', 'text-slate-900')}`}>My Scrap Requests</h1>
-          <p className="text-xs text-slate-500">Track and manage your recyclable scrap pickups.</p>
+          <h1 className={`text-lg font-bold tracking-tight ${dk('text-white', 'text-slate-900')}`}>My Scrap Requests</h1>
+          <p className="text-sm font-medium text-slate-500">Track and manage your recyclable scrap pickups.</p>
         </div>
         <button 
           onClick={fetchRequests} 
@@ -154,12 +154,6 @@ const MyScrapRequests = () => {
               )}
 
               <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-                <button 
-                  onClick={() => navigate(`/citizen/scrap-status`)}
-                  className="text-xs text-green-600 font-bold flex items-center gap-1 hover:underline"
-                >
-                  View Details <HiChevronRight className="h-3.5 w-3.5" />
-                </button>
                 {r.status === 'Requested' && (
                    <span className="text-[10px] text-slate-400 italic">Waiting for collector...</span>
                 )}

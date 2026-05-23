@@ -17,12 +17,42 @@ const POINTS_MAPPING = {
 
 const createScrapRequest = async (req, res) => {
   try {
-    const { scrapType, quantity, image, location, pickupTime, description } = req.body;
+    const { 
+      scrapType, 
+      quantity, 
+      quantityType,
+      image, 
+      address, 
+      addressDetails,
+      pickupTime, 
+      description 
+    } = req.body;
     const userId = req.user.id;
     const user = await User.findById(userId);
 
-    if (!scrapType || !quantity || !location?.lat || !location?.lng || !pickupTime) {
-      return res.status(400).json({ message: 'All required fields must be provided.' });
+    // Validate required fields
+    if (!scrapType || !quantity || !pickupTime) {
+      return res.status(400).json({ message: 'Scrap type, quantity, and pickup time are required.' });
+    }
+
+    // Validate address - either from address string or location
+    if (!address && (!addressDetails || !addressDetails.village)) {
+      return res.status(400).json({ message: 'Pickup address is required.' });
+    }
+
+    // Build location object - support both coordinate-based and address-only
+    const locationData = {
+      type: 'Point',
+      coordinates: [0, 0],
+      address: address || '',
+      displayAddress: address || '',
+    };
+
+    // If coordinates are provided, include them
+    if (addressDetails && addressDetails.lat && addressDetails.lng) {
+      locationData.coordinates = [addressDetails.lng, addressDetails.lat];
+      locationData.lat = addressDetails.lat;
+      locationData.lng = addressDetails.lng;
     }
 
     const scrapRequest = await ScrapRequest.create({
@@ -31,24 +61,23 @@ const createScrapRequest = async (req, res) => {
       userEmail: user.email,
       scrapType,
       quantity,
+      quantityType: quantityType || 'kg',
       image: req.file ? req.file.path : (image || ''),
-      location: {
-        ...location,
-        type: 'Point',
-        coordinates: [location.lng, location.lat]
-      },
-      latitude: location.lat,
-      longitude: location.lng,
+      location: locationData,
+      latitude: addressDetails?.lat || null,
+      longitude: addressDetails?.lng || null,
       pickupTime,
       description: description || '',
       status: 'Requested',
-      ecoPoints: POINTS_MAPPING[scrapType] || 10
+      ecoPoints: POINTS_MAPPING[scrapType] || 10,
+      addressDetails: addressDetails || {}
     });
 
     res.status(201).json({ message: 'Scrap pickup request submitted successfully.', scrapRequest });
 
     createNotification(userId, 'Scrap Request Submitted', `Your request for ${scrapType} pickup has been received.`, 'report', scrapRequest._id);
   } catch (err) {
+    console.error('Scrap request error:', err);
     res.status(500).json({ message: 'Server error.', error: err.message });
   }
 };

@@ -22,11 +22,12 @@ export const UserProvider = ({ children }) => {
     try {
       const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
       const role = storedUser.role;
-
-      let url = `${API}/api/user/profile`;
-      if (role === 'Citizen') url = `${API}/api/citizen/profile`;
-      else if (role === 'Collector') url = `${API}/api/collector/profile`;
-      else if (role === 'GreenChampion') url = `${API}/api/citizen/profile`; 
+      const r = role?.toLowerCase().replace('_', '');
+      let url;
+      if (r === 'citizen') url = `${API}/api/citizen/profile`;
+      else if (r === 'collector') url = `${API}/api/collector/profile`;
+      else if (r === 'greenchampion') url = `${API}/api/citizen/profile`; 
+      else url = `${API}/api/user/profile`;
 
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {

@@ -27,9 +27,17 @@ const WASTE_ICONS = {
 };
 
 const WASTE_COLORS = {
-  'Wet Waste': 'bg-green-100 text-green-600', 'Dry Waste': 'bg-blue-100 text-blue-600',
-  'E-Waste': 'bg-purple-100 text-purple-600', 'Plastic Waste': 'bg-cyan-100 text-cyan-600',
-  'Mixed Waste': 'bg-orange-100 text-orange-600',
+  'Plastic Waste': 'bg-cyan-100 text-cyan-600',
+  'Organic Waste': 'bg-green-100 text-green-600',
+  'Food Waste': 'bg-lime-100 text-lime-600',
+  'E-Waste': 'bg-purple-100 text-purple-600',
+  'Construction Waste': 'bg-orange-100 text-orange-600',
+  'Medical Waste': 'bg-red-100 text-red-600',
+  'Mixed Waste': 'bg-slate-100 text-slate-600',
+  'Glass Waste': 'bg-blue-100 text-blue-600',
+  'Paper Waste': 'bg-yellow-100 text-yellow-600',
+  'Sewage / Drainage': 'bg-emerald-100 text-emerald-600',
+  'Dead Animal Waste': 'bg-rose-100 text-rose-600',
 };
 
 const MyReports = () => {
@@ -94,9 +102,9 @@ const MyReports = () => {
   const fmtTime = (iso) => new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div className={`p-4 sm:p-6 space-y-4 max-w-4xl mx-auto`}>
+    <div className="flex-1 px-4 sm:px-6 md:px-8 lg:px-10 pt-4 sm:pt-6 md:pt-8 lg:pt-10 pb-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className={`text-base font-bold ${dk('text-slate-200','text-slate-800')}`}>My Reports</h1>
+        <h1 className={`text-lg font-bold tracking-tight ${dk('text-slate-200','text-slate-800')}`}>My Reports</h1>
         <button onClick={fetchReports} className={`flex items-center gap-1.5 text-sm transition ${dk('text-slate-400 hover:text-green-400','text-slate-500 hover:text-green-600')}`}>
           <HiRefresh className="h-5 w-5" /><span className="hidden sm:inline">Refresh</span>
         </button>
@@ -131,9 +139,14 @@ const MyReports = () => {
                 </div>
                 <div className="flex-1 min-w-0 space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-mono tracking-tighter bg-green-50 text-green-600 px-1.5 py-0.5 rounded-sm border border-green-100 font-bold">{r.reportId || 'ECO-PENDING'}</span>
                     <span className={`text-sm font-bold ${dk('text-slate-200','text-slate-900')}`}>{r.wasteType}</span>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-sm uppercase tracking-wider ${r.reportType === 'Home Pickup' ? 'bg-green-600 text-white' : 'bg-orange-500 text-white'}`}>
+                      {r.reportType || 'Public'}
+                    </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLES[r.status] || 'bg-slate-100 text-slate-600'}`}>{r.status}</span>
                     {r.severity && <span className={`text-xs px-2 py-0.5 rounded-full ${SEVERITY_STYLES[r.severity] || ''}`}>{r.severity}</span>}
+                    {r.quantity && <span className={`text-[10px] px-2 py-0.5 rounded-full border border-slate-200 ${dk('bg-slate-800 text-slate-300','bg-white text-slate-500')}`}>{r.quantity}</span>}
                     <CleanupTimeBadge report={r} />
                   </div>
                   <p className={`text-xs line-clamp-2 ${dk('text-slate-400','text-slate-500')}`}>{r.description}</p>

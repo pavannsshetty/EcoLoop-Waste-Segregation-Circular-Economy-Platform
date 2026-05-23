@@ -4,22 +4,33 @@ import {
   HiMenu,
   HiX,
   HiLogout,
-  HiHome,
+  HiChartBar,
   HiUserAdd,
   HiUsers,
   HiClipboardList,
   HiCog,
   HiMoon,
   HiSun,
+  HiStar,
+  HiBell,
+  HiShoppingCart,
+  HiBadgeCheck,
+  HiShieldCheck,
 } from 'react-icons/hi';
 import DarkBg from '../components/DarkBg';
+import EcoLoopLogo from '../components/EcoLoopLogo';
 import { useTheme } from '../context/ThemeContext';
 
 const NAV = [
-  { path: '/admin/dashboard', icon: HiHome, label: 'Dashboard' },
+  { path: '/admin/dashboard', icon: HiChartBar, label: 'Dashboard' },
   { path: '/admin/add-collector', icon: HiUserAdd, label: 'Add Collector' },
   { path: '/admin/collectors', icon: HiUsers, label: 'View Collectors' },
+  { path: '/admin/champions', icon: HiStar, label: 'Green Champions' },
+  { path: '/admin/champion-requests', icon: HiBadgeCheck, label: 'Champion Requests' },
+  { path: '/admin/approval-requests', icon: HiShieldCheck, label: 'Approval Requests' },
   { path: '/admin/reports', icon: HiClipboardList, label: 'Reports' },
+  { path: '/admin/eco-shopping', icon: HiShoppingCart, label: 'Eco Shopping' },
+  { path: '/admin/notifications', icon: HiBell, label: 'Notifications' },
   { path: '/admin/settings', icon: HiCog, label: 'Settings' },
 ];
 
@@ -31,19 +42,17 @@ const NavItem = ({ path, Icon, label, collapsed, dark, onNavigate }) => {
       type="button"
       onClick={() => onNavigate(path)}
       title={collapsed ? label : undefined}
-      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
+      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-sm transition-all duration-200 group ${
         active
-          ? dark
-            ? 'bg-green-900/40 text-green-400'
-            : 'bg-green-50 text-green-700'
-          : dark
-            ? 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
-            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+          ? dark ? 'bg-green-900/40 text-green-400' : 'bg-green-50 text-green-700'
+          : dark ? 'text-slate-400 hover:bg-white/5 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
       }`}
     >
-      <Icon className={`h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-110 ${active ? 'text-green-500' : ''}`} />
+      <span className={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${active ? 'text-green-500' : ''}`}>
+        <Icon className="h-5 w-5" />
+      </span>
       <span className={`whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>{label}</span>
-      {active && !collapsed && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" />}
+      {active && !collapsed && <span className="ml-auto h-1.5 w-1.5 rounded-sm bg-green-500 shrink-0" />}
     </button>
   );
 };
@@ -69,8 +78,8 @@ const AdminLayout = () => {
     setMobileOpen(false);
   };
 
-  const sidebarBg = dark ? 'bg-black/80 border-gray-800' : 'bg-white border-gray-100';
-  const headerBg = dark ? 'bg-black/80 border-gray-800' : 'bg-white/90 border-gray-100';
+  const sidebarBg = dark ? 'bg-black/60 border-white/10' : 'bg-white border-slate-200';
+  const headerBg = dark ? 'bg-black/80 border-white/10' : 'bg-white/90 border-slate-200';
   const sectionLbl = dark ? 'text-slate-500' : 'text-slate-400';
 
   return (
@@ -99,10 +108,10 @@ const AdminLayout = () => {
       <aside
         className={`fixed top-0 left-0 h-full z-50 flex flex-col border-r shadow-lg transition-all duration-300 ease-in-out ${sidebarBg} ${
           mobileOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64'
-        } lg:translate-x-0 ${sideW}`}
+        } lg:translate-x-0 ${sideW} rounded-sm`}
       >
         <div
-          className={`h-16 flex items-center border-b shrink-0 px-4 ${dark ? 'border-gray-800' : 'border-gray-100'} ${
+          className={`h-16 flex items-center border-b shrink-0 px-4 ${dark ? 'border-white/10' : 'border-slate-200'} ${
             collapsed ? 'justify-center' : 'justify-between'
           }`}
         >
@@ -111,16 +120,12 @@ const AdminLayout = () => {
               collapsed ? 'w-0 opacity-0 lg:w-auto lg:opacity-100' : ''
             }`}
           >
-            <span className="text-2xl shrink-0">🌱</span>
-            <div className="min-w-0">
-              <p className={`text-sm font-bold truncate ${dark ? 'text-slate-100' : 'text-slate-800'}`}>EcoLoop Admin</p>
-              <p className={`text-[10px] uppercase tracking-wide font-semibold ${sectionLbl}`}>Portal</p>
-            </div>
+            <EcoLoopLogo height={38} dark={dark} />
           </div>
           <button
             type="button"
             onClick={() => setCollapsed((c) => !c)}
-            className={`hidden lg:flex items-center justify-center h-8 w-8 rounded-lg transition shrink-0 ${
+            className={`hidden lg:flex items-center justify-center h-8 w-8 rounded-sm transition shrink-0 ${
               dark ? 'text-slate-500 hover:bg-white/10 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
             }`}
             aria-label="Toggle sidebar width"
@@ -130,7 +135,7 @@ const AdminLayout = () => {
         </div>
 
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <p className={`text-xs font-semibold px-3 mb-1 uppercase tracking-wider ${collapsed ? 'lg:hidden' : ''} ${sectionLbl}`}>
+          <p className={`text-xs font-bold px-3 mb-1 uppercase tracking-wider ${collapsed ? 'lg:hidden' : ''} ${sectionLbl}`}>
             Management
           </p>
           {NAV.map(({ path, icon, label }) => (
@@ -138,12 +143,12 @@ const AdminLayout = () => {
           ))}
         </nav>
 
-        <div className={`p-3 border-t shrink-0 ${dark ? 'border-gray-800' : 'border-gray-100'}`}>
+        <div className={`p-3 border-t shrink-0 ${dark ? 'border-white/10' : 'border-slate-200'}`}>
           <button
             type="button"
             onClick={logout}
             title={collapsed ? 'Sign Out' : undefined}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm transition group ${
               dark ? 'text-slate-400 hover:bg-red-900/30 hover:text-red-400' : 'text-slate-500 hover:bg-red-50 hover:text-red-500'
             }`}
           >
@@ -160,7 +165,7 @@ const AdminLayout = () => {
           <button
             type="button"
             onClick={() => setMobileOpen((o) => !o)}
-            className={`flex items-center justify-center h-9 w-9 rounded-xl transition lg:hidden ${
+            className={`flex items-center justify-center h-9 w-9 rounded-sm transition lg:hidden ${
               dark ? 'text-slate-400 hover:bg-white/10 hover:text-green-400' : 'text-slate-500 hover:bg-slate-100 hover:text-green-600'
             }`}
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
@@ -168,20 +173,24 @@ const AdminLayout = () => {
             {mobileOpen ? <HiX className="h-5 w-5" /> : <HiMenu className="h-5 w-5" />}
           </button>
           <div className="flex-1 min-w-0">
-            <p className={`text-sm font-semibold truncate ${dark ? 'text-slate-200' : 'text-slate-800'}`}>Welcome, {username}</p>
-            <p className={`text-xs ${dark ? 'text-slate-500' : 'text-slate-400'}`}>Admin Dashboard</p>
+            <h1 className={`text-base font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
+              Welcome, {username}
+            </h1>
+            <p className={`text-[10px] uppercase tracking-widest leading-none mt-0.5 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+              Admin Dashboard
+            </p>
           </div>
           <button
             type="button"
             onClick={toggleDark}
             aria-label="Toggle dark mode"
-            className={`flex items-center justify-center h-9 w-9 rounded-xl transition ${
+            className={`flex items-center justify-center h-9 w-9 rounded-sm transition ${
               dark ? 'text-yellow-400 hover:bg-white/10' : 'text-slate-500 hover:bg-slate-100'
             }`}
           >
             {dark ? <HiSun className="h-5 w-5" /> : <HiMoon className="h-5 w-5" />}
           </button>
-          <div className="h-9 w-9 rounded-full overflow-hidden bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
+          <div className="h-9 w-9 rounded-sm overflow-hidden bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
             {username[0].toUpperCase()}
           </div>
         </header>

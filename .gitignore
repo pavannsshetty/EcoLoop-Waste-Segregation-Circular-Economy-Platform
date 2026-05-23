@@ -3,6 +3,11 @@
 **/dist/
 **/build/
 
+# Secret files
+server/secrets/vision-api.json
+server/secrets/*.json
+
+
 # Environment Variables
 .env
 .env.local

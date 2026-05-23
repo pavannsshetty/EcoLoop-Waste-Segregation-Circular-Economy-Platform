@@ -1,7 +1,9 @@
 const jwt       = require('jsonwebtoken');
 const User      = require('../models/User');
 const Collector = require('../models/Collector');
+const GreenChampionRequest = require('../models/GreenChampionRequest');
 const bcrypt    = require('bcryptjs');
+const { getCanonicalVillageName } = require('../data/kundapuraVillages');
 
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -10,28 +12,69 @@ const signToken = (id) =>
 // POST /api/auth/register
 const register = async (req, res) => {
   try {
-    const { name, email, password, phone, role, locality, village } = req.body;
+    let { name, email, password, phone, role, locality, village } = req.body;
+    role = role?.toLowerCase().trim();
+    if (role === 'greenchampion' || role === 'green champion') role = 'green_champion';
 
-    if (role === 'Collector') {
-      return res.status(403).json({ message: 'Collector accounts are issued by the administrator.' });
+    if (role === 'collector' || role === 'green_champion') {
+      return res.status(403).json({ message: `${role} accounts are issued by the administrator.` });
     }
 
-    const existing = await User.findOne({ $or: [{ email }, { phone }] });
-    if (existing) {
-      return res.status(409).json({ message: 'Email or phone already registered.' });
+    const searchEmail = email.toLowerCase().trim();
+    const searchPhone = phone.trim();
+
+    // Indian Mobile Number Validation
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phoneRegex.test(searchPhone)) {
+      return res.status(400).json({ message: 'Enter a valid 10-digit mobile number starting with 9, 8, 7, or 6.' });
     }
 
-    if (role === 'Citizen' && !village) {
+    // 1. Check Citizens & Green Champions (User model)
+    const existingUser = await User.findOne({ $or: [{ email: searchEmail }, { phone: searchPhone }] });
+    if (existingUser) {
+      const msg = existingUser.role === 'green_champion' 
+        ? 'This mobile number/email is already associated with a Green Champion account.'
+        : 'Citizen account already exists with this mobile number/email.';
+      return res.status(409).json({ message: msg });
+    }
+
+    // 2. Check Collectors
+    const existingCollector = await Collector.findOne({ $or: [{ email: searchEmail }, { mobile: searchPhone }] });
+    if (existingCollector) {
+      return res.status(409).json({ message: 'This mobile number/email is already associated with a Collector account.' });
+    }
+
+    // 3. Check Pending Green Champion Requests
+    const existingRequest = await GreenChampionRequest.findOne({ 
+      $or: [{ email: searchEmail }, { mobile: searchPhone }],
+      status: { $in: ['PENDING', 'APPROVED'] }
+    });
+    if (existingRequest) {
+      return res.status(409).json({ message: 'A Green Champion request already exists with this mobile number/email.' });
+    }
+
+    const canonicalVillage = getCanonicalVillageName(village);
+
+    if (role === 'citizen' && !canonicalVillage) {
       return res.status(400).json({ message: 'Village is required for Citizen registration.' });
     }
 
-    const userData = { name, email, password, phone, role, isVerified: true };
+    const userData = { name, email: searchEmail, password, phone: searchPhone, role, isVerified: true };
     if (locality) userData.locality = locality;
-    if (village)  userData.village  = village;
+    if (canonicalVillage) userData.village = canonicalVillage;
 
     const user  = await User.create(userData);
     const token = signToken(user._id);
-    res.status(201).json({ token, user });
+
+    const roleMapping = {
+      'citizen': 'Citizen',
+      'collector': 'Collector',
+      'green_champion': 'GreenChampion'
+    };
+    const safeUser = user.toJSON();
+    safeUser.role = roleMapping[user.role] || user.role;
+
+    res.status(201).json({ token, user: safeUser });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -41,53 +84,169 @@ const register = async (req, res) => {
 // POST /api/auth/login
 const login = async (req, res) => {
   try {
-    const { identifier, collectorId, password, role } = req.body;
+    let { identifier, collectorId, password, role } = req.body;
+    role = role?.toLowerCase().trim();
+    if (role === 'greenchampion' || role === 'green champion') role = 'green_champion';
 
-    if (role === 'Collector') {
-      if (!collectorId) return res.status(400).json({ message: 'Collector ID is required.' });
-      const collector = await Collector.findOne({ collectorId }).select('+password');
-      if (!collector) return res.status(401).json({ message: 'Collector not found.' });
-      const match = await bcrypt.compare(password, collector.password);
-      if (!match) return res.status(401).json({ message: 'Invalid Collector ID or Password.' });
-      if (collector.status === 'Inactive') return res.status(403).json({ message: 'Your account is inactive. Contact admin.' });
+    console.log(`\n--- Login Attempt [${new Date().toISOString()}] ---`);
+    console.log(`Role: ${role}`);
+
+    if (role === 'collector') {
+      const cleanCollectorId = collectorId?.trim();
+      if (!cleanCollectorId) {
+        console.log('[Login] FAIL: Missing collectorId');
+        return res.status(400).json({ message: 'Collector ID is required.' });
+      }
+
+      console.log(`Searching Collector with ID: "${cleanCollectorId}"`);
+      const collector = await Collector.findOne({ 
+        collectorId: { $regex: new RegExp(`^${cleanCollectorId}$`, 'i') } 
+      }).select('+password');
+      
+      if (!collector) {
+        console.log(`[Login] FAIL: Collector NOT FOUND for ID: "${cleanCollectorId}"`);
+        return res.status(401).json({ message: 'Collector account not found for this ID.' });
+      }
+
+      console.log(`Collector found: ${collector.name} (Status: ${collector.status})`);
+      
+      if (collector.status === 'Inactive') {
+        console.log('[Login] FAIL: Account Inactive');
+        return res.status(403).json({ message: 'Your account is inactive. Please contact the administrator.' });
+      }
+
+      const match = await collector.matchPassword(password);
+      if (!match) {
+        console.log(`[Login] FAIL: Password MISMATCH for Collector ID: "${cleanCollectorId}"`);
+        return res.status(401).json({ message: 'Invalid password for this Collector ID.' });
+      }
+
+      console.log(`[Login] SUCCESS: Collector ${collector.name} logged in`);
       const token = signToken(collector._id);
-      const safeCollector = { _id: collector._id, name: collector.name, collectorId: collector.collectorId, role: 'Collector', city: collector.city, area: collector.area };
+      const safeCollector = { 
+        _id: collector._id, 
+        name: collector.name, 
+        collectorId: collector.collectorId, 
+        role: 'Collector', 
+        city: collector.city, 
+        area: collector.area 
+      };
       return res.json({ token, user: safeCollector });
     }
 
-    if (!identifier) return res.status(400).json({ message: 'Email or phone is required.' });
+    // Citizen / Green Champion Login
+    if (!identifier) {
+      console.log('[Login] FAIL: Missing identifier');
+      return res.status(400).json({ message: 'Email or phone number is required.' });
+    }
 
-    const searchIdentifier = identifier.toLowerCase().trim();
-    console.log(`[Login] Attempting login — identifier: "${searchIdentifier}", role: "${role}"`);
+    const searchIdentifier = identifier.trim();
+    const searchEmail = searchIdentifier.toLowerCase();
+    
+    console.log(`Searching User with Identifier: "${searchIdentifier}" (Search Role: ${role})`);
 
     const user = await User.findOne({
-      $or: [{ email: searchIdentifier }, { phone: searchIdentifier }],
+      $or: [
+        { email: searchEmail }, 
+        { phone: searchIdentifier },
+        { greenChampionId: { $regex: new RegExp(`^${searchIdentifier}$`, 'i') } }
+      ],
     }).select('+password');
 
     if (!user) {
-      console.log(`[Login] FAIL — User NOT FOUND for: "${searchIdentifier}"`);
-      return res.status(401).json({ message: 'Invalid credentials.' });
+      console.log(`[Login] FAIL: User NOT FOUND for identifier: "${searchIdentifier}"`);
+      const msg = role === 'green_champion' 
+        ? 'No Green Champion account found with this ID/Mobile.'
+        : 'No account found with this email or phone number.';
+      return res.status(401).json({ message: msg });
     }
 
-    console.log(`[Login] User found — DB role: "${user.role}", requested role: "${role}"`);
+    console.log(`User found: ${user.name} (DB Role: "${user.role}", DB Status: "${user.accountStatus}")`);
 
-    if (user.role !== role) {
-      console.log(`[Login] FAIL — Role MISMATCH. Expected: "${role}", Found: "${user.role}"`);
-      return res.status(401).json({ message: 'Invalid credentials.' });
+    if (user.role.toLowerCase() !== role) {
+      console.log(`[Login] FAIL: Role mismatch. Expected: "${role}", Found: "${user.role}"`);
+      return res.status(401).json({ message: 'The provided credentials do not belong to a ' + role + ' account.' });
+    }
+    
+    if (user.role === 'green_champion') {
+        const request = await GreenChampionRequest.findOne({ 
+            $or: [{ greenChampionId: user.greenChampionId }, { mobile: user.phone }] 
+        });
+
+        if (request) {
+            if (request.status === 'PENDING') {
+                return res.status(403).json({ message: 'Your application is still under review. Please check status later.' });
+            }
+            if (request.status === 'REJECTED') {
+                return res.status(403).json({ message: 'Your application was rejected. Please re-apply with correct details.' });
+            }
+            if (request.status === 'SUSPENDED') {
+                return res.status(403).json({ message: 'Your Green Champion account has been suspended for policy violations.' });
+            }
+        }
+    }
+
+    if (user.accountStatus === 'Inactive') {
+      console.log('[Login] FAIL: User Account Inactive');
+      return res.status(403).json({ message: 'Your account has been deactivated. Please contact support.' });
     }
 
     const isMatch = await user.matchPassword(password);
-    console.log(`[Login] Password match: ${isMatch}`);
+    console.log(`Password comparison result: ${isMatch}`);
+
     if (!isMatch) {
-      console.log(`[Login] FAIL — Password MISMATCH for: "${searchIdentifier}"`);
-      return res.status(401).json({ message: 'Invalid credentials.' });
+      console.log(`[Login] FAIL: Password MISMATCH for user: "${searchIdentifier}"`);
+      return res.status(401).json({ message: 'Incorrect password. Please try again.' });
     }
 
+    // Green Champion specific checks after password match
+    if (user.role === 'green_champion') {
+      if (user.accountStatus === 'Inactive') {
+         return res.status(403).json({ message: 'Your Green Champion account is currently suspended or inactive.' });
+      }
+    }
+
+    console.log(`[Login] SUCCESS: User ${user.name} logged in`);
     const token = signToken(user._id);
-    res.json({ token, user });
+    const userRes = user.toJSON();
+
+    const roleMapping = {
+      'citizen': 'Citizen',
+      'collector': 'Collector',
+      'green_champion': 'GreenChampion'
+    };
+    userRes.role = roleMapping[user.role] || user.role;
+    
+    // Include isFirstLogin for the frontend to handle password change force
+    if (user.role === 'green_champion') {
+      userRes.isFirstLogin = user.isFirstLogin;
+    }
+
+    res.json({ token, user: userRes });
+
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error('[Login] INTERNAL ERROR:', err);
+    res.status(500).json({ message: 'An internal server error occurred during login.', error: err.message });
   }
 };
 
-module.exports = { register, login };
+// Update Password (used for force password change)
+const updatePassword = async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ message: 'Password is required.' });
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    user.password = password;
+    user.isFirstLogin = false;
+    await user.save();
+
+    res.json({ message: 'Password updated successfully.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+module.exports = { register, login, updatePassword };

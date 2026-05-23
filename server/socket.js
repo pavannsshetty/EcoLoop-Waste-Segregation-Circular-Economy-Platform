@@ -8,6 +8,7 @@ const init = (server) => {
     cors: {
       origin: [
         "http://localhost:5173",
+        "http://localhost:5174",
         "https://ecoloop-waste-segregation-circular-economy-platform.pages.dev"
       ],
       methods: ["GET", "POST"]

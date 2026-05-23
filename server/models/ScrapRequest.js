@@ -9,7 +9,8 @@ const scrapRequestSchema = new mongoose.Schema({
     required: true, 
     enum: ['Paper', 'Plastic', 'Metal', 'E-Waste', 'Glass', 'Clothes', 'Furniture', 'Other'] 
   },
-  quantity:         { type: String, required: true }, // e.g., "5kg", "2 items"
+  quantity:         { type: String, required: true }, // e.g., "5kg", "2 items", "Not sure"
+  quantityType:     { type: String, enum: ['kg', 'items', 'not-sure'], default: 'kg' },
   image:            { type: String, default: '' },
   location: {
     type:           { type: String, enum: ['Point'], default: 'Point' },
@@ -22,8 +23,8 @@ const scrapRequestSchema = new mongoose.Schema({
     state:          { type: String, default: '' },
     pincode:        { type: String, default: '' },
     country:        { type: String, default: '' },
-    lat:            { type: Number, required: true },
-    lng:            { type: Number, required: true },
+    lat:            { type: Number },
+    lng:            { type: Number },
   },
   latitude:         { type: Number },
   longitude:        { type: Number },
@@ -37,6 +38,14 @@ const scrapRequestSchema = new mongoose.Schema({
   taskType:         { type: String, default: 'scrap' },
   assignedCollector: { type: mongoose.Schema.Types.ObjectId, ref: 'Collector', default: null },
   ecoPoints:        { type: Number, default: 0 },
+  // Address details from user profile
+  addressDetails: {
+    village:      { type: String, default: '' },
+    houseNo:      { type: String, default: '' },
+    streetArea:   { type: String, default: '' },
+    landmark:     { type: String, default: '' },
+    addressType:  { type: String, default: '' }
+  }
 }, { timestamps: true });
 
 scrapRequestSchema.index({ location: '2dsphere' });

@@ -65,9 +65,12 @@ const Notifications = () => {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <div className="px-4 sm:px-6 md:px-8 lg:px-10 pt-4 sm:pt-6 md:pt-8 lg:pt-10 pb-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className={`text-base font-bold ${dk('text-slate-200','text-slate-800')}`}>Notifications</h1>
+        <div>
+          <h1 className={`text-lg font-bold tracking-tight ${dk('text-slate-200','text-slate-800')}`}>Notifications</h1>
+          <p className={`text-sm font-medium mt-0.5 ${dk('text-slate-400','text-slate-500')}`}>Stay updated on your recent activity</p>
+        </div>
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
             <button onClick={markAllRead} className="text-xs text-green-500 hover:underline">Mark all read</button>

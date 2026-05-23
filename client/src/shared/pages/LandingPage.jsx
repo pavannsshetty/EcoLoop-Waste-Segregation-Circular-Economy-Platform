@@ -52,7 +52,7 @@ const LandingPage = () => {
 
         <div className="flex-1 relative overflow-hidden">
           <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
-            style={{ backgroundImage: 'radial-gradient(circle, #16a34a 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+            style={{ backgroundImage: 'radial-gradient(circle, #0AAF29 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
 
           <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-16 flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 py-6">
 

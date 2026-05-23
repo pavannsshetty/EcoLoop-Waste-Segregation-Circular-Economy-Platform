@@ -16,6 +16,7 @@ connectDB();
 app.use(cors({
   origin: [
     'http://localhost:5173',
+    'http://localhost:5174',
     'https://ecoloop-waste-segregation-circular-economy-platform.pages.dev',
     process.env.CLIENT_URL,
   ].filter(Boolean),
@@ -36,10 +37,13 @@ app.use('/api/user',          require('./routes/userRoutes'));
 app.use('/api/waste',         require('./routes/wasteRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/scrap',         require('./routes/scrapRoutes'));
-app.use('/api/rewards',       require('./routes/rewardsRoutes'));
+app.use('/api/rewards',       require('./routes/rewardRoutes'));
 app.use('/api/leaderboard',   require('./routes/leaderboardRoutes'));
 app.use('/api/collector',     require('./routes/collectorRoutes'));
+app.use('/api/eco-shopping', require('./routes/ecoShoppingRoutes'));
+app.use('/api/green-champion', require('./routes/greenChampionRoutes'));
 
+app.use('/api/villages',       require('./routes/villageRoutes'));
 app.get('/', (req, res) => res.send('EcoLoop API is running...'));
 
 socket.init(server);

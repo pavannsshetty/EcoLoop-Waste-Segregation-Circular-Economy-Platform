@@ -4,6 +4,13 @@ import AdminLayout   from './layouts/AdminLayout';
 import Dashboard     from './pages/Dashboard';
 import AddCollector  from './pages/AddCollector';
 import ViewCollectors from './pages/ViewCollectors';
+import Reports from './pages/Reports';
+import ViewGreenChampions from './pages/ViewGreenChampions';
+import GreenChampionRequests from './pages/GreenChampionRequests';
+import EcoShopping from './pages/EcoShopping';
+import AdminNotifications from './pages/AdminNotifications';
+import Settings from './pages/Settings';
+import ApprovalRequests from './pages/ApprovalRequests';
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('admin-token');
@@ -20,6 +27,13 @@ function App() {
           <Route path="dashboard"      element={<Dashboard />} />
           <Route path="add-collector"  element={<AddCollector />} />
           <Route path="collectors"     element={<ViewCollectors />} />
+          <Route path="reports"        element={<Reports />} />
+          <Route path="champions"      element={<ViewGreenChampions />} />
+          <Route path="champion-requests" element={<GreenChampionRequests />} />
+          <Route path="approval-requests" element={<ApprovalRequests />} />
+          <Route path="eco-shopping"   element={<EcoShopping />} />
+          <Route path="notifications"  element={<AdminNotifications />} />
+          <Route path="settings"       element={<Settings />} />
         </Route>
         <Route path="*" element={<Navigate to="/admin/login" replace />} />
       </Routes>

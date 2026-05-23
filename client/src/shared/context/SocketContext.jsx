@@ -9,7 +9,7 @@ const SocketContext = createContext({
 export const useSocket = () => useContext(SocketContext);
 
 export const SocketProvider = ({ children }) => {
-  const { user } = useUser();
+  const { user, refreshUser } = useUser();
 
   useEffect(() => {
     if (user && user._id) {
@@ -18,6 +18,7 @@ export const SocketProvider = ({ children }) => {
       }
       socket.emit('join', user._id);
       console.log('Socket joining room:', user._id);
+      socket.on('profile_updated', refreshUser);
     } else {
       if (socket.connected) {
         socket.disconnect();
@@ -25,11 +26,12 @@ export const SocketProvider = ({ children }) => {
     }
 
     return () => {
+      socket.off('profile_updated', refreshUser);
       if (socket.connected) {
         socket.disconnect();
       }
     };
-  }, [user]);
+  }, [user, refreshUser]);
 
   return (
     <SocketContext.Provider value={{ socket }}>

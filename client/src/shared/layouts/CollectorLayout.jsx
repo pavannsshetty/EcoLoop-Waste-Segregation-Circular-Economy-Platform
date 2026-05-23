@@ -45,21 +45,17 @@ const NavItem = ({ item, collapsed, dark, onClick }) => {
       type="button"
       onClick={() => onClick(item.path)}
       title={collapsed ? item.label : undefined}
-      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-medium transition-all duration-200 group ${
+      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-sm transition-all duration-200 group ${
         active
-          ? dark
-            ? 'bg-green-900/40 text-green-400'
-            : 'bg-green-50 text-green-700'
-          : dark
-            ? 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
-            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+          ? dark ? 'bg-green-900/40 text-green-400' : 'bg-green-50 text-green-700'
+          : dark ? 'text-slate-400 hover:bg-white/5 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
       }`}
     >
       <span className={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${active ? 'text-green-500' : ''}`}>
         <item.Icon />
       </span>
       <span className={`whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>{item.label}</span>
-      {active && !collapsed && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" />}
+      {active && !collapsed && <span className="ml-auto h-1.5 w-1.5 rounded-sm bg-green-500 shrink-0" />}
     </button>
   );
 };
@@ -73,7 +69,8 @@ const CollectorLayout = () => {
 
   useEffect(() => {
     if (!userLoading) {
-      if (!user || user.role !== 'Collector') {
+      const r = user?.role?.toLowerCase();
+      if (!user || r !== 'collector') {
         navigate('/');
       }
     }
@@ -82,8 +79,6 @@ const CollectorLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const sideW = collapsed ? 'lg:w-20' : 'lg:w-64';
   const mainML = collapsed ? 'lg:ml-20' : 'lg:ml-64';
 
@@ -100,8 +95,8 @@ const CollectorLayout = () => {
     setMobileOpen(false);
   };
 
-  const sidebarBg = dark ? 'bg-black/80 border-gray-800' : 'bg-white border-gray-100';
-  const headerBg = dark ? 'bg-black/80 border-gray-800' : 'bg-white/90 border-gray-100';
+  const sidebarBg = dark ? 'bg-black/60 border-white/10' : 'bg-white border-slate-200';
+  const headerBg = dark ? 'bg-black/80 border-white/10' : 'bg-white/90 border-slate-200';
   const sectionLbl = dark ? 'text-slate-500' : 'text-slate-400';
 
   return (
@@ -130,10 +125,10 @@ const CollectorLayout = () => {
       <aside
         className={`fixed top-0 left-0 h-full z-50 flex flex-col border-r shadow-lg transition-all duration-300 ease-in-out ${sidebarBg} ${
           mobileOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64'
-        } lg:translate-x-0 ${sideW}`}
+        } lg:translate-x-0 ${sideW} rounded-sm`}
       >
         <div
-          className={`h-16 flex items-center border-b shrink-0 px-4 ${dark ? 'border-gray-800' : 'border-gray-100'} ${
+          className={`h-16 flex items-center border-b shrink-0 px-4 ${dark ? 'border-white/10' : 'border-slate-200'} ${
             collapsed ? 'justify-center' : 'justify-between'
           }`}
         >
@@ -157,32 +152,32 @@ const CollectorLayout = () => {
         </div>
 
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <p className={`text-xs font-semibold px-3 mb-1 uppercase tracking-wider ${collapsed ? 'lg:hidden' : ''} ${sectionLbl}`}>Main</p>
+          <p className={`text-xs font-bold px-3 mb-1 uppercase tracking-wider ${collapsed ? 'lg:hidden' : ''} ${sectionLbl}`}>Main</p>
           {NAV_MAIN.map((item) => (
             <NavItem key={item.path} item={item} collapsed={collapsed} dark={dark} onClick={handleNav} />
           ))}
 
           <div className={`pt-3 ${collapsed ? 'lg:hidden' : ''}`}>
-            <p className={`text-xs font-semibold px-3 mb-1 uppercase tracking-wider ${sectionLbl}`}>Field</p>
+            <p className={`text-xs font-bold px-3 mb-1 uppercase tracking-wider ${sectionLbl}`}>Field</p>
           </div>
           {NAV_FIELD.map((item) => (
             <NavItem key={item.path} item={item} collapsed={collapsed} dark={dark} onClick={handleNav} />
           ))}
 
           <div className={`pt-3 ${collapsed ? 'lg:hidden' : ''}`}>
-            <p className={`text-xs font-semibold px-3 mb-1 uppercase tracking-wider ${sectionLbl}`}>Account</p>
+            <p className={`text-xs font-bold px-3 mb-1 uppercase tracking-wider ${sectionLbl}`}>Account</p>
           </div>
           {NAV_ACCOUNT.map((item) => (
             <NavItem key={item.path} item={item} collapsed={collapsed} dark={dark} onClick={handleNav} />
           ))}
         </nav>
 
-        <div className={`p-3 border-t shrink-0 ${dark ? 'border-gray-800' : 'border-gray-100'}`}>
+        <div className={`p-3 border-t shrink-0 ${dark ? 'border-white/10' : 'border-slate-200'}`}>
           <button
             type="button"
             onClick={logout}
             title={collapsed ? 'Log Out' : undefined}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-medium transition group ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm transition group ${
               dark ? 'text-slate-400 hover:bg-red-900/30 hover:text-red-400' : 'text-slate-500 hover:bg-red-50 hover:text-red-500'
             }`}
           >
@@ -207,11 +202,11 @@ const CollectorLayout = () => {
             {mobileOpen ? <HiX className="h-5 w-5" /> : <HiMenu className="h-5 w-5" />}
           </button>
           <div className="flex-1 min-w-0">
-            <p className={`text-sm font-semibold truncate ${dark ? 'text-slate-200' : 'text-slate-800'}`}>
-              {greeting}, {user.name || 'Collector'}
-            </p>
-            <p className={`text-xs ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-              {user.collectorId ? `ID ${user.collectorId}` : 'Collector Dashboard'}
+            <h1 className={`text-base font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
+              {user.name || 'Collector'}
+            </h1>
+            <p className={`text-[10px] uppercase tracking-widest leading-none mt-0.5 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+              Collector Dashboard
             </p>
           </div>
           <button
@@ -224,7 +219,7 @@ const CollectorLayout = () => {
           >
             {dark ? <HiSun className="h-5 w-5" /> : <HiMoon className="h-5 w-5" />}
           </button>
-          <div className="h-9 w-9 rounded-full overflow-hidden bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
+          <div className="h-9 w-9 rounded-sm overflow-hidden bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
             {user.profilePhoto ? (
               <img src={user.profilePhoto} alt="" className="h-full w-full object-cover" />
             ) : (
