@@ -48,9 +48,9 @@ const ReportWastePage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {cards.map(card => (
           <div key={card.id}
-            className={`group relative overflow-hidden rounded-sm border ${dk('border-slate-700', 'border-slate-200')} ${card.bg} p-4 sm:p-5 flex flex-col justify-between transition-all hover:translate-y-[-2px] hover:shadow-lg`}>
+            className={`group relative overflow-hidden rounded-lg border ${dk('border-slate-700', 'border-slate-200')} ${card.bg} p-4 sm:p-5 flex flex-col justify-between transition-all hover:translate-y-[-2px] hover:shadow-lg`}>
             <div className="space-y-3">
-              <div className={`${card.iconColor} bg-white/10 dark:bg-white/5 p-2 sm:p-2.5 rounded-sm w-fit`}>
+              <div className={`${card.iconColor} bg-white/10 dark:bg-white/5 p-2 sm:p-2.5 rounded-lg w-fit`}>
                 {card.icon}
               </div>
               <div className="space-y-1.5">
@@ -60,7 +60,7 @@ const ReportWastePage = () => {
             </div>
 
             <button key={`btn-${card.id}`} onClick={card.onClick}
-              className={`mt-6 flex items-center justify-center gap-3 w-fit rounded-sm px-4 py-3 text-xs font-bold text-white transition shadow-md ${card.btn}`}>
+              className={`mt-6 flex items-center justify-center gap-3 w-fit rounded-lg px-4 py-3 text-xs font-bold text-white transition shadow-md min-h-[44px] ${card.btn}`}>
               <span>{card.title.toUpperCase()}</span>
               <HiArrowRight className="h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
             </button>
@@ -71,14 +71,14 @@ const ReportWastePage = () => {
       <PublicWasteModal
         isOpen={showPublicModal}
         onClose={() => setShowPublicModal(false)}
-        onSuccess={() => { setShowPublicModal(false); navigate('/citizen/my-reports'); }}
+        onSuccess={() => { setShowPublicModal(false); navigate('/citizen/public-reports'); }}
         dark={dark}
       />
 
       <HomePickupModal
         isOpen={showHomeModal}
         onClose={() => setShowHomeModal(false)}
-        onSuccess={() => { setShowHomeModal(false); navigate('/citizen/my-reports'); }}
+        onSuccess={() => { setShowHomeModal(false); navigate('/citizen/home-reports'); }}
         dark={dark}
       />
     </div>

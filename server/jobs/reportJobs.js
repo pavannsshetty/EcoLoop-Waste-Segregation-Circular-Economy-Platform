@@ -99,13 +99,39 @@ const escalateOverdueTasks = async () => {
   }
 };
 
+// Edge Case 4 — expire clarification requests after 7 days
+const expireClarifications = async () => {
+  try {
+    const now = new Date();
+    const expired = await WasteReport.find({
+      status: 'Clarification Requested',
+      clarificationExpiresAt: { $lt: now },
+    }).lean();
+
+    for (const report of expired) {
+      await WasteReport.findByIdAndUpdate(report._id, {
+        status: 'Clarification Expired',
+      });
+      if (report.userId) {
+        createNotification(report.userId, 'Clarification Expired',
+          `Your ${report.wasteType} waste report clarification request has expired. Please contact support if needed.`,
+          'status', report._id);
+      }
+    }
+  } catch (err) {
+    console.error('[expireClarifications]', err.message);
+  }
+};
+
 const startReportJobs = () => {
   // Run every 30 minutes
   setInterval(autoReassignStaleTask,  30 * 60 * 1000);
   setInterval(escalateOverdueTasks,   30 * 60 * 1000);
+  setInterval(expireClarifications,   30 * 60 * 1000);
   // Also run immediately on startup
   autoReassignStaleTask();
   escalateOverdueTasks();
+  expireClarifications();
   console.log('[reportJobs] Background jobs started.');
 };
 

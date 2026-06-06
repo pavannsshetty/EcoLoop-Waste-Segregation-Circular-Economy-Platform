@@ -4,6 +4,7 @@ const Collector = require('../models/Collector');
 const GreenChampionRequest = require('../models/GreenChampionRequest');
 const bcrypt    = require('bcryptjs');
 const { getCanonicalVillageName } = require('../data/kundapuraVillages');
+const { updateStreak } = require('../utils/streakManager');
 
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -64,15 +65,17 @@ const register = async (req, res) => {
     if (canonicalVillage) userData.village = canonicalVillage;
 
     const user  = await User.create(userData);
-    const token = signToken(user._id);
+    await updateStreak(user._id);
+    const updatedUser = await User.findById(user._id);
+    const token = signToken(updatedUser._id);
 
     const roleMapping = {
       'citizen': 'Citizen',
       'collector': 'Collector',
       'green_champion': 'GreenChampion'
     };
-    const safeUser = user.toJSON();
-    safeUser.role = roleMapping[user.role] || user.role;
+    const safeUser = updatedUser.toJSON();
+    safeUser.role = roleMapping[updatedUser.role] || updatedUser.role;
 
     res.status(201).json({ token, user: safeUser });
   } catch (err) {
@@ -186,6 +189,21 @@ const login = async (req, res) => {
         }
     }
 
+    if (user.accountStatus === 'Deleted') {
+      console.log('[Login] FAIL: User Account Deleted');
+      return res.status(403).json({ message: 'DELETED_ACCOUNT', deletionReason: user.deletionReason });
+    }
+
+    if (user.accountStatus === 'Suspended') {
+      console.log('[Login] FAIL: User Account Suspended');
+      return res.status(403).json({
+        message: 'SUSPENDED_ACCOUNT',
+        suspensionReason: user.suspensionReason,
+        suspendedUntil: user.suspendedUntil,
+        suspensionDuration: user.suspensionDuration,
+      });
+    }
+
     if (user.accountStatus === 'Inactive') {
       console.log('[Login] FAIL: User Account Inactive');
       return res.status(403).json({ message: 'Your account has been deactivated. Please contact support.' });
@@ -207,19 +225,21 @@ const login = async (req, res) => {
     }
 
     console.log(`[Login] SUCCESS: User ${user.name} logged in`);
-    const token = signToken(user._id);
-    const userRes = user.toJSON();
+    await updateStreak(user._id);
+    const updatedUser = await User.findById(user._id);
+    const token = signToken(updatedUser._id);
+    const userRes = updatedUser.toJSON();
 
     const roleMapping = {
       'citizen': 'Citizen',
       'collector': 'Collector',
       'green_champion': 'GreenChampion'
     };
-    userRes.role = roleMapping[user.role] || user.role;
+    userRes.role = roleMapping[updatedUser.role] || updatedUser.role;
     
     // Include isFirstLogin for the frontend to handle password change force
-    if (user.role === 'green_champion') {
-      userRes.isFirstLogin = user.isFirstLogin;
+    if (updatedUser.role === 'green_champion') {
+      userRes.isFirstLogin = updatedUser.isFirstLogin;
     }
 
     res.json({ token, user: userRes });
@@ -249,4 +269,41 @@ const updatePassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, updatePassword };
+// Reset Password for Green Champions (Forgot Password)
+const resetPasswordGC = async (req, res) => {
+  try {
+    const { greenChampionId, email, password } = req.body;
+    if (!greenChampionId || !email || !password) {
+      return res.status(400).json({ message: 'Green Champion ID, registered email, and new password are required.' });
+    }
+
+    const searchEmail = email.toLowerCase().trim();
+    const searchId = greenChampionId.trim();
+
+    // Find User by greenChampionId
+    const user = await User.findOne({
+      role: 'green_champion',
+      greenChampionId: { $regex: new RegExp(`^${searchId}$`, 'i') }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'Green Champion account not found with this ID.' });
+    }
+
+    if (user.email !== searchEmail) {
+      return res.status(400).json({ message: 'The email provided does not match the registered email for this Green Champion ID.' });
+    }
+
+    // Reuse existing auth infrastructure
+    user.password = password;
+    user.isFirstLogin = false;
+    await user.save();
+
+    res.json({ message: 'Password reset successfully.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+module.exports = { register, login, updatePassword, resetPasswordGC };
+

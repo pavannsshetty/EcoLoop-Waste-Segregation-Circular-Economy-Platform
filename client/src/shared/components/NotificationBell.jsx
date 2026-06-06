@@ -1,8 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { HiBell, HiX, HiCheckCircle, HiClipboardList, HiRefresh, HiThumbUp, HiExclamation } from 'react-icons/hi';
+import { useNavigate } from 'react-router-dom';
+import { HiBell, HiX, HiCheckCircle, HiClipboardList, HiRefresh, HiThumbUp, HiExclamation, HiClock, HiHome, HiShoppingCart, HiSparkles, HiStar } from 'react-icons/hi';
+import { MdRecycling, MdWarning, MdEmojiEvents } from 'react-icons/md';
+import { FaTrophy } from 'react-icons/fa';
 import { API } from '../constants';
 
-const TYPE_ICONS = { report: HiClipboardList, status: HiRefresh, support: HiThumbUp, delay: HiExclamation, system: HiBell };
+const TYPE_META = {
+  report:       { Icon: HiClipboardList, color: 'text-green-600', bg: 'bg-green-100' },
+  status:       { Icon: HiRefresh,       color: 'text-blue-600',  bg: 'bg-blue-100'  },
+  support:      { Icon: HiThumbUp,       color: 'text-purple-600',bg: 'bg-purple-100' },
+  escalation:   { Icon: MdWarning,       color: 'text-red-600',   bg: 'bg-red-100'   },
+  delay:        { Icon: HiClock,         color: 'text-orange-600',bg: 'bg-orange-100' },
+  pickup:       { Icon: HiHome,          color: 'text-teal-600',  bg: 'bg-teal-100'  },
+  scrap:        { Icon: MdRecycling,     color: 'text-emerald-600',bg: 'bg-emerald-100'},
+  reward:       { Icon: HiStar,          color: 'text-yellow-600',bg: 'bg-yellow-100' },
+  order:        { Icon: HiShoppingCart,  color: 'text-indigo-600',bg: 'bg-indigo-100' },
+  'Eco Events': { Icon: HiSparkles,      color: 'text-purple-600',bg: 'bg-purple-100' },
+  'Emergency Alerts': { Icon: MdWarning, color: 'text-red-600',   bg: 'bg-red-100'   },
+  'Reward Bonus Events': { Icon: FaTrophy, color: 'text-yellow-600', bg: 'bg-yellow-100' },
+  System:       { Icon: HiBell,          color: 'text-slate-600', bg: 'bg-slate-100'  },
+};
 
 const timeAgo = (iso) => {
   const diff = Date.now() - new Date(iso).getTime();
@@ -11,13 +28,29 @@ const timeAgo = (iso) => {
   if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
 };
 
 import { useSocket } from '../context/SocketContext';
+import { parseStoredUser } from '../context/UserContext';
 import { useTheme } from '../context/ThemeContext';
 
+const TYPE_NAV = {
+  report:     '/citizen/public-reports',
+  status:     '/citizen/public-reports',
+  support:    '/citizen/nearby-issues',
+  escalation: '/citizen/public-reports',
+  delay:      '/citizen/public-reports',
+  pickup:     '/citizen/home-reports',
+  scrap:      '/citizen/scrap-requests',
+  reward:     '/citizen/my-rewards',
+  order:      '/citizen/eco-shopping',
+};
+
 const NotificationBell = () => {
+  const navigate = useNavigate();
   const { dark } = useTheme();
   const [open,         setOpen]         = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -53,29 +86,22 @@ const NotificationBell = () => {
   useEffect(() => {
     if (socket) {
       const handleNotification = (newNotification) => {
-        setNotifications(prev => [newNotification, ...prev]);
-        setUnread(prev => prev + 1);
-      };
-
-      const handleReportCreated = (report) => {
-        const notif = {
-          _id: Date.now().toString(), 
-          title: 'New Waste Reported',
-          message: `A new ${report.wasteType} report was submitted nearby.`,
-          type: 'report',
-          createdAt: new Date(),
-          isRead: false
-        };
-        setNotifications(prev => [notif, ...prev]);
-        setUnread(prev => prev + 1);
+        const userId = parseStoredUser()._id;
+        const localUnread = newNotification.unreadCount !== undefined
+          ? newNotification.unreadCount
+          : (prev) => prev + 1;
+        setNotifications(prev => {
+          if (prev.some(n => n._id === newNotification._id)) return prev;
+          return [{ ...newNotification, isRead: newNotification.isRead ?? (newNotification.readBy || []).includes(userId) }, ...prev];
+        });
+        if (typeof localUnread === 'number') setUnread(localUnread);
+        else setUnread(prev => prev + 1);
       };
 
       socket.on('notification', handleNotification);
-      socket.on('report_created', handleReportCreated);
 
       return () => {
         socket.off('notification', handleNotification);
-        socket.off('report_created', handleReportCreated);
       };
     }
   }, [socket]);
@@ -90,12 +116,17 @@ const NotificationBell = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const markRead = async (id) => {
-    try {
-      await fetch(`${API}/api/notifications/read/${id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
-      setNotifications(ns => ns.map(n => n._id === id ? { ...n, isRead: true } : n));
-      setUnread(u => Math.max(0, u - 1));
-    } catch { }
+  const handleClick = async (n) => {
+    if (!n.isRead) {
+      try {
+        await fetch(`${API}/api/notifications/read/${n._id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
+        setNotifications(ns => ns.map(x => x._id === n._id ? { ...x, isRead: true } : x));
+        setUnread(u => Math.max(0, u - 1));
+      } catch { }
+    }
+    const navPath = n.reportId ? TYPE_NAV[n.type] || TYPE_NAV.report : TYPE_NAV[n.type];
+    if (navPath) navigate(navPath);
+    setOpen(false);
   };
 
   const markAllRead = async () => {
@@ -109,34 +140,38 @@ const NotificationBell = () => {
   return (
     <div className="relative" ref={panelRef}>
       <button onClick={() => setOpen(o => !o)}
-        className="relative flex items-center justify-center h-9 w-9 rounded-sm text-slate-500 hover:bg-slate-100 hover:text-green-600 transition">
-        <HiBell className="h-5 w-5" />
+        className={`relative flex items-center justify-center h-9 w-9 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 ${
+          open
+            ? (dark ? 'bg-white/10 text-green-400' : 'bg-green-50 text-green-600')
+            : (dark ? 'text-slate-400 hover:bg-white/10 hover:text-green-400' : 'text-slate-500 hover:bg-slate-100 hover:text-green-600')
+        }`}>
+        <HiBell className="h-5 w-5 transition-all duration-300" />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-sm bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-            {unread > 9 ? '9+' : unread}
+          <span className="absolute -top-0.5 -right-0.5 h-[14px] min-w-[14px] rounded-full bg-red-400/80 text-white text-[8px] font-semibold flex items-center justify-center px-[3px] leading-none">
+            {unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className={`fixed sm:absolute right-4 sm:right-0 left-4 sm:left-auto top-16 sm:top-12 sm:w-[400px] rounded-sm shadow-2xl z-50 overflow-hidden ring-1 ring-black/5 animate-in fade-in slide-in-from-top-2 duration-300 ${
-          dark ? 'bg-black/90 border border-gray-800' : 'bg-white border border-slate-100'
+        <div className={`fixed sm:absolute right-4 sm:right-0 left-4 sm:left-auto top-16 sm:top-12 sm:w-[400px] rounded-2xl shadow-2xl z-50 overflow-hidden ring-1 ring-black/5 animate-in fade-in slide-in-from-top-2 duration-300 ${
+          dark ? 'bg-[#0A0A0A] border border-gray-800' : 'bg-white border border-slate-100'
         }`}>
-          <div className={`flex items-center justify-between px-6 py-4 border-b ${dark ? 'border-gray-800' : 'border-slate-50'}`}>
+          <div className={`flex items-center justify-between px-5 py-4 border-b ${dark ? 'border-gray-800' : 'border-slate-100'}`}>
             <div className="flex items-center gap-3">
-              <div className={`h-8 w-8 rounded-sm flex items-center justify-center ${dark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-600'}`}>
+              <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${dark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-600'}`}>
                 <HiBell className="h-4 w-4" />
               </div>
               <div>
                 <span className={`text-sm font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>Notifications</span>
-                {unread > 0 && <p className="text-[10px] text-green-500 uppercase tracking-widest">{unread} unread messages</p>}
+                {unread > 0 && <p className="text-[10px] text-green-500 uppercase tracking-widest font-semibold">{unread} new</p>}
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {unread > 0 && (
-                <button onClick={markAllRead} className="text-[10px] uppercase tracking-widest text-green-600 hover:text-green-700 transition-colors">Mark all read</button>
+                <button onClick={markAllRead} className="text-[10px] uppercase tracking-widest font-bold text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 transition-colors">Mark all read</button>
               )}
-              <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-600 transition">
+              <button onClick={() => setOpen(false)} className={`p-1.5 rounded-lg transition ${dark ? 'text-slate-500 hover:bg-white/10' : 'text-slate-400 hover:bg-slate-100'}`}>
                 <HiX className="h-4 w-4" />
               </button>
             </div>
@@ -145,40 +180,39 @@ const NotificationBell = () => {
           <div className="max-h-[420px] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="h-6 w-6 rounded-sm border-2 border-green-500 border-t-transparent animate-spin" />
+                <div className="h-6 w-6 rounded-full border-2 border-green-500 border-t-transparent animate-spin" />
               </div>
             ) : notifications.length === 0 ? (
-              <div className="text-center py-16 flex flex-col items-center gap-3">
-                <div className={`h-12 w-12 rounded-sm flex items-center justify-center ${dark ? 'bg-white/5' : 'bg-slate-50'}`}>
-                  <HiBell className="h-6 w-6 text-slate-300" />
+              <div className="text-center py-14 flex flex-col items-center gap-3">
+                <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${dark ? 'bg-white/5' : 'bg-slate-50'}`}>
+                  <HiBell className="h-7 w-7 text-slate-300" />
                 </div>
-                <p className="text-xs text-slate-400">All caught up! No notifications yet.</p>
+                <div>
+                  <p className={`text-sm font-bold ${dark ? 'text-slate-300' : 'text-slate-600'}`}>All caught up!</p>
+                  <p className="text-xs text-slate-400 mt-0.5">No notifications yet.</p>
+                </div>
               </div>
             ) : (
-              <div className="divide-y divide-slate-50 dark:divide-gray-800">
+              <div className="divide-y divide-slate-100 dark:divide-gray-800/50">
                 {notifications.map(n => {
-                  const Icon = TYPE_ICONS[n.type] || HiBell;
+                  const meta = TYPE_META[n.type] || TYPE_META.System;
                   return (
-                    <button key={n._id} onClick={() => markRead(n._id)}
-                      className={`w-full flex items-start gap-4 px-6 py-4 text-left transition relative group overflow-hidden ${
+                    <button key={n._id} onClick={() => handleClick(n)}
+                      className={`w-full flex items-start gap-3 px-5 py-4 text-left transition relative group ${
                         !n.isRead 
-                          ? dark ? 'bg-green-500/5 hover:bg-green-500/10' : 'bg-green-50/50 hover:bg-green-50' 
-                          : dark ? 'hover:bg-white/5' : 'hover:bg-slate-50'
+                          ? dark ? 'bg-green-500/[0.04] hover:bg-green-500/[0.08]' : 'bg-green-50/40 hover:bg-green-50' 
+                          : dark ? 'hover:bg-white/[0.03]' : 'hover:bg-slate-50'
                       }`}>
-                       <div className={`h-10 w-10 rounded-sm flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 ${
-                        !n.isRead 
-                          ? dark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-600'
-                          : dark ? 'bg-white/5 text-slate-500' : 'bg-slate-100 text-slate-400'
-                      }`}>
-                        <Icon className="h-5 w-5" />
+                      <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 ${!n.isRead ? meta.bg : (dark ? 'bg-white/5 text-slate-500' : 'bg-slate-100 text-slate-400')}`}>
+                        <meta.Icon className={`h-4 w-4 ${!n.isRead ? meta.color : ''}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <p className={`text-xs font-bold tracking-tight truncate ${!n.isRead ? (dark ? 'text-white' : 'text-slate-900') : 'text-slate-500'}`}>{n.title}</p>
-                          {!n.isRead && <div className="h-1.5 w-1.5 rounded-sm bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />}
+                          <p className={`text-xs font-bold truncate ${!n.isRead ? (dark ? 'text-white' : 'text-slate-900') : (dark ? 'text-slate-400' : 'text-slate-500')}`}>{n.title}</p>
+                          {!n.isRead && <span className="h-2 w-2 rounded-full bg-green-500 shrink-0 shadow-[0_0_6px_rgba(34,197,94,0.5)]" />}
                         </div>
-                        <p className={`text-xs mt-1 leading-relaxed line-clamp-2 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{n.message}</p>
-                        <p className="text-[10px] uppercase tracking-wider text-slate-400 mt-2">{timeAgo(n.createdAt)}</p>
+                        <p className={`text-xs mt-0.5 leading-relaxed line-clamp-2 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>{n.message || n.description}</p>
+                        <p className="text-[9px] uppercase tracking-wider text-slate-400 mt-1.5 font-medium">{timeAgo(n.createdAt)}</p>
                       </div>
                     </button>
                   );
@@ -187,9 +221,9 @@ const NotificationBell = () => {
             )}
           </div>
 
-          <div className={`px-6 py-3 border-t text-center ${dark ? 'bg-white/5 border-gray-800' : 'bg-slate-50 border-slate-100'}`}>
-            <button onClick={() => { setOpen(false); window.location.href = '/citizen/notifications'; }}
-              className="text-[10px] uppercase tracking-widest text-green-600 hover:text-green-700 transition-colors">View all notifications</button>
+          <div className={`px-5 py-3 border-t ${dark ? 'bg-white/[0.02] border-gray-800' : 'bg-slate-50 border-slate-100'}`}>
+            <button onClick={() => { setOpen(false); navigate('/citizen/notifications'); }}
+              className="w-full py-2 rounded-xl text-[10px] uppercase tracking-widest font-bold text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-white/5 transition-colors">View all notifications</button>
           </div>
         </div>
       )}

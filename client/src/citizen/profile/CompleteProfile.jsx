@@ -80,17 +80,17 @@ const CompleteProfile = () => {
     navigate('/citizen/dashboard', { replace: true });
   };
 
-  const inp = `w-full rounded-sm border px-3.5 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${dk('bg-white/5 border-gray-700 text-slate-200 placeholder-slate-500', 'bg-white border-slate-200 text-slate-800 placeholder-slate-400')}`;
+  const inp = `w-full rounded-lg border px-3.5 py-3 sm:py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${dk('bg-white/5 border-gray-700 text-slate-200 placeholder-slate-500', 'bg-white border-slate-200 text-slate-800 placeholder-slate-400')}`;
   const lbl = `text-xs mb-1.5 block font-semibold ${dk('text-slate-300', 'text-slate-700')}`;
 
   return (
     <div className={`min-h-screen flex items-center justify-center p-4 ${dk('bg-[#0A0A0A]', 'bg-[#F9FAFB]')}`}>
-      <div className={`w-full max-w-md rounded-sm shadow-lg overflow-hidden border ${dk('bg-slate-900 border-white/10', 'bg-white border-slate-200')}`}>
+      <div className={`w-full max-w-md rounded-lg shadow-lg overflow-hidden border ${dk('bg-slate-900 border-white/10', 'bg-white border-slate-200')}`}>
         {/* Header Section */}
         <div className="bg-gradient-to-br from-[#0AAF29] to-emerald-600 p-6 sm:p-8 text-center relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
           <div className="relative z-10 flex flex-col items-center">
-            <div className="h-14 w-14 bg-white/20 backdrop-blur-sm rounded-sm flex items-center justify-center mb-4 border border-white/40">
+            <div className="h-14 w-14 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center mb-4 border border-white/40">
               <HiHome className="h-7 w-7 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Complete Your Address Setup</h1>
@@ -103,7 +103,7 @@ const CompleteProfile = () => {
         {/* Form Section */}
         <div className="p-6 sm:p-8">
           {/* Info Banner */}
-          <div className={`flex gap-3 p-3 rounded-sm mb-6 ${dk('bg-blue-900/30 border border-blue-800/50', 'bg-blue-50 border border-blue-200')}`}>
+          <div className={`flex gap-3 p-3 rounded-lg mb-6 ${dk('bg-blue-900/30 border border-blue-800/50', 'bg-blue-50 border border-blue-200')}`}>
             <HiInformationCircle className={`h-5 w-5 shrink-0 mt-0.5 ${dk('text-blue-300', 'text-blue-600')}`} />
             <p className={`text-xs leading-relaxed ${dk('text-blue-200', 'text-blue-700')}`}>
               Your village <strong>{user?.village || 'N/A'}</strong> is pre-filled from registration. Update your street address to proceed.
@@ -114,7 +114,7 @@ const CompleteProfile = () => {
             {/* Village - Read Only */}
             <div>
               <label className={lbl}>Registered Village</label>
-              <div className={`w-full rounded-sm border px-3.5 py-2.5 text-sm ${dk('bg-white/5 border-gray-700 text-slate-400', 'bg-slate-50 border-slate-300 text-slate-500')}`}>
+              <div className={`w-full rounded-lg border px-3.5 py-3 sm:py-2.5 text-sm ${dk('bg-white/5 border-gray-700 text-slate-400', 'bg-slate-50 border-slate-300 text-slate-500')}`}>
                 {user?.village || 'N/A'}
               </div>
             </div>
@@ -174,7 +174,7 @@ const CompleteProfile = () => {
 
             {/* Error Message */}
             {error && (
-              <div className={`flex gap-2 p-3 rounded-sm text-xs font-medium ${dk('bg-red-900/30 border border-red-800/50 text-red-200', 'bg-red-50 border border-red-200 text-red-700')}`}>
+              <div className={`flex gap-2 p-3 rounded-lg text-xs font-medium ${dk('bg-red-900/30 border border-red-800/50 text-red-200', 'bg-red-50 border border-red-200 text-red-700')}`}>
                 <span className="shrink-0 mt-0.5">⚠</span>
                 <span>{error}</span>
               </div>
@@ -185,7 +185,7 @@ const CompleteProfile = () => {
               <button 
                 type="submit" 
                 disabled={loading}
-                className="h-11 w-full flex items-center justify-center gap-2 bg-[#0AAF29] text-white font-semibold rounded-sm shadow-sm hover:bg-[#0AAF29]/90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="h-11 w-full flex items-center justify-center gap-2 bg-[#0AAF29] text-white font-semibold rounded-lg shadow-sm hover:bg-[#0AAF29]/90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Saving...' : <><HiCheckCircle className="h-5 w-5" /> Save Address</>}
               </button>
@@ -193,7 +193,7 @@ const CompleteProfile = () => {
               <button 
                 type="button" 
                 onClick={handleSkip}
-                className={`h-11 w-full font-semibold rounded-sm transition-all ${dk('text-slate-300 hover:bg-white/10', 'text-slate-600 hover:bg-slate-100')}`}
+                className={`h-11 w-full font-semibold rounded-lg transition-all ${dk('text-slate-300 hover:bg-white/10', 'text-slate-600 hover:bg-slate-100')}`}
               >
                 Continue to Dashboard
               </button>

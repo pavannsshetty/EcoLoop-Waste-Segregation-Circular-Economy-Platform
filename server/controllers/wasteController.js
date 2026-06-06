@@ -2,14 +2,17 @@ const WasteReport = require('../models/WasteReport');
 const Collector   = require('../models/Collector');
 const { createNotification } = require('./notificationController');
 const { awardPoints }        = require('./rewardsController');
+const { findBestCollector }  = require('../utils/assignment');
 const User               = require('../models/User');
 const Village            = require('../models/Village');
 const { isPointInPolygon } = require('../utils/geoUtils');
 const { emitToAll, emitToUser } = require('../socket');
 const { detectFakeWaste } = require('../utils/aiWasteDetection');
 const { isValidVillage } = require('../data/kundapuraVillages');
+const { broadcastLeaderboardUpdate } = require('../utils/rewardSync');
 
-const DAILY_REPORT_LIMIT  = 5;
+const DAILY_REPORT_LIMIT       = 5;
+const HOME_PICKUP_DAILY_LIMIT  = 3;
 const MAX_ACTIVE_TASKS    = 10;   
 
 const haversineMeters = (lat1, lng1, lat2, lng2) => {
@@ -44,38 +47,6 @@ const generateReportId = async () => {
 };
 
 const expectedHours = (severity) => ({ Low: 72, Medium: 48, High: 24 }[severity] || 48);
-
-const findBestCollector = async (village, location) => {
-  const collectors = await Collector.find({ status: 'Active', availability: { $ne: 'Offline' } }).lean();
-  if (!collectors.length) return null;
-
-  const activeCounts = await Promise.all(
-    collectors.map(c =>
-      WasteReport.countDocuments({ assignedCollector: c._id, status: { $in: ['Assigned', 'In Progress'] } })
-    )
-  );
-
-  const eligible = collectors.filter((_, i) => activeCounts[i] < MAX_ACTIVE_TASKS);
-  if (!eligible.length) return null;
-
-  const villageNorm = (village || '').trim().toLowerCase();
-
-  if (villageNorm) {
-    const villageMatches = eligible.filter(c =>
-      Array.isArray(c.villages) && c.villages.some(v => v.trim().toLowerCase() === villageNorm)
-    );
-    if (villageMatches.length) {
-      const counts = villageMatches.map(c => activeCounts[collectors.indexOf(c)]);
-      return villageMatches[counts.indexOf(Math.min(...counts))];
-    }
-  }
-
-  const city = (location?.city || '').toLowerCase();
-  const cityMatches = eligible.filter(c => (c.city || '').toLowerCase().includes(city));
-  const pool = cityMatches.length ? cityMatches : eligible;
-  const poolCounts = pool.map(c => activeCounts[collectors.indexOf(c)]);
-  return pool[poolCounts.indexOf(Math.min(...poolCounts))];
-};
 
 const notifyNearbyUsers = async (village, report, eventType) => {
   try {
@@ -190,7 +161,6 @@ const createReport = async (req, res) => {
     if (location?.lat === 0 && location?.lng === 0) {
       requiredFields.houseNo = houseNo;
       requiredFields.street = street;
-      requiredFields.wardNumber = wardNumber;
     }
 
     const missing = Object.entries(requiredFields)
@@ -198,32 +168,104 @@ const createReport = async (req, res) => {
       .map(([k]) => k);
 
     if (missing.length > 0) {
+      const isAddress = missing.some(m => ['houseNo', 'street'].includes(m));
       return res.status(400).json({ 
-        message: `All required fields must be provided. Missing: ${missing.join(', ')}` 
+        message: isAddress
+          ? `Please complete your address details in your profile before requesting pickup.`
+          : `All required fields must be provided. Missing: ${missing.join(', ')}`
       });
     }
 
-    // Backend Village Boundary Validation
+    // Backend Village Boundary Validation - STRICT POLYGON-ONLY
     if (user.village) {
       const villageData = await Village.findOne({ name: user.village });
-      if (villageData && villageData.boundary) {
-        const isInside = isPointInPolygon(parseFloat(location.lat), parseFloat(location.lng), villageData.boundary);
-        if (!isInside) {
-          return res.status(403).json({ 
-            message: `You can report waste only inside your registered village (${user.village}).` 
-          });
-        }
-      }
-    }
+      
+      // DEBUG: Log validation start
+      console.debug('[wasteController] village boundary validation start', {
+        user: user._id,
+        village: user.village,
+        coordinates: { lat: location.lat, lng: location.lng },
+        polygonLoaded: !!(villageData?.boundary?.coordinates?.length > 0),
+        polygonCoordinates: villageData?.boundary?.coordinates?.[0]?.length || 0
+      });
 
-    const locAddr     = (location?.address || '').toLowerCase();
-    const inUdupi     = locAddr.includes('udupi') || locAddr.includes('kundapura') || locAddr.includes('karwar') || true; // Relaxing for testing, but let's keep it safe
+      // STRICT: Boundary must exist
+      if (!villageData || !villageData.boundary || !villageData.boundary.coordinates || villageData.boundary.coordinates[0]?.length < 3) {
+        console.debug('[wasteController] NO POLYGON AVAILABLE - location REJECTED', {
+          user: user._id,
+          village: user.village
+        });
+        return res.status(403).json({ 
+          message: `Village boundary for ${user.village} is not configured. Please contact support.` 
+        });
+      }
+
+      // Perform Point-in-Polygon validation ONLY
+      const isInside = isPointInPolygon(parseFloat(location.lat), parseFloat(location.lng), villageData.boundary);
+      console.debug('[wasteController] point-in-polygon result', {
+        user: user._id,
+        village: user.village,
+        lat: location.lat,
+        lng: location.lng,
+        isInside,
+        polygonCoordinates: villageData.boundary.coordinates[0].length
+      });
+
+      if (!isInside) {
+        console.debug('[wasteController] VALIDATION FAILED - outside polygon', {
+          user: user._id,
+          village: user.village,
+          lat: location.lat,
+          lng: location.lng
+        });
+        return res.status(403).json({ 
+          message: `You can report waste only inside your registered village (${user.village}).` 
+        });
+      }
+      
+      console.debug('[wasteController] VALIDATION PASSED - inside polygon', {
+        user: user._id,
+        village: user.village,
+        lat: location.lat,
+        lng: location.lng
+      });
+    }
     
-    // Check limit
+    // Check limits
     const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
-    const todayCount = await WasteReport.countDocuments({ userId, createdAt: { $gte: dayStart } });
-    if (todayCount >= DAILY_REPORT_LIMIT) {
-      return res.status(429).json({ message: `Daily report limit (${DAILY_REPORT_LIMIT}) reached. Try again tomorrow.` });
+
+    if (reportType === 'Home Pickup') {
+      const todayHomeCount = await WasteReport.countDocuments({
+        userId,
+        reportType: 'Home Pickup',
+        createdAt: { $gte: dayStart },
+      });
+      if (todayHomeCount >= HOME_PICKUP_DAILY_LIMIT) {
+        return res.status(429).json({ message: 'Daily report limit reached.' });
+      }
+
+      const dayEnd = new Date(dayStart);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const existingSameType = await WasteReport.findOne({
+        userId,
+        reportType: 'Home Pickup',
+        wasteType,
+        createdAt: { $gte: dayStart, $lte: dayEnd },
+        status: { $in: ['Submitted', 'Verified', 'Assigned', 'In Progress', 'Resubmitted'] },
+      });
+      if (existingSameType) {
+        return res.status(409).json({
+          message: 'You have already submitted a pickup request today.',
+          existingReportId: existingSameType.reportId,
+          status: existingSameType.status,
+        });
+      }
+    } else {
+      const todayCount = await WasteReport.countDocuments({ userId, createdAt: { $gte: dayStart } });
+      if (todayCount >= DAILY_REPORT_LIMIT) {
+        return res.status(429).json({ message: `Daily report limit (${DAILY_REPORT_LIMIT}) reached. Try again tomorrow.` });
+      }
     }
 
     const bestCollector = await findBestCollector(user.village, location);
@@ -253,8 +295,7 @@ const createReport = async (req, res) => {
       }
     }
 
-    const reportStatus = aiResults.aiStatus === 'REJECTED' ? 'Cancelled' : 
-                         (bestCollector ? 'Assigned' : 'Submitted');
+    const reportStatus = aiResults.aiStatus === 'REJECTED' ? 'Cancelled' : 'Submitted';
 
     const reportId = await generateReportId();
 
@@ -282,9 +323,9 @@ const createReport = async (req, res) => {
       pickupTime: finalPickupTime,
       village: user.village || '', 
       status: reportStatus,
-      assignedCollector: bestCollector ? bestCollector._id : null,
-      isLocked: !!bestCollector && aiResults.aiStatus !== 'REJECTED',
-      lockedAt: bestCollector && aiResults.aiStatus !== 'REJECTED' ? new Date() : null,
+      assignedCollector: null,
+      isLocked: false,
+      lockedAt: null,
       expectedCleanupHours: expectedHours(severity || 'Medium'),
       deadline: new Date(Date.now() + expectedHours(severity || 'Medium') * 60 * 60 * 1000),
       ...aiResults
@@ -306,19 +347,26 @@ const createReport = async (req, res) => {
 
     try {
       createNotification(userId, 'Report Submitted',
-        `Your ${wasteType} waste report has been submitted. Expected cleanup: ${expectedHours(severity || 'Medium')}h.`,
+        `Your ${wasteType} waste report has been submitted and is awaiting verification.`,
         'report', report._id);
 
-      if (bestCollector) {
-        createNotification(bestCollector._id, 'New Task Assigned',
-          `A ${wasteType} waste report has been assigned to you in ${location.area || location.city}.`,
+      // Notify collectors in the village about new report for verification
+      const nearbyCollectors = await User.find({
+        village: { $regex: new RegExp(user.village, 'i') },
+        role: 'collector'
+      });
+      for (const coll of nearbyCollectors) {
+        createNotification(coll._id, 'New Report for Verification',
+          `A new ${wasteType} waste report in ${user.village} needs verification.`,
           'report', report._id);
       }
-      
+
       const { emitToAll } = require('../socket');
       emitToAll('report_created', report);
       if (reportStatus !== 'Cancelled') {
         await awardPoints(userId, 5, 'Report Submitted', report._id);
+      } else {
+        try { broadcastLeaderboardUpdate(); } catch {}
       }
     } catch (notifErr) {
       console.error('[createReport Notification/Socket/Points Error]:', notifErr);
@@ -382,25 +430,31 @@ const updateReport = async (req, res) => {
     if (report.userId.toString() !== userId) return res.status(403).json({ message: 'Not authorized.' });
     if (report.status !== 'Submitted') return res.status(400).json({ message: 'Report cannot be edited after processing started.' });
 
-    const { wasteType, severity, description, landmark, landmarkType, pickupTime, location, image, houseNo, street, wardNumber } = req.body;
-    if (wasteType)              report.wasteType    = wasteType;
-    if (severity)               report.severity     = severity;
-    if (description)            report.description  = description;
-    if (landmark !== undefined) report.landmark     = landmark;
-    if (landmarkType !== undefined) report.landmarkType = landmarkType;
-    if (pickupTime)             report.pickupTime   = new Date(pickupTime);
-    if (houseNo)                report.houseNo      = houseNo;
-    if (street)                 report.street       = street;
-    if (wardNumber)             report.wardNumber   = wardNumber;
-    if (req.file)               report.image        = req.file.path;
-    else if (image !== undefined) report.image      = image;
-    if (location?.lat) {
-      report.location = { ...report.location, ...location, type: 'Point', coordinates: [location.lng, location.lat] };
+    const elapsed = Date.now() - new Date(report.createdAt).getTime();
+    const TEN_MIN = 10 * 60 * 1000;
+    if (elapsed > TEN_MIN) {
+      return res.status(400).json({ message: 'This report can no longer be edited.' });
     }
+
+    const { wasteType, quantity, description, pickupTime, image } = req.body;
+    if (wasteType)              report.wasteType   = wasteType;
+    if (quantity !== undefined) report.quantity    = quantity;
+    if (description !== undefined) report.description = description;
+    if (pickupTime)             report.pickupTime  = new Date(pickupTime);
+    if (req.file)               report.image       = req.file.path;
+    else if (image !== undefined) report.image     = image;
     report.isEdited  = true;
-    report.updatedAt = new Date();
     await report.save();
-    res.json({ message: 'Report updated successfully.', report });
+
+    const populated = await WasteReport.findById(report._id)
+      .populate('assignedCollector', 'name collectorType teamLeader teamSize')
+      .lean();
+    try {
+      const { emitToAll } = require('../socket');
+      emitToAll('report_updated', populated);
+    } catch (e) { /* socket non-critical */ }
+
+    res.json({ message: 'Report updated successfully.', report: populated });
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }
@@ -415,6 +469,11 @@ const deleteReport = async (req, res) => {
     if (report.userId.toString() !== userId) return res.status(403).json({ message: 'Not authorized.' });
     if (report.status !== 'Submitted') return res.status(400).json({ message: 'Cannot delete a report that is already being processed.' });
     await report.deleteOne();
+    try {
+      broadcastLeaderboardUpdate();
+    } catch (err) {
+      console.error('[deleteReport leaderboard sync error]:', err);
+    }
     res.json({ message: 'Report deleted.' });
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
@@ -443,7 +502,9 @@ const getNearbyReports = async (req, res) => {
 
 const getMyReports = async (req, res) => {
   try {
-    const reports = await WasteReport.find({ userId: req.user.id }).sort({ createdAt: -1 });
+    const reports = await WasteReport.find({ userId: req.user.id })
+      .populate('assignedCollector', 'name collectorType teamLeader teamSize')
+      .sort({ createdAt: -1 });
     res.json(reports);
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
@@ -506,4 +567,269 @@ const citizenVerify = async (req, res) => {
   }
 };
 
-module.exports = { createReport, validateWasteImage, checkDuplicate, upvoteReport, updateReport, deleteReport, getNearbyReports, getMyReports, escalateReport, citizenVerify };
+// ─── Collector Verification ───────────────────────────────────────────────
+const collectorVerify = async (req, res) => {
+  try {
+    const report = await WasteReport.findById(req.params.id);
+    if (!report) return res.status(404).json({ message: 'Report not found.' });
+    if (report.status !== 'Submitted' && report.status !== 'Resubmitted' && report.status !== 'Clarification Expired') {
+      return res.status(400).json({ message: 'Only submitted, resubmitted, or expired reports can be verified/rejected.' });
+    }
+
+    const { checklist, notes, action = 'verify' } = req.body;
+    report.verificationNotes = notes || '';
+    report.verifiedBy = req.user.id;
+    report.verifiedAt = new Date();
+
+    if (action === 'reject') {
+      report.status = 'Rejected';
+      createNotification(report.userId, 'Report Rejected',
+        `Your ${report.wasteType} waste report has been rejected by a collector.`, 'status', report._id);
+    } else {
+      report.verificationChecklist = {
+        wasteVisible:        checklist?.wasteVisible || false,
+        typeCorrect:         checklist?.typeCorrect || false,
+        descriptionMatches:  checklist?.descriptionMatches || false,
+        locationReasonable:  checklist?.locationReasonable || false,
+      };
+      report.status = 'Verified';
+      createNotification(report.userId, 'Report Verified',
+        `Your ${report.wasteType} waste report has been verified by a collector.`, 'status', report._id);
+    }
+
+    await report.save();
+
+    const populated = await WasteReport.findById(report._id)
+      .populate('userId', 'name phone email')
+      .lean();
+    try { emitToAll('report_updated', populated); } catch (e) {}
+    res.json({
+      message: action === 'reject' ? 'Report rejected successfully.' : 'Report verified successfully.',
+      report: populated
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+// ─── Request Clarification ────────────────────────────────────────────────
+const requestClarification = async (req, res) => {
+  try {
+    const report = await WasteReport.findById(req.params.id);
+    if (!report) return res.status(404).json({ message: 'Report not found.' });
+    if (report.status !== 'Submitted' && report.status !== 'Resubmitted') {
+      return res.status(400).json({ message: 'Cannot request clarification for this report.' });
+    }
+    if ((report.clarificationCount || 0) >= 2) {
+      return res.status(400).json({ message: 'Maximum clarification requests reached. Please verify or reject.' });
+    }
+
+    const { reason, notes } = req.body;
+    if (!reason) return res.status(400).json({ message: 'Reason is required.' });
+
+    if (!report.clarificationRequests) report.clarificationRequests = [];
+    report.clarificationRequests.push({
+      reason,
+      notes: notes || '',
+      requestedAt: new Date(),
+      requestedBy: req.user.id,
+    });
+    report.clarificationCount = (report.clarificationCount || 0) + 1;
+    report.status = 'Clarification Requested';
+    report.clarificationExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await report.save();
+
+    createNotification(report.userId, 'Clarification Requested',
+      `Your ${report.wasteType} waste report needs clarification. Reason: ${reason}${notes ? '. ' + notes : ''}`,
+      'status', report._id);
+
+    const populated = await WasteReport.findById(report._id)
+      .populate('userId', 'name phone email')
+      .lean();
+    try { emitToAll('report_updated', populated); } catch (e) {}
+    res.json({ message: 'Clarification requested.', report: populated });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+// ─── Resubmit Report (Citizen responds to clarification) ──────────────────
+const resubmitReport = async (req, res) => {
+  try {
+    const report = await WasteReport.findById(req.params.id);
+    if (!report) return res.status(404).json({ message: 'Report not found.' });
+    if (report.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized.' });
+    }
+    if (report.status !== 'Clarification Requested') {
+      return res.status(400).json({ message: 'Report is not awaiting clarification.' });
+    }
+
+    let { wasteType, description, quantity, location } = req.body;
+    if (wasteType)                 report.wasteType   = wasteType;
+    if (description !== undefined) report.description = description;
+    if (quantity !== undefined)    report.quantity    = quantity;
+    if (req.file)                  report.image       = req.file.path;
+
+    if (typeof location === 'string') {
+      try { location = JSON.parse(location); } catch (e) { location = null; }
+    }
+
+    if (location && location.lat != null && location.lng != null) {
+      const lat = parseFloat(location.lat);
+      const lng = parseFloat(location.lng);
+      report.location = {
+        type: 'Point',
+        coordinates: [lng, lat],
+        address: location.address,
+        displayAddress: location.displayAddress || '',
+        lat,
+        lng,
+      };
+    }
+
+    report.status = 'Resubmitted';
+    report.resubmittedAt = new Date();
+    report.clarificationExpiresAt = null;
+    report.isEdited = true;
+    await report.save();
+
+    createNotification(report.userId, 'Report Resubmitted',
+      `Your ${report.wasteType} waste report has been resubmitted for review.`, 'status', report._id);
+
+    const populated = await WasteReport.findById(report._id)
+      .populate('userId', 'name phone email')
+      .lean();
+    try { emitToAll('report_updated', populated); } catch (e) {}
+    res.json({ message: 'Report resubmitted for review.', report: populated });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+// ─── Enhanced Duplicate Check (100m + waste type, public only) ────────────
+const checkDuplicateEnhanced = async (req, res) => {
+  try {
+    const { lat, lng, wasteType } = req.query;
+    if (!lat || !lng) return res.status(400).json({ message: 'lat and lng required.' });
+
+    const activeStatuses = ['Submitted', 'Verified', 'Assigned', 'In Progress', 'Resubmitted', 'Clarification Requested'];
+    const query = {
+      status: { $in: activeStatuses },
+      reportType: 'Public',
+      'location.lat': { $exists: true },
+      'location.lng': { $exists: true },
+    };
+    if (wasteType) query.wasteType = wasteType;
+
+    const active = await WasteReport.find(query).sort({ createdAt: -1 }).lean();
+    const duplicates = active
+      .map(r => ({
+        ...r,
+        distance: haversineMeters(parseFloat(lat), parseFloat(lng), r.location.lat, r.location.lng),
+      }))
+      .filter(r => r.distance <= 100 && r._id.toString() !== (req.query.exclude || ''));
+
+    if (duplicates.length > 0) {
+      try {
+        createNotification(req.user.id, 'Duplicate Report Warning',
+          `A similar public waste report already exists nearby. You can support the existing report or continue anyway.`,
+          'warning', duplicates[0]._id);
+      } catch (notifErr) {
+        console.error('[duplicateWarningNotification]', notifErr);
+      }
+    }
+
+    res.json({
+      hasDuplicates: duplicates.length > 0,
+      duplicates: duplicates.map(r => ({
+        _id: r._id,
+        reportId: r.reportId,
+        status: r.status,
+        wasteType: r.wasteType,
+        distance: Math.round(r.distance),
+        description: r.description,
+        supportedByCount: r.supportedBy?.length || 0,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+// ─── Support Existing Report ──────────────────────────────────────────────
+const supportReport = async (req, res) => {
+  try {
+    const report = await WasteReport.findById(req.params.id);
+    if (!report) return res.status(404).json({ message: 'Report not found.' });
+    if (report.reportType !== 'Public') return res.status(400).json({ message: 'Only public waste reports can be supported.' });
+
+    const already = (report.supportedBy || []).find(s => s.userId.toString() === req.user.id);
+    if (already) {
+      return res.status(409).json({ message: 'You already support this report.' });
+    }
+
+    if (!report.supportedBy) report.supportedBy = [];
+    report.supportedBy.push({ userId: req.user.id, supportedAt: new Date() });
+    await report.save();
+
+    createNotification(report.userId, 'Report Supported',
+      `A citizen supports your ${report.wasteType} waste report. Total supporters: ${report.supportedBy.length}`,
+      'support', report._id);
+
+    const populated = await WasteReport.findById(report._id)
+      .populate('userId', 'name phone email')
+      .lean();
+    try { emitToAll('report_updated', populated); } catch (e) {}
+    res.json({ message: 'Report supported.', supporters: report.supportedBy.length, report: populated });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+// ─── Get Report Verification Details ──────────────────────────────────────
+const getReportVerification = async (req, res) => {
+  try {
+    const report = await WasteReport.findById(req.params.id)
+      .select('verificationChecklist verificationNotes verifiedBy verifiedAt clarificationRequests clarificationCount clarificationExpiresAt resubmittedAt supportedBy duplicateOf status reportId wasteType description')
+      .populate('verifiedBy', 'name')
+      .populate('clarificationRequests.requestedBy', 'name')
+      .lean();
+    if (!report) return res.status(404).json({ message: 'Report not found.' });
+    res.json(report);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+// ─── Check Home Pickup Duplicate (same citizen + same waste type + same day) ─
+const checkHomePickupDuplicate = async (req, res) => {
+  try {
+    const { wasteType } = req.query;
+    const userId = req.user.id;
+    const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(); dayEnd.setHours(23, 59, 59, 999);
+
+    const existing = await WasteReport.findOne({
+      userId,
+      reportType: 'Home Pickup',
+      wasteType,
+      createdAt: { $gte: dayStart, $lte: dayEnd },
+      status: { $in: ['Submitted', 'Verified', 'Assigned', 'In Progress'] },
+    }).lean();
+
+    res.json({
+      isDuplicate: !!existing,
+      report: existing ? {
+        _id: existing._id,
+        reportId: existing.reportId,
+        status: existing.status,
+        wasteType: existing.wasteType,
+      } : null,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+module.exports = { createReport, validateWasteImage, checkDuplicate, upvoteReport, updateReport, deleteReport, getNearbyReports, getMyReports, escalateReport, citizenVerify, collectorVerify, requestClarification, resubmitReport, checkDuplicateEnhanced, supportReport, getReportVerification, checkHomePickupDuplicate };

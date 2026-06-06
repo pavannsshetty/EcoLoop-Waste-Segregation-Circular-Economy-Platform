@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import * as L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { API } from '../../shared/constants';
 import {
   HiX, HiLocationMarker, HiCamera,
@@ -8,6 +11,15 @@ import {
 } from 'react-icons/hi';
 import { useTheme } from '../../shared/context/ThemeContext';
 import { useUser } from '../../shared/context/UserContext';
+import { getMapLayer } from '../../shared/utils/mapLayers';
+import MapLayerSwitcher from '../../shared/components/MapLayerSwitcher';
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 const SCRAP_TYPES  = ['Paper', 'Plastic', 'Metal', 'E-Waste', 'Glass', 'Clothes', 'Furniture', 'Other'];
 const PICKUP_TIMES = ['Morning', 'Afternoon', 'Evening'];
@@ -20,6 +32,7 @@ const QUANTITY_TYPES = [
 const SellScrap = () => {
   const navigate = useNavigate();
   const { dark } = useTheme();
+    const [mapLayer, setMapLayer] = useState('osm');
   const { user: ctxUser, updateUser } = useUser();
   const dk = (d, l) => (dark ? d : l);
 
@@ -37,6 +50,8 @@ const SellScrap = () => {
     landmark: '',
     addressType: ''
   });
+  const [homeLat, setHomeLat] = useState(ctxUser?.latitude || null);
+  const [homeLng, setHomeLng] = useState(ctxUser?.longitude || null);
   const [addressLoading, setAddressLoading] = useState(true);
   const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState('');
@@ -59,6 +74,8 @@ const SellScrap = () => {
             addressType: ctxUser.addressType || ''
           };
           setAddress(addr);
+          setHomeLat(ctxUser.latitude || null);
+          setHomeLng(ctxUser.longitude || null);
           setAddressLoading(false);
           return;
         }
@@ -161,6 +178,12 @@ const SellScrap = () => {
       if (address.landmark) addressParts.push(`Near ${address.landmark}`);
       const pickupAddress = addressParts.join(', ');
 
+      const addressDetails = { ...address };
+      if (homeLat && homeLng) {
+        addressDetails.lat = homeLat;
+        addressDetails.lng = homeLng;
+      }
+
       const res = await fetch(`${API}/api/scrap/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -171,7 +194,7 @@ const SellScrap = () => {
           pickupTime: form.pickupTime,
           description: form.description,
           address: pickupAddress,
-          addressDetails: address,
+          addressDetails,
           image: imageFile ? `[image:${imageFile.name}]` : ''
         }),
       });
@@ -191,18 +214,17 @@ const SellScrap = () => {
 
   const handleClose = () => navigate(-1);
 
-  const inp = `w-full rounded-sm border py-2.5 px-3.5 text-sm shadow-sm transition focus:outline-none focus:ring-2 focus:ring-green-500 ${
+  const inp = `w-full rounded-none border py-2.5 px-3.5 text-sm shadow-sm transition focus:outline-none focus:ring-2 focus:ring-green-500 ${
     dk('bg-slate-800 border-slate-600 text-slate-100 placeholder-slate-500', 'bg-white border-slate-300 text-slate-900 placeholder-slate-400')
   }`;
-  const lbl    = `text-sm ${dk('text-slate-300', 'text-slate-700')}`;
-  const errCls = 'text-xs text-red-400 mt-0.5';
-  const card   = `rounded-sm border p-4 space-y-3 ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`;
-  const btnBase = `flex items-center justify-center gap-2 rounded-sm border px-4 py-2.5 text-sm font-bold transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed`;
+  const lbl    = `text-sm font-bold ${dk('text-slate-300', 'text-slate-700')}`;
+  const errCls = 'text-xs text-red-500 mt-0.5';
+  const card   = `rounded-none border p-4 space-y-3 ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`;
 
   if (success) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-        <div className={`w-full max-w-sm rounded-sm shadow-2xl p-8 flex flex-col items-center text-center ${dk('bg-slate-900 border border-gray-700', 'bg-white')}`}>
+        <div className={`w-full max-w-sm rounded-none shadow-2xl p-6 sm:p-8 flex flex-col items-center text-center ${dk('bg-slate-900 border border-gray-800', 'bg-white')}`}>
           <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
             <HiCheckCircle className="h-10 w-10 text-green-600" />
           </div>
@@ -215,21 +237,111 @@ const SellScrap = () => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
-      <div className={`relative z-10 w-full sm:max-w-2xl rounded-sm sm:rounded-sm shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] ${dk('bg-black/90 border border-gray-800', 'bg-white')}`}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto" onClick={handleClose} />
+      <div className={`relative z-10 w-full max-w-md sm:max-w-xl rounded-none shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[90vh] pointer-events-auto ${dk('bg-slate-900 border border-gray-800', 'bg-white')}`}>
 
-        <div className={`flex items-center justify-between px-4 sm:px-6 py-3.5 border-b shrink-0 ${dk('border-slate-700', 'border-slate-100')}`}>
+        <div className={`flex items-center justify-between px-3 sm:px-6 py-3.5 border-b shrink-0 ${dk('border-slate-700', 'border-slate-100')}`}>
           <div className="flex items-center gap-2">
             <HiClipboardList className="h-5 w-5 text-green-500" />
-            <span className={`font-bold text-sm sm:text-base ${dk('text-white', 'text-slate-900')}`}>Sell Scrap</span>
+            <span className={`font-bold text-lg sm:text-xl ${dk('text-white', 'text-slate-900')}`}>Sell Scrap</span>
           </div>
-          <button type="button" onClick={handleClose} className={`rounded-sm p-1.5 transition ${dk('text-slate-400 hover:bg-slate-700', 'text-slate-400 hover:bg-slate-100')}`}>
+          <button type="button" onClick={handleClose} className={`rounded-none p-1.5 transition ${dk('text-slate-400 hover:bg-slate-700', 'text-slate-400 hover:bg-slate-100')}`}>
             <HiX className="h-5 w-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} noValidate className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 space-y-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <form onSubmit={handleSubmit} noValidate className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 space-y-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pointer-events-auto">
+
+          {/* Pickup Address - FIRST */}
+          <div className={card}>
+            <div className="flex items-center justify-between">
+              <p className={`text-xs font-bold uppercase tracking-wide ${dk('text-slate-400', 'text-slate-500')}`}>Pickup Address</p>
+              <button
+                type="button"
+                onClick={() => navigate('/citizen/profile')}
+                className="text-[10px] font-bold text-green-600 hover:underline flex items-center gap-1"
+              >
+                <HiPencil className="h-3 w-3" /> EDIT ADDRESS
+              </button>
+            </div>
+
+            {addressLoading ? (
+              <div className="flex items-center gap-2 py-4">
+                <div className="h-4 w-4 border-2 border-green-500 border-t-transparent animate-spin rounded-full" />
+                <span className="text-xs text-slate-500">Loading address...</span>
+              </div>
+            ) : address.village || address.houseNo || address.streetArea ? (
+              <div className={`p-4 rounded-none border border-dashed ${dk('bg-white/5 border-slate-700', 'bg-white border-slate-300')}`}>
+                {address.addressType && (
+                  <span className="inline-block bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-lg mb-1 uppercase tracking-wider dark:bg-[#0AAF29]/20 dark:text-[#0AAF29]">
+                    {address.addressType}
+                  </span>
+                )}
+                <p className={`text-sm font-bold ${dk('text-white', 'text-slate-900')}`}>
+                  {address.houseNo && `${address.houseNo}, `}{address.streetArea}
+                </p>
+                <p className={`text-xs ${dk('text-slate-400', 'text-slate-500')}`}>{address.landmark && `${address.landmark}, `}{address.village} Village</p>
+                <div className="flex items-center gap-2 mt-2">
+                  {homeLat && homeLng ? (
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg ${dk('bg-green-900/30 text-green-400', 'bg-green-50 text-green-700')}`}>
+                      <HiCheckCircle className="h-3 w-3" /> GPS Verified
+                    </span>
+                  ) : (
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg ${dk('bg-amber-900/30 text-amber-400', 'bg-amber-50 text-amber-700')}`}>
+                      <HiExclamation className="h-3 w-3" /> No GPS
+                    </span>
+                  )}
+                </div>
+                {homeLat && homeLng && (
+                  <div className={`mt-2 text-[10px] font-mono ${dk('text-slate-500', 'text-slate-400')}`}>
+                    Lat: {homeLat.toFixed(6)} &middot; Lng: {homeLng.toFixed(6)}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-4 rounded-none bg-red-50 border border-red-200 text-center space-y-2.5">
+                <div>
+                  <p className="text-xs text-red-600 font-bold uppercase">No Address Found</p>
+                  <p className="text-[10px] text-red-500 mt-1">Please update your address in profile before requesting scrap pickup.</p>
+                </div>
+                <button type="button" onClick={() => navigate('/citizen/profile')}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-none bg-red-600 text-white hover:bg-red-500 transition active:scale-95">
+                  Complete Address
+                </button>
+              </div>
+            )}
+            {errors.address && <p className={errCls}>{errors.address}</p>}
+
+            {homeLat && homeLng && (
+              <div className="relative w-full h-36 rounded-none overflow-hidden border border-slate-200 dark:border-slate-700">
+                <MapContainer
+                  key={`scrap-home-${homeLat}-${homeLng}`}
+                  center={[homeLat, homeLng]}
+                  zoom={15}
+                  scrollWheelZoom={false}
+                  dragging={false}
+                  zoomControl={false}
+                  className="w-full h-full z-10"
+                >
+                  {(() => {
+                    const currentLayer = getMapLayer(mapLayer);
+                    return (
+                      <TileLayer
+                        key={`tile-${mapLayer}`}
+                        attribution={currentLayer.attribution}
+                        url={currentLayer.url}
+                        maxZoom={currentLayer.maxZoom}
+                        minZoom={currentLayer.minZoom}
+                      />
+                    );
+                  })()}
+                  <MapLayerSwitcher currentLayer={mapLayer} onLayerChange={setMapLayer} position="top-right" />
+                  <Marker position={[homeLat, homeLng]} />
+                </MapContainer>
+              </div>
+            )}
+          </div>
 
           {/* Scrap Details */}
           <div className={card}>
@@ -270,7 +382,6 @@ const SellScrap = () => {
                       value={form.quantity}
                       onChange={e => {
                         const val = e.target.value;
-                        // Prevent negative values
                         if (val === '' || parseFloat(val) >= 0) {
                           set('quantity', val);
                         }
@@ -281,7 +392,7 @@ const SellScrap = () => {
                   )}
                   
                   {form.quantityType === 'not-sure' && (
-                    <p className="text-xs text-slate-500 italic">The collector will assess the quantity during pickup.</p>
+                    <p className="text-xs text-slate-500 italic mt-1">The collector will assess the quantity during pickup.</p>
                   )}
                 </div>
                 {errors.quantity && <p className={errCls}>{errors.quantity}</p>}
@@ -293,7 +404,7 @@ const SellScrap = () => {
               <div className="flex gap-2 mt-1">
                 {PICKUP_TIMES.map(t => (
                   <button key={t} type="button" onClick={() => set('pickupTime', t)}
-                    className={`flex-1 py-2 rounded-sm border text-xs font-bold transition ${
+                    className={`flex-1 py-3 sm:py-2.5 rounded-none border text-xs font-bold transition ${
                       form.pickupTime === t
                         ? 'bg-green-600 text-white border-green-600'
                         : dk('border-slate-600 text-slate-400 hover:border-green-500', 'border-slate-300 text-slate-600 hover:border-green-400')
@@ -307,141 +418,42 @@ const SellScrap = () => {
 
             <div>
               <label className={lbl}>Description (Optional)</label>
-              <textarea rows={3} value={form.description} onChange={e => set('description', e.target.value)}
+              <textarea rows={2} value={form.description} onChange={e => set('description', e.target.value)}
                 placeholder="Any specific instructions for the collector..."
                 className={`${inp} mt-1 resize-none`} />
             </div>
           </div>
 
-          {/* Photo Upload Section */}
+          {/* Photo Upload */}
           <div className={card}>
             <p className={`text-xs font-bold uppercase tracking-wide ${dk('text-slate-400', 'text-slate-500')}`}>Photo (Optional)</p>
-            {preview ? (
-              <div className="flex items-center gap-3">
-                <img src={preview} alt="preview" className="h-20 w-20 rounded-sm object-cover border" />
-                <div className="flex-1">
-                  <p className={`text-sm ${dk('text-slate-200', 'text-slate-700')}`}>{imageFile.name}</p>
-                  <p className="text-xs text-slate-500">{(imageFile.size / 1024).toFixed(1)} KB</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { setImageFile(null); setPreview(''); }}
-                  className={`p-2 rounded-sm transition ${dk('text-slate-400 hover:bg-slate-700', 'text-slate-400 hover:bg-slate-100')}`}
-                >
-                  <HiX className="h-4 w-4" />
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {/* Upload from Gallery */}
-                <label className={`flex flex-col items-center justify-center gap-2 rounded-sm border-2 border-dashed cursor-pointer transition py-4 ${
-                  dk('border-slate-600 hover:border-green-500 bg-slate-800/50', 'border-slate-300 hover:border-green-400 bg-white')
-                }`}>
-                  <HiOutlinePhotograph className={`h-6 w-6 ${dk('text-slate-500', 'text-slate-400')}`} />
-                  <span className={`text-xs font-bold ${dk('text-slate-400', 'text-slate-500')}`}>Gallery</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={e => handleImage(e.target.files[0])}
-                  />
-                </label>
-                
-                {/* Take Photo (Camera) */}
-                <label className={`flex flex-col items-center justify-center gap-2 rounded-sm border-2 border-dashed cursor-pointer transition py-4 ${
-                  dk('border-slate-600 hover:border-green-500 bg-slate-800/50', 'border-slate-300 hover:border-green-400 bg-white')
-                }`}>
-                  <HiCamera className={`h-6 w-6 ${dk('text-slate-500', 'text-slate-400')}`} />
-                  <span className={`text-xs font-bold ${dk('text-slate-400', 'text-slate-500')}`}>Camera</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={e => handleImage(e.target.files[0])}
-                  />
-                </label>
-              </div>
-            )}
-          </div>
-
-          {/* Pickup Location / Address Section */}
-          <div className={card}>
-            <div className="flex items-center justify-between">
-              <p className={`text-xs font-bold uppercase tracking-wide ${dk('text-slate-400', 'text-slate-500')}`}>Pickup Location</p>
-              <button
-                type="button"
-                onClick={() => navigate('/citizen/profile')}
-                className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-sm transition ${
-                  dk('bg-white/10 text-slate-300 hover:bg-white/20', 'bg-slate-100 text-slate-600 hover:bg-slate-200')
-                }`}
-              >
-                <HiPencil className="h-3 w-3" />
-                Edit Address
-              </button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <label className={`flex-1 flex flex-col items-center justify-center gap-2 rounded-none border-2 border-dashed cursor-pointer transition py-4 ${
+                dk('border-slate-600 hover:border-green-500 bg-slate-800/50', 'border-slate-300 hover:border-green-400 bg-white')
+              }`}>
+                {preview
+                  ? <img src={preview} alt="preview" className="h-24 w-auto rounded-none object-cover" />
+                  : <><HiOutlinePhotograph className={`h-7 w-7 ${dk('text-slate-500', 'text-slate-400')}`} /><span className={`text-xs ${dk('text-slate-400', 'text-slate-500')}`}>Upload from gallery</span></>
+                }
+                <input type="file" accept="image/*" className="hidden" onChange={e => handleImage(e.target.files[0])} />
+              </label>
+              <label className={`flex flex-col items-center justify-center gap-2 rounded-none border-2 border-dashed px-6 py-4 transition cursor-pointer ${
+                dk('border-slate-600 hover:border-green-500 text-slate-400 hover:text-green-400', 'border-slate-300 hover:border-green-400 text-slate-400 hover:text-green-600')
+              }`}>
+                <HiCamera className="h-7 w-7" /><span className="text-xs">Take Photo</span>
+                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={e => handleImage(e.target.files[0])} />
+              </label>
             </div>
-
-            {addressLoading ? (
-              <div className="flex items-center gap-2 py-4">
-                <div className="h-4 w-4 border-2 border-green-500 border-t-transparent animate-spin rounded-full" />
-                <span className="text-xs text-slate-500">Loading address...</span>
-              </div>
-            ) : (
-              <div className="space-y-3 mt-2">
-                {/* Address Display */}
-                <div className={`rounded-sm border p-3 ${dk('bg-slate-800/50 border-slate-700', 'bg-slate-50 border-slate-200')}`}>
-                  <div className="grid grid-cols-1 gap-2 text-sm">
-                    {address.village && (
-                      <div className="flex gap-2">
-                        <span className={`text-xs font-bold uppercase ${dk('text-slate-500', 'text-slate-400')}`}>Village:</span>
-                        <span className={dk('text-slate-200', 'text-slate-700')}>{address.village}</span>
-                      </div>
-                    )}
-                    {address.houseNo && (
-                      <div className="flex gap-2">
-                        <span className={`text-xs font-bold uppercase ${dk('text-slate-500', 'text-slate-400')}`}>House No:</span>
-                        <span className={dk('text-slate-200', 'text-slate-700')}>{address.houseNo}</span>
-                      </div>
-                    )}
-                    {address.streetArea && (
-                      <div className="flex gap-2">
-                        <span className={`text-xs font-bold uppercase ${dk('text-slate-500', 'text-slate-400')}`}>Street/Area:</span>
-                        <span className={dk('text-slate-200', 'text-slate-700')}>{address.streetArea}</span>
-                      </div>
-                    )}
-                    {address.landmark && (
-                      <div className="flex gap-2">
-                        <span className={`text-xs font-bold uppercase ${dk('text-slate-500', 'text-slate-400')}`}>Landmark:</span>
-                        <span className={dk('text-slate-200', 'text-slate-700')}>{address.landmark}</span>
-                      </div>
-                    )}
-                    {address.addressType && (
-                      <div className="flex gap-2">
-                        <span className={`text-xs font-bold uppercase ${dk('text-slate-500', 'text-slate-400')}`}>Type:</span>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-bold ${
-                          dk('bg-green-900/30 text-green-400', 'bg-green-100 text-green-700')
-                        }`}>
-                          {address.addressType}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Location indicator */}
-                {address.village && (
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                    <HiLocationMarker className="h-4 w-4 text-green-500 shrink-0" />
-                    <span>Pickup will be at your registered {address.addressType?.toLowerCase() || 'address'}</span>
-                  </div>
-                )}
-              </div>
+            {preview && (
+              <button type="button" onClick={() => { setImageFile(null); setPreview(''); }}
+                className={`text-xs font-bold ${dk('text-red-400 hover:text-red-300', 'text-red-600 hover:text-red-500')}`}>
+                Remove photo
+              </button>
             )}
-            {errors.address && <p className={errCls}>{errors.address}</p>}
           </div>
 
           {errors.submit && (
-            <div className="rounded-sm bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-600 flex items-center gap-2">
+            <div className="rounded-none bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-600 flex items-center gap-2">
               <HiExclamation className="h-5 w-5 shrink-0" />{errors.submit}
             </div>
           )}
@@ -449,13 +461,13 @@ const SellScrap = () => {
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 pt-1 pb-2">
             <button type="button" onClick={handleClose}
-              className={`w-full sm:w-auto flex-1 rounded-sm border px-4 py-2.5 text-sm transition ${
+              className={`w-full sm:w-auto flex-1 rounded-none border px-4 py-2.5 text-sm transition ${
                 dk('border-slate-600 text-slate-300 hover:bg-slate-800', 'border-slate-300 text-slate-600 hover:bg-slate-50')
               }`}>
               Cancel
             </button>
-            <button type="submit" disabled={loading}
-              className="w-full sm:w-auto flex-1 rounded-sm bg-green-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-green-500 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <button type="submit" disabled={loading || (!address.village && !address.houseNo && !address.streetArea)}
+              className="w-full sm:w-auto flex-1 rounded-none bg-[#0AAF29] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#0AAF29]/90 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed text-center uppercase flex items-center justify-center gap-2">
               {loading
                 ? <div className="h-4 w-4 border-2 border-white border-t-transparent animate-spin rounded-full" />
                 : <><HiTruck className="h-4 w-4" /> Request Scrap Pickup</>

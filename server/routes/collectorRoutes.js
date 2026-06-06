@@ -20,7 +20,7 @@ const collectorAuth = async (req, res, next) => {
 
 router.get('/reports', protect, collectorAuth, async (req, res) => {
   try {
-    const { filter, sort } = req.query;
+    const { filter, sort, type } = req.query;
     const cid = req.user.id;
     const collector = req.collector;
     const villages = Array.isArray(collector.villages) && collector.villages.length
@@ -32,6 +32,11 @@ router.get('/reports', protect, collectorAuth, async (req, res) => {
       ? { status: 'Submitted', assignedCollector: null, village: { $in: villages } }
       : { status: 'Submitted', assignedCollector: null };
 
+    if (type && ['Public', 'Home Pickup'].includes(type)) {
+      mine.reportType = type;
+      villageQueue.reportType = type;
+    }
+
     let query;
     if (!filter || filter === 'all') {
       query = { $or: [mine, villageQueue] };
@@ -42,13 +47,17 @@ router.get('/reports', protect, collectorAuth, async (req, res) => {
           { ...villageQueue, severity: filter },
         ],
       };
-    } else if (['Assigned', 'In Progress', 'Resolved', 'Delayed'].includes(filter)) {
+    } else if (['Verified', 'Assigned', 'In Progress', 'Resolved', 'Delayed', 'Clarification Requested', 'Resubmitted'].includes(filter)) {
       query = { assignedCollector: cid, status: filter };
     } else {
       query = { ...mine, status: filter };
     }
 
-    let reports = await WasteReport.find(query).sort({ createdAt: -1 }).lean();
+    let reports = await WasteReport.find(query)
+      .populate('userId', 'name phone email')
+      .populate('verifiedBy', 'name')
+      .sort({ createdAt: -1 })
+      .lean();
     if (sort === 'priority') {
       const order = { High: 0, Medium: 1, Low: 2 };
       reports.sort((a, b) => (order[a.severity] ?? 3) - (order[b.severity] ?? 3));
@@ -57,9 +66,90 @@ router.get('/reports', protect, collectorAuth, async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+router.get('/reports/public', protect, collectorAuth, async (req, res) => {
+  try {
+    req.query.type = 'Public';
+    const { filter, sort } = req.query;
+    const cid = req.user.id;
+    const collector = req.collector;
+    const villages = Array.isArray(collector.villages) && collector.villages.length
+      ? collector.villages
+      : collector.village ? [collector.village] : [];
+
+    const mine = { assignedCollector: cid, reportType: 'Public' };
+    const villageQueue = villages.length
+      ? { status: { $in: ['Submitted', 'Verified', 'Resubmitted', 'Clarification Expired'] }, assignedCollector: null, village: { $in: villages }, reportType: 'Public' }
+      : { status: { $in: ['Submitted', 'Verified', 'Resubmitted', 'Clarification Expired'] }, assignedCollector: null, reportType: 'Public' };
+
+    let query;
+    if (!filter || filter === 'all') {
+      query = { $or: [mine, villageQueue] };
+    } else if (['High', 'Medium', 'Low'].includes(filter)) {
+      query = {
+        $or: [
+          { ...mine, severity: filter },
+          { ...villageQueue, severity: filter },
+        ],
+      };
+    } else if (['Submitted', 'Verified', 'Resubmitted', 'Assigned', 'In Progress', 'Resolved', 'Delayed', 'Clarification Requested', 'Clarification Expired'].includes(filter)) {
+      query = { assignedCollector: cid, reportType: 'Public', status: filter };
+    } else {
+      query = { ...mine, status: filter };
+    }
+
+    let reports = await WasteReport.find(query)
+      .populate('userId', 'name phone email')
+      .populate('verifiedBy', 'name')
+      .sort({ createdAt: -1 })
+      .lean();
+    if (sort === 'priority') {
+      const order = { High: 0, Medium: 1, Low: 2 };
+      reports.sort((a, b) => (order[a.severity] ?? 3) - (order[b.severity] ?? 3));
+    }
+    res.json(reports);
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+router.get('/reports/home-pickup', protect, collectorAuth, async (req, res) => {
+  try {
+    const { filter, sort } = req.query;
+    const cid = req.user.id;
+    const collector = req.collector;
+    const villages = Array.isArray(collector.villages) && collector.villages.length
+      ? collector.villages
+      : collector.village ? [collector.village] : [];
+
+    const mine = { assignedCollector: cid, reportType: 'Home Pickup' };
+    const villageQueue = villages.length
+      ? { status: 'Submitted', assignedCollector: null, village: { $in: villages }, reportType: 'Home Pickup' }
+      : { status: 'Submitted', assignedCollector: null, reportType: 'Home Pickup' };
+
+    let query;
+    if (!filter || filter === 'all') {
+      query = { $or: [mine, villageQueue] };
+    } else if (['Submitted', 'Assigned', 'In Progress', 'Resolved', 'Delayed'].includes(filter)) {
+      query = { assignedCollector: cid, reportType: 'Home Pickup', status: filter };
+    } else {
+      query = { ...mine, status: filter };
+    }
+
+    let reports = await WasteReport.find(query)
+      .populate('userId', 'name phone email')
+      .sort({ createdAt: -1 })
+      .lean();
+    if (sort === 'date') {
+      reports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+    res.json(reports);
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
 router.get('/available', protect, collectorAuth, async (req, res) => {
   try {
-    const reports = await WasteReport.find({ status: 'Submitted', assignedCollector: null }).sort({ createdAt: -1 }).lean();
+    const reports = await WasteReport.find({ status: { $in: ['Submitted', 'Verified', 'Resubmitted', 'Clarification Expired'] }, assignedCollector: null })
+      .populate('userId', 'name phone email')
+      .sort({ createdAt: -1 })
+      .lean();
     res.json(reports);
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
@@ -76,6 +166,9 @@ router.put('/report/:id/status', protect, collectorAuth, upload.single('completi
           _id: req.params.id,
           $or: [
             { status: 'Submitted', isLocked: { $ne: true } },
+            { status: 'Verified', isLocked: { $ne: true } },
+            { status: 'Resubmitted', isLocked: { $ne: true } },
+            { status: 'Clarification Expired', isLocked: { $ne: true } },
             { status: 'Reopened', isLocked: { $ne: true } },
           ],
         },
@@ -94,11 +187,20 @@ router.put('/report/:id/status', protect, collectorAuth, upload.single('completi
         return res.status(409).json({ message: 'This task has already been accepted by another collector.' });
       }
 
-      if (locked.userId) {
-        createNotification(locked.userId, 'Report Assigned',
-          `A collector has been assigned to your ${locked.wasteType} waste report.`, 'status', locked._id);
+      // Populate and broadcast assignment in real-time
+      const assignedReport = await WasteReport.findById(locked._id)
+        .populate('assignedCollector', 'name collectorType teamLeader teamSize')
+        .lean();
+      if (assignedReport.userId) {
+        createNotification(assignedReport.userId, 'Report Assigned',
+          `A collector has been assigned to your ${assignedReport.wasteType} waste report.`, 'status', assignedReport._id);
       }
-      return res.json({ message: 'Task accepted.', report: locked });
+      try {
+        const { emitToUser, emitToAll } = require('../socket');
+        if (assignedReport.userId?._id) emitToUser(assignedReport.userId.toString(), 'report_updated', assignedReport);
+        emitToAll('report_updated', assignedReport);
+      } catch (e) { /* socket non-critical */ }
+      return res.json({ message: 'Task accepted.', report: assignedReport });
     }
 
     const report = await WasteReport.findById(req.params.id);
@@ -123,6 +225,7 @@ router.put('/report/:id/status', protect, collectorAuth, upload.single('completi
       report.completionPhoto   = req.file ? req.file.path : (completionPhoto || '');
       report.completionNotes   = completionNotes || '';
       report.completedAt       = new Date();
+      report.revokePreviousStatus = report.status;
       report.citizenVerified   = 'pending';
       await Collector.findByIdAndUpdate(cid, { $inc: { completedTasks: 1 } });
       if (report.userId) {
@@ -139,7 +242,71 @@ router.put('/report/:id/status', protect, collectorAuth, upload.single('completi
         `Your ${report.wasteType} waste report is delayed: ${delayReason}`, 'delay', report._id);
     }
     await report.save();
-    res.json({ message: 'Status updated.', report });
+    
+    // Return populated report so frontend has user data
+    const populated = await WasteReport.findById(report._id)
+      .populate('userId', 'name phone email')
+      .populate('assignedCollector', 'name collectorType teamLeader teamSize')
+      .lean();
+    
+    // Socket broadcast
+    try {
+      const { emitToUser, emitToAll } = require('../socket');
+      if (populated.userId?._id) emitToUser(populated.userId._id.toString(), 'report_updated', populated);
+      emitToAll('report_updated', populated);
+    } catch (e) { /* socket non-critical */ }
+
+    res.json({ message: 'Status updated.', report: populated });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+/* ─── Revoke Completion ─── */
+router.put('/report/:id/revoke', protect, collectorAuth, async (req, res) => {
+  try {
+    const cid = req.user.id;
+    const report = await WasteReport.findById(req.params.id);
+    if (!report) return res.status(404).json({ message: 'Report not found.' });
+    if (report.assignedCollector?.toString() !== cid.toString()) {
+      return res.status(403).json({ message: 'Not assigned to this task.' });
+    }
+    if (report.status !== 'Resolved') {
+      return res.status(400).json({ message: 'Only completed reports can be revoked.' });
+    }
+
+    // Store revoke tracking
+    report.revokedAt = new Date();
+    report.revokedBy = cid;
+    report.revokePreviousStatus = report.revokePreviousStatus || report.status;
+
+    // Restore to previous active status (default In Progress if unknown)
+    const restoreStatus = report.revokePreviousStatus === 'Resolved' ? 'In Progress' : (report.revokePreviousStatus || 'In Progress');
+    report.status = restoreStatus;
+    report.completedAt = null;
+    report.citizenVerified = 'pending';
+
+    // Decrement completed tasks counter
+    await Collector.findByIdAndUpdate(cid, { $inc: { completedTasks: -1 } });
+    await report.save();
+
+    // Notify citizen
+    if (report.userId) {
+      const { createNotification } = require('../controllers/notificationController');
+      createNotification(report.userId, 'Completion Revoked',
+        `Your ${report.wasteType} waste report completion has been revoked by the collector. Status restored to "${restoreStatus}".`,
+        'status', report._id);
+    }
+
+    // Socket broadcast
+    try {
+      const { emitToUser, emitToAll } = require('../socket');
+      const populated = await WasteReport.findById(report._id)
+        .populate('userId', 'name phone email')
+        .lean();
+      if (report.userId) emitToUser(report.userId.toString(), 'report_updated', populated);
+      emitToAll('report_updated', populated);
+    } catch (e) { /* socket non-critical */ }
+
+    res.json({ message: 'Completion revoked, report restored.', report: await WasteReport.findById(report._id).populate('userId', 'name phone email').lean() });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
@@ -153,24 +320,15 @@ router.put('/availability', protect, collectorAuth, async (req, res) => {
 
 router.get('/profile', protect, collectorAuth, async (req, res) => {
   try {
-    const collector = req.collector; 
+    const collector = await Collector.findById(req.user.id).select('-password').lean();
     if (!collector) return res.status(404).json({ message: 'Collector not found.' });
 
     res.json({
-      _id:          collector._id,
-      name:         collector.name,
-      email:        collector.email || '',
-      phone:        collector.mobile || '',
-      role:         'Collector',
-      locality:     collector.area || '',
+      ...collector,
+      phone: collector.mobile || '',
       profilePhoto: collector.photo || '',
-      completedTasks: collector.completedTasks || 0,
-      createdAt:    collector.createdAt,
-      collectorId:  collector.collectorId,
-      city:         collector.city,
-      area:         collector.area,
-      performanceScore: collector.performanceScore || 0,
-      availability: collector.availability
+      role: 'Collector',
+      locality: collector.area || collector.city || '',
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
@@ -195,6 +353,7 @@ router.put('/profile', protect, collectorAuth, upload.single('photo'), async (re
 });
 
 const ScrapRequest   = require('../models/ScrapRequest');
+const Order          = require('../models/Order');
 
 router.get('/stats', protect, collectorAuth, async (req, res) => {
   try {
@@ -209,9 +368,11 @@ router.get('/stats', protect, collectorAuth, async (req, res) => {
 
     const [
       pendingSubmitted, assigned, inProgress, completedToday, total,
-      pendingScrap, assignedScrap, inProgressScrap, completedScrapToday, totalScrap
+      pendingScrap, assignedScrap, inProgressScrap, completedScrapToday, totalScrap,
+      publicPending, publicAssigned, publicInProgress, publicCompletedToday, publicTotal,
+      homePending, homeAssigned, homeInProgress, homeCompletedToday, homeTotal
     ] = await Promise.all([
-      WasteReport.countDocuments({ status: 'Submitted', assignedCollector: null, ...villageFilter }),
+      WasteReport.countDocuments({ status: { $in: ['Submitted', 'Verified', 'Resubmitted', 'Clarification Expired'] }, assignedCollector: null, ...villageFilter }),
       WasteReport.countDocuments({ assignedCollector: cid, status: 'Assigned' }),
       WasteReport.countDocuments({ assignedCollector: cid, status: 'In Progress' }),
       WasteReport.countDocuments({ assignedCollector: cid, status: 'Resolved', completedAt: { $gte: today } }),
@@ -222,6 +383,17 @@ router.get('/stats', protect, collectorAuth, async (req, res) => {
       ScrapRequest.countDocuments({ assignedCollector: cid, status: 'In Progress' }),
       ScrapRequest.countDocuments({ assignedCollector: cid, status: 'Collected', updatedAt: { $gte: today } }),
       ScrapRequest.countDocuments({ assignedCollector: cid }),
+
+      WasteReport.countDocuments({ status: { $in: ['Submitted', 'Verified', 'Resubmitted', 'Clarification Expired'] }, assignedCollector: null, reportType: 'Public', ...villageFilter }),
+      WasteReport.countDocuments({ assignedCollector: cid, status: 'Assigned', reportType: 'Public' }),
+      WasteReport.countDocuments({ assignedCollector: cid, status: 'In Progress', reportType: 'Public' }),
+      WasteReport.countDocuments({ assignedCollector: cid, status: 'Resolved', reportType: 'Public', completedAt: { $gte: today } }),
+      WasteReport.countDocuments({ assignedCollector: cid, reportType: 'Public' }),
+
+      WasteReport.countDocuments({ assignedCollector: cid, status: 'Assigned', reportType: 'Home Pickup' }),
+      WasteReport.countDocuments({ assignedCollector: cid, status: 'In Progress', reportType: 'Home Pickup' }),
+      WasteReport.countDocuments({ assignedCollector: cid, status: 'Resolved', reportType: 'Home Pickup', completedAt: { $gte: today } }),
+      WasteReport.countDocuments({ assignedCollector: cid, reportType: 'Home Pickup' }),
     ]);
 
     const collectorDoc = await Collector.findById(req.user.id).select('name collectorId city area village villages availability completedTasks');
@@ -234,7 +406,9 @@ router.get('/stats', protect, collectorAuth, async (req, res) => {
       total: total + totalScrap,
       collector: collectorDoc,
       wasteDetails: { pendingSubmitted, assigned, inProgress, completedToday, total },
-      scrapDetails: { pendingScrap, assignedScrap, inProgressScrap, completedScrapToday, totalScrap }
+      scrapDetails: { pendingScrap, assignedScrap, inProgressScrap, completedScrapToday, totalScrap },
+      publicWasteDetails: { pendingSubmitted: publicPending, assigned: publicAssigned, inProgress: publicInProgress, completedToday: publicCompletedToday, total: publicTotal },
+      homePickupDetails: { assigned: homeAssigned, inProgress: homeInProgress, completedToday: homeCompletedToday, total: homeTotal }
     });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
@@ -267,12 +441,59 @@ router.get('/village-reports', protect, collectorAuth, async (req, res) => {
               $maxDistance: 5000,
             },
           },
-          status: { $nin: ['Resolved'] },
+      status: { $nin: ['Resolved', 'Clarification Requested', 'Clarification Expired'] },
         }).limit(20).lean();
       }
     }
 
     res.json({ villageReports, nearbyReports, villages, village: villages[0] || '' });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+/* ─── Eco Delivery Routes ─── */
+router.get('/deliveries', protect, collectorAuth, async (req, res) => {
+  try {
+    const { filter } = req.query;
+    const cid = req.user.id;
+
+    let query = { assignedCollector: cid };
+    if (filter && ['Assigned', 'Out for Delivery', 'Delivered'].includes(filter)) {
+      query.deliveryStatus = filter;
+    } else {
+      query.deliveryStatus = { $in: ['Assigned', 'Out for Delivery', 'Delivered'] };
+    }
+
+    const orders = await Order.find(query)
+      .populate('userId', 'name phone email')
+      .populate('itemId', 'itemName image price category')
+      .sort({ updatedAt: -1 })
+      .lean();
+    res.json(orders);
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+router.put('/delivery/:id/status', protect, collectorAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const cid = req.user.id;
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found.' });
+    if (order.assignedCollector?.toString() !== cid.toString()) {
+      return res.status(403).json({ message: 'Not assigned to this delivery.' });
+    }
+
+    const allowed = { Assigned: ['Out for Delivery'], 'Out for Delivery': ['Delivered'] };
+    if (!allowed[order.deliveryStatus]?.includes(status)) {
+      return res.status(400).json({ message: `Cannot change from ${order.deliveryStatus} to ${status}.` });
+    }
+
+    order.deliveryStatus = status;
+    await order.save();
+    if (order.userId) {
+      createNotification(order.userId, 'Delivery Update',
+        `Your eco shopping order is now "${status}".`, 'status', order._id);
+    }
+    res.json({ message: `Delivery status updated to ${status}.`, order });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 

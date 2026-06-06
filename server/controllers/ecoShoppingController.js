@@ -3,9 +3,12 @@ const User        = require('../models/User');
 const EcoPointHistory = require('../models/EcoPointHistory');
 const ProductView = require('../models/ProductView');
 const Order       = require('../models/Order');
+const Collector   = require('../models/Collector');
 const { CATEGORIES } = require('../models/RecycleItem');
-const { emitToAll } = require('../socket');
+const { emitToAll, emitToUser } = require('../socket');
 const { deductPoints } = require('./rewardsController');
+const { createNotification } = require('./notificationController');
+const { findBestCollector } = require('../utils/assignment');
 
 // Helper for stock alerts
 const checkAndAlertStock = (item) => {
@@ -252,6 +255,16 @@ const buyItem = async (req, res) => {
     }
 
     // Create Order
+    const deliveryAddress = user.homeAddress?.trim()
+      ? user.homeAddress.trim()
+      : [user.houseNo, user.streetArea, user.landmark].filter(Boolean).join(', ') || user.currentLocation || '';
+    const deliveryLatitude = typeof user.latitude === 'number' ? user.latitude : null;
+    const deliveryLongitude = typeof user.longitude === 'number' ? user.longitude : null;
+
+    const bestCollector = await findBestCollector(user.village, { city: user.city });
+    const assignedCollectorId = bestCollector ? bestCollector._id : null;
+    const deliveryStatus = bestCollector ? 'Assigned' : 'Pending';
+
     const order = await Order.create({
       userId: user._id,
       itemId: item._id,
@@ -260,8 +273,21 @@ const buyItem = async (req, res) => {
       discountAmount: discount,
       finalAmount: finalCashPrice,
       paymentMethod,
-      paymentStatus: 'Completed'
+      paymentStatus: 'Completed',
+      quantity: 1,
+      deliveryAddress,
+      deliveryLatitude,
+      deliveryLongitude,
+      deliveryStatus,
+      assignedCollector: assignedCollectorId,
     });
+
+    if (bestCollector) {
+      await createNotification(bestCollector._id, 'New Delivery Assigned', `You have been assigned a new eco shopping delivery order.`, 'assignment', order._id);
+      await createNotification(user._id, 'Order Assigned', `Your eco shopping order has been assigned to ${bestCollector.name}.`, 'order', order._id);
+      emitToUser(bestCollector._id.toString(), 'new_delivery', order);
+      emitToUser(user._id.toString(), 'order_updated', order);
+    }
 
     // Update Item
     item.stock -= 1;
@@ -275,8 +301,11 @@ const buyItem = async (req, res) => {
     }
 
     emitToAll('RECYCLE_ITEM_UPDATED', { action: 'BUY', item });
+    emitToAll('ECO_SHOPPING_ORDER_UPDATED', { orderId: order._id, userId: user._id });
     emitToAll('STORE_ANALYTICS_UPDATED', { action: 'PURCHASE', itemId: item._id, requests: item.requests });
     checkAndAlertStock(item);
+
+    await createNotification(user._id, 'Order Placed', `Your eco shopping order for ${item.itemName} has been placed successfully.`, 'order', order._id);
 
     res.json({ 
       message: finalCashPrice === 0 
@@ -292,9 +321,241 @@ const buyItem = async (req, res) => {
   }
 };
 
-// ─── Get categories list ─────────────────────────────────────────────────────
-const getCategories = async (req, res) => {
-  res.json({ categories: CATEGORIES });
+const getMyOrders = async (req, res) => {
+  try {
+    const userId = req.user?.id || req.user?._id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Not authorized. Invalid user token.' });
+    }
+
+    const orders = await Order.find({ userId })
+      .populate('itemId', 'itemName image price category')
+      .populate('assignedCollector', 'name collectorId phone email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json(orders);
+  } catch (err) {
+    console.error('[getMyOrders Error]:', err);
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
 };
 
-module.exports = { addItem, updateItem, deleteItem, getStoreAnalytics, getItems, getItem, viewItem, buyItem, getCategories };
+const formatBuyerAddress = (user) => {
+  if (!user) return '';
+  if (user.homeAddress && user.homeAddress.trim()) return user.homeAddress.trim();
+  const parts = [];
+  if (user.houseNo) parts.push(user.houseNo);
+  if (user.streetArea) parts.push(user.streetArea);
+  if (user.landmark) parts.push(user.landmark);
+  if (user.village) parts.push(user.village);
+  if (user.city) parts.push(user.city);
+  if (user.currentLocation) parts.push(user.currentLocation);
+  return parts.filter(Boolean).join(', ');
+};
+
+const getOrdersForAdmin = async (req, res) => {
+  try {
+    const { status, collectorId, search } = req.query;
+    const query = {};
+    if (status && ['Pending', 'Assigned', 'Out for Delivery', 'Delivered'].includes(status)) {
+      query.deliveryStatus = status;
+    }
+    if (collectorId) {
+      query.assignedCollector = collectorId;
+    }
+
+    let orders = await Order.find(query)
+      .populate('userId', 'name phone email')
+      .populate('itemId', 'itemName image price category')
+      .populate('assignedCollector', 'name collectorId phone email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), 'i');
+      orders = orders.filter((order) => {
+        return (
+          searchRegex.test(order._id.toString()) ||
+          searchRegex.test(order.itemId?.itemName || '') ||
+          searchRegex.test(order.userId?.name || '') ||
+          searchRegex.test(order.userId?.phone || '')
+        );
+      });
+    }
+
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+const getEcoProductBuyers = async (req, res) => {
+  try {
+    const { status, search, sort } = req.query;
+    const query = {};
+    if (status && ['Pending', 'Assigned', 'Out for Delivery', 'Delivered'].includes(status)) {
+      query.deliveryStatus = status;
+    }
+
+    const orders = await Order.find(query)
+      .populate('userId', 'name email phone profilePhoto homeAddress houseNo streetArea landmark village city currentLocation')
+      .populate('itemId', 'itemName image price category')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const buyerMap = new Map();
+    orders.forEach((order) => {
+      const user = order.userId;
+      if (!user?._id) return;
+      const userId = user._id.toString();
+      const existing = buyerMap.get(userId);
+      const latestOrder = existing?.latestOrder || order;
+      const buyer = existing || {
+        _id: user._id,
+        name: user.name || 'Citizen',
+        profilePhoto: user.profilePhoto || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        address: formatBuyerAddress(user),
+        totalAmount: 0,
+        totalOrders: 0,
+        latestOrderDate: order.createdAt,
+        latestOrderStatus: order.deliveryStatus,
+        latestPaymentStatus: order.paymentStatus,
+        latestProductName: order.itemId?.itemName || 'Eco product',
+        latestQuantity: order.quantity || 1,
+        latestDeliveryAddress: order.deliveryAddress || '',
+        paymentStatusCounts: {},
+      };
+
+      buyer.totalAmount += order.finalAmount || 0;
+      buyer.totalOrders += 1;
+      if (!existing || order.createdAt > latestOrder.createdAt) {
+        buyer.latestOrderDate = order.createdAt;
+        buyer.latestOrderStatus = order.deliveryStatus;
+        buyer.latestPaymentStatus = order.paymentStatus;
+        buyer.latestProductName = order.itemId?.itemName || 'Eco product';
+        buyer.latestQuantity = order.quantity || 1;
+        buyer.latestDeliveryAddress = order.deliveryAddress || '';
+      }
+      buyer.paymentStatusCounts[order.paymentStatus] = (buyer.paymentStatusCounts[order.paymentStatus] || 0) + 1;
+      buyerMap.set(userId, buyer);
+    });
+
+    let buyers = Array.from(buyerMap.values());
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), 'i');
+      buyers = buyers.filter((buyer) => {
+        return (
+          searchRegex.test(buyer.name || '') ||
+          searchRegex.test(buyer.email || '') ||
+          searchRegex.test(buyer.phone || '') ||
+          searchRegex.test(buyer.address || '') ||
+          searchRegex.test(buyer.latestProductName || '')
+        );
+      });
+    }
+
+    if (sort === 'amount') {
+      buyers.sort((a, b) => (b.totalAmount || 0) - (a.totalAmount || 0));
+    } else if (sort === 'orders') {
+      buyers.sort((a, b) => (b.totalOrders || 0) - (a.totalOrders || 0));
+    } else if (sort === 'name') {
+      buyers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    } else {
+      buyers.sort((a, b) => new Date(b.latestOrderDate) - new Date(a.latestOrderDate));
+    }
+
+    res.json(buyers);
+  } catch (err) {
+    console.error('[getEcoProductBuyers Error]:', err);
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+const getEcoProductBuyerOrders = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).select('name email phone profilePhoto homeAddress houseNo streetArea landmark village city currentLocation');
+    if (!user) return res.status(404).json({ message: 'Buyer not found.' });
+
+    const orders = await Order.find({ userId: user._id })
+      .populate('itemId', 'itemName image price category')
+      .populate('assignedCollector', 'name collectorId phone email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ user, orders });
+  } catch (err) {
+    console.error('[getEcoProductBuyerOrders Error]:', err);
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+const assignOrderCollector = async (req, res) => {
+  try {
+    const { collectorId } = req.body;
+    if (!collectorId) return res.status(400).json({ message: 'collectorId is required.' });
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found.' });
+
+    const collector = await Collector.findById(collectorId);
+    if (!collector) return res.status(404).json({ message: 'Collector not found.' });
+    if (collector.status === 'Inactive') return res.status(400).json({ message: 'Collector is inactive.' });
+
+    order.assignedCollector = collector._id;
+    order.deliveryStatus = 'Assigned';
+    await order.save();
+
+    await createNotification(order.userId, 'Delivery Assigned', `Your eco shopping order has been assigned to ${collector.name}.`, 'order', order._id);
+    await createNotification(collector._id, 'New Delivery Assignment', `You have been assigned a new eco shopping delivery order.`, 'assignment', order._id);
+    emitToAll('ECO_SHOPPING_ORDER_UPDATED', { orderId: order._id, userId: order.userId });
+
+    res.json({ message: 'Collector assigned successfully.', order });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+const getActiveCollectors = async (req, res) => {
+  try {
+    const collectors = await Collector.find({ status: 'Active' })
+      .select('name collectorId phone email villages city area vehicleType vehicleNumber')
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json({ collectors });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+// ─── Get categories list ─────────────────────────────────────────────────────
+const getCategories = async (req, res) => {
+  try {
+    const dbCategories = await RecycleItem.distinct('category');
+    const allCategories = Array.from(new Set([...(Array.isArray(dbCategories) ? dbCategories : []), ...CATEGORIES]));
+    res.json({ categories: allCategories });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+module.exports = {
+  addItem,
+  updateItem,
+  deleteItem,
+  getStoreAnalytics,
+  getItems,
+  getItem,
+  viewItem,
+  buyItem,
+  getMyOrders,
+  getOrdersForAdmin,
+  getEcoProductBuyers,
+  getEcoProductBuyerOrders,
+  assignOrderCollector,
+  getActiveCollectors,
+  getCategories,
+};

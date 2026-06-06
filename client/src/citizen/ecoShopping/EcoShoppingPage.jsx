@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
   HiSearch, HiX, HiStar, HiShoppingCart, HiEye,
   HiCheckCircle, HiExclamation, HiChevronDown,
@@ -8,7 +9,6 @@ import {
   MdRecycling, MdChair, MdBuild, MdInsertDriveFile, 
   MdCheckroom, MdToys, MdHome, MdFolder, MdDevices 
 } from 'react-icons/md';
-import { useOutletContext } from 'react-router-dom';
 import { API } from '../../shared/constants';
 import socket from '../../socket';
 import { useUser } from '../../shared/context/UserContext';
@@ -35,142 +35,132 @@ const CAT_ICONS = {
   'Other Recyclable Items': <MdFolder />,
 };
 
-/* ── Item Detail Modal ── */
+/* ── Item Detail Modal (Mobile-first) ── */
 const ItemDetailModal = ({ item, dark, onClose, onBuy, buying, ctxUser }) => {
   const [pointsToUse, setPointsToUse] = useState(0);
+  const [descExpanded, setDescExpanded] = useState(false);
   if (!item) return null;
   const textPrimary = dark ? 'text-[#f3f4f6]' : 'text-slate-900';
   const textMuted   = dark ? 'text-[#8b95a7]' : 'text-slate-500';
   const available   = item.status === 'Available' && item.stock > 0;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className={`relative w-full max-w-xl rounded-sm shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300 border ${dark ? 'bg-[#11151c] border-white/10' : 'bg-white border-black/5'}`}>
-        <button type="button" onClick={onClose}
-          className={`absolute top-4 right-4 z-20 h-8 w-8 flex items-center justify-center rounded-full transition-all ${dark ? 'bg-black/50 text-white hover:bg-black/70' : 'bg-white/80 text-slate-600 hover:bg-white hover:text-slate-900 shadow-sm'}`}>
-          <HiX className="h-4 w-4" />
-        </button>
-
-        <div className="overflow-y-auto flex-1 [scrollbar-width:none]">
-          {/* Image */}
-          <div className="relative p-2 pb-0">
-              {item.image
-              ? <img src={item.image} alt={item.itemName} className="w-full h-52 sm:h-60 object-contain rounded-xl bg-slate-50 dark:bg-slate-800/50" />
-              : <div className={`w-full h-52 sm:h-60 flex items-center justify-center text-7xl rounded-xl ${dark ? 'bg-slate-800' : 'bg-slate-50 text-green-500'}`}>
-                  {CAT_ICONS[item.category] || <MdFolder />}
-                </div>
-              }
+    <div className="fixed inset-0 z-[100] flex items-end justify-center p-4 bg-black/50 backdrop-blur-sm md:items-center md:justify-center">
+      <div className={`w-full max-w-md md:max-w-2xl flex flex-col bg-white dark:bg-[#0f1320] border-t md:border ${dark ? 'border-white/10' : 'border-slate-200'} rounded-t-2xl md:rounded-2xl shadow-xl md:shadow-2xl md:max-h-[80vh] max-h-[95vh] overflow-hidden`}>
+        {/* Header - non-scrolling */}
+        <div className={`shrink-0 flex items-start gap-3 px-4 py-3 md:px-6 md:py-4 ${dark ? 'text-white' : 'text-slate-900'}`}>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${available ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{available ? 'Available' : 'Out of Stock'}</span>
+              <span className="text-[11px] text-slate-400 uppercase tracking-wider">{item.category}</span>
+            </div>
+            <h2 className={`mt-2 text-lg font-bold leading-tight ${textPrimary}`}>{item.itemName}</h2>
           </div>
+          <button type="button" onClick={onClose} className={`ml-2 h-9 w-9 flex items-center justify-center rounded-full ${dark ? 'bg-slate-900/90 text-slate-100' : 'bg-white text-slate-600 shadow-sm'}`}>
+            <HiX className="h-5 w-5" />
+          </button>
+        </div>
 
-          <div className="p-5 sm:px-6 py-4 space-y-4">
-            {/* Top Section */}
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-2">
-                <span className={`text-[10px] uppercase font-bold tracking-widest px-3 py-1.5 rounded-lg ${available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {available ? '● Available' : '● Out of Stock'}
-                </span>
-              </div>
-              
-              <div>
-                <h2 className={`text-xl sm:text-2xl font-semibold tracking-tight ${textPrimary}`}>{item.itemName}</h2>
-                <p className={`text-xs font-bold uppercase tracking-widest mt-1.5 flex items-center gap-1.5 ${textMuted}`}>
-                  <span className="text-green-500">{CAT_ICONS[item.category]}</span> {item.category}
-                </p>
-              </div>
-            </div>
-
-            {/* Price & Stock */}
-            <div className={`flex items-center justify-between rounded-xl px-5 py-4 border ${dark ? 'bg-[#171b22] border-white/10 shadow-inner' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Price</p>
-                <p className="text-2xl font-bold text-green-600 tracking-tight">₹{item.price}</p>
-                <p className={`text-[10px] uppercase tracking-widest font-bold ${item.stockType === 'Set' ? 'text-green-500' : 'text-blue-500'}`}>per {item.stockType === 'Set' ? 'Set' : 'Item'}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5 mt-0">Stock</p>
-                <p className={`text-xl font-bold ${item.stock === 0 ? 'text-red-500' : textPrimary}`}>{item.stock} <span className="text-sm font-medium opacity-70">{item.stockType === 'Set' ? (item.stock === 1 ? 'Set' : 'Sets') : 'Units'}</span></p>
-                {item.stockType === 'Set' && (
-                  <p className={`text-[10px] font-medium ${textMuted}`}>({item.itemsPerSet} items/set)</p>
-                )}
-                {item.stock > 0 && item.stock <= 5 && (
-                  <p className="text-[10px] font-bold uppercase text-amber-600 tracking-widest mt-1 bg-amber-50 inline-block px-2 py-0.5 rounded">Only {item.stock} left!</p>
-                )}
-              </div>
-            </div>
-
-            {/* Description */}
-            {item.description && (
-              <div className="mt-5 space-y-2">
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Description</p>
-                <p className={`text-sm leading-relaxed ${dark ? 'text-slate-300' : 'text-slate-500'}`}>{item.description}</p>
-              </div>
-            )}
-
-            {/* Stats */}
-            <div className={`flex items-center gap-4 flex-wrap text-[11px] font-medium mt-5 ${textMuted}`}>
-              <span className="flex items-center gap-1.5"><HiEye className="w-4 h-4 text-slate-400" /> {item.views || 0} views</span>
-              <span className="flex items-center gap-1.5"><HiShoppingCart className="w-4 h-4 text-slate-400" /> {item.requests || 0} purchases</span>
-              <span className="flex items-center gap-1.5"><HiBookOpen className="w-4 h-4 text-slate-400" /> {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-            </div>
-
-            {!available && (
-              <div className={`flex gap-3 rounded-xl border p-4 mt-5 ${dark ? 'bg-red-950/40 border-red-800 text-red-300' : 'bg-red-50 border-red-200 text-red-700'}`}>
-                <HiExclamation className="h-5 w-5 shrink-0 mt-0.5" />
-                <p className="text-xs font-medium leading-relaxed">This item is currently unavailable or out of stock. Check back later!</p>
-              </div>
-            )}
-
-            {/* Eco Points Redemption */}
-            {available && (
-              <div className={`rounded-xl border p-4 sm:p-5 space-y-4 mt-5 ${dark ? 'bg-slate-800/50 border-white/10' : 'bg-green-100/50 border-green-200'}`}>
-                 <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Your Eco Points</p>
-                    <p className="text-xs font-bold uppercase tracking-widest text-green-700 bg-green-200/50 px-2.5 py-1 rounded-md">{ctxUser?.rewards?.points || 0} pts</p>
-                 </div>
-                 
-                 <div className="space-y-1.5">
-                   <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Use Points (2 pts = ₹1)</p>
-                   <input 
-                     type="number" 
-                     placeholder="Points to use"
-                     min="0"
-                     max={Math.min(ctxUser?.rewards?.points || 0, item.price * 2)}
-                     value={pointsToUse || ''}
-                     onChange={(e) => setPointsToUse(Math.min(parseInt(e.target.value) || 0, ctxUser?.rewards?.points || 0, item.price * 2))}
-                     className={`w-full h-11 px-4 text-sm font-medium rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all ${dark ? 'bg-[#11151c] border border-white/10 text-white' : 'bg-white border border-black/5 text-slate-900 shadow-sm'}`}
-                   />
-                 </div>
-
-                 <div className="pt-3 border-t border-green-200/50 flex flex-col gap-1.5">
-                   <div className="flex justify-between items-center text-sm font-medium text-green-700">
-                     <span>Discount:</span>
-                     <span>-₹{pointsToUse / 2}</span>
-                   </div>
-                   <div className="flex justify-between items-center text-lg font-bold text-green-800 dark:text-green-400">
-                     <span>Final Price:</span>
-                     <span>₹{Math.max(0, item.price - (pointsToUse / 2))}</span>
-                   </div>
-                 </div>
+        {/* Image - non-scrolling */}
+        <div className="shrink-0 w-full px-4 md:px-6">
+          <div className="w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-900 flex items-center justify-center">
+            {item.image ? (
+              <img src={item.image} alt={item.itemName} className="w-full max-h-[220px] object-contain" />
+            ) : (
+              <div className={`w-full h-[180px] flex items-center justify-center text-6xl ${dark ? 'bg-slate-900' : 'bg-slate-100 text-emerald-600'}`}>
+                {CAT_ICONS[item.category] || <MdFolder />}
               </div>
             )}
           </div>
         </div>
 
-        {/* Action */}
-        <div className={`sticky bottom-0 p-4 sm:p-5 bg-white dark:bg-[#11151c] border-t ${dark ? 'border-white/10' : 'border-slate-100'} flex gap-3 z-10 rounded-b-sm`}>
-          <button type="button" onClick={onClose}
-            className={`flex-1 h-11 rounded-xl border text-xs font-bold uppercase tracking-widest transition-all ${dark ? 'border-white/10 text-[#b6bec9] hover:bg-white/5 hover:text-white' : 'border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-800'}`}>
-            Close
-          </button>
-          <button
-            type="button"
-            disabled={!available || buying}
-            onClick={() => onBuy(item._id, pointsToUse)}
-            className="flex-[2] h-11 flex items-center justify-center gap-2 rounded-xl bg-green-600 text-xs font-bold uppercase tracking-widest text-white hover:bg-green-700 transition-all disabled:opacity-50"
-          >
-            <HiShoppingCart className="h-5 w-5" />
-            {buying ? 'Processing...' : (pointsToUse >= item.price * 2 ? 'Get with Points' : 'Buy Now')}
-          </button>
+        {/* Content - scrollable, flex-grow */}
+        <div className="flex-1 overflow-y-auto px-4 py-3 md:px-6 md:py-4">
+          {/* Price + Stock Row (compact) */}
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-[11px] uppercase text-slate-400 tracking-wider">Price</p>
+              <p className="text-xl font-bold text-emerald-600">₹{item.price} <span className="text-sm font-medium text-slate-400">per {item.stockType === 'Set' ? 'set' : 'item'}</span></p>
+            </div>
+            <div className="text-right">
+              <p className="text-[11px] uppercase text-slate-400 tracking-wider">Stock</p>
+              <p className={`text-lg font-bold ${item.stock === 0 ? 'text-rose-500' : textPrimary}`}>{item.stock} <span className="text-sm font-medium text-slate-400">{item.stockType === 'Set' ? 'sets' : 'units'}</span></p>
+            </div>
+          </div>
+
+          {/* Compact meta: views & purchases */}
+          <div className="flex items-center gap-3 mb-3 text-sm text-slate-600">
+            <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-50 border"> 
+              <HiEye className="h-4 w-4 text-slate-400" />
+              <span className="font-semibold">{item.views || 0} views</span>
+            </div>
+            <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-50 border">
+              <HiShoppingCart className="h-4 w-4 text-slate-400" />
+              <span className="font-semibold">{item.requests || 0} purchases</span>
+            </div>
+          </div>
+
+          {/* Description (collapsed) */}
+          {item.description && (
+            <div className="mb-3">
+              <p className="text-[11px] uppercase tracking-wider text-slate-400 mb-2">Description</p>
+              <p className={`${dark ? 'text-slate-300' : 'text-slate-700'} text-sm leading-6 ${descExpanded ? '' : 'line-clamp-3'}`}>{item.description}</p>
+              <button type="button" onClick={() => setDescExpanded(v => !v)} className="mt-2 text-sm font-semibold text-green-600">
+                {descExpanded ? 'View Less' : 'View More'}
+              </button>
+            </div>
+          )}
+
+          {/* EcoPoints compact card */}
+          {available && (
+            <div className={`mb-3 p-3 rounded-lg border ${dark ? 'bg-[#0e141a] border-white/6' : 'bg-green-50 border-green-100'}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider text-slate-500">Eco Points</p>
+                  <p className="text-lg font-bold text-emerald-700">{ctxUser?.rewards?.points || 0} pts</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[11px] text-slate-500">2 pts = ₹1</p>
+                </div>
+              </div>
+
+              <div className="mt-3">
+                <input
+                  type="number"
+                  placeholder="Points to use"
+                  min="0"
+                  max={Math.min(ctxUser?.rewards?.points || 0, item.price * 2)}
+                  value={pointsToUse || ''}
+                  onChange={(e) => setPointsToUse(Math.min(parseInt(e.target.value) || 0, ctxUser?.rewards?.points || 0, item.price * 2))}
+                  className={`w-full h-10 rounded-xl border px-3 text-sm font-medium outline-none ${dark ? 'bg-[#0d111a] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Out of stock note */}
+          {!available && (
+            <div className={`mb-3 p-3 rounded-lg border ${dark ? 'bg-red-950/40 border-red-800 text-red-300' : 'bg-red-50 border-red-200 text-red-700'}`}>
+              <p className="text-sm font-semibold">This item is currently unavailable or out of stock.</p>
+              <p className="text-xs text-slate-500 mt-2">Please check back later for availability.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Sticky footer - never overlaps content */}
+        <div className={`shrink-0 sticky bottom-0 px-4 py-3 md:py-2 md:px-6 bg-white dark:bg-[#0f1320] border-t ${dark ? 'border-white/10' : 'border-slate-200'}`}>
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={onClose} className={`h-11 md:h-9 flex-1 rounded-lg border text-sm font-semibold ${dark ? 'border-white/10 text-[#b6bec9]' : 'border-slate-200 text-slate-500'} md:text-sm`}>Close</button>
+            <button
+              type="button"
+              disabled={!available || buying}
+              onClick={() => onBuy(item._id, pointsToUse)}
+              className="h-11 md:h-9 inline-flex items-center justify-center gap-2 md:gap-1 px-4 md:px-3 rounded-lg bg-green-600 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              <HiShoppingCart className="h-4 w-4 md:h-4 md:w-4" />
+              {buying ? 'Processing...' : (pointsToUse >= item.price * 2 ? 'Get with Points' : 'Buy Now')}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -186,12 +176,12 @@ const ItemCard = ({ item, dark, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className={`group relative rounded-2xl overflow-hidden border cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-md p-2 sm:p-4 flex flex-col w-full ${
+      className={`group relative rounded-lg overflow-hidden border cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-md p-2 sm:p-4 flex flex-col w-full ${
         dark ? 'bg-[#11151c] border-white/10 shadow-sm' : 'bg-white border-slate-200 shadow-sm'
       }`}
     >
       {/* Image */}
-      <div className="relative overflow-hidden w-full h-32 sm:h-48 mb-2 sm:mb-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center">
+      <div className="relative overflow-hidden w-full h-32 sm:h-48 mb-2 sm:mb-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center">
         {item.image
           ? <img src={item.image} alt={item.itemName} className="w-full h-full object-contain mx-auto transition-transform duration-500 group-hover:scale-105" />
           : <div className={`w-full h-full flex items-center justify-center text-6xl transition-transform duration-500 group-hover:scale-110 text-green-500`}>
@@ -205,8 +195,8 @@ const ItemCard = ({ item, dark, onClick }) => {
           </span>
         </div>
         {/* View icon overlay on hover */}
-        <div className="absolute inset-x-1 inset-y-1 rounded-xl bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-          <div className="bg-white rounded-xl p-2.5 shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+        <div className="absolute inset-x-1 inset-y-1 rounded-lg bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+          <div className="bg-white rounded-lg p-2.5 shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
             <HiEye className="h-5 w-5 text-green-500" />
           </div>
         </div>
@@ -214,11 +204,11 @@ const ItemCard = ({ item, dark, onClick }) => {
 
       {/* Content */}
       <div className="flex-1 flex flex-col">
-        <p className={`text-[10px] font-bold uppercase tracking-widest ${textMuted} mb-1.5 flex items-center gap-1.5`}>
+        <p className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-widest ${textMuted} mb-1.5 flex items-center gap-1.5`}>
           <span className="text-green-500">{CAT_ICONS[item.category]}</span> {item.category}
         </p>
-        <p className={`text-base font-semibold tracking-tight line-clamp-2 mb-1.5 leading-snug ${textPrimary}`}>{item.itemName}</p>
-        {item.description && <p className={`text-xs font-medium leading-relaxed line-clamp-2 mb-3 ${textMuted}`}>{item.description}</p>}
+        <p className={`text-sm sm:text-base font-semibold tracking-tight line-clamp-2 mb-1.5 leading-snug ${textPrimary}`}>{item.itemName}</p>
+        {item.description && <p className={`text-[11px] sm:text-xs font-medium leading-relaxed line-clamp-2 mb-3 ${textMuted}`}>{item.description}</p>}
         
         <div className="mt-auto pt-3 border-t border-slate-100 dark:border-white/10 flex items-center justify-between">
           <div>
@@ -239,15 +229,30 @@ const ItemCard = ({ item, dark, onClick }) => {
 /*   MAIN PAGE                                                                 */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 const EcoShoppingPage = () => {
+  const navigate = useNavigate();
   const { dark, toast } = useOutletContext() || {};
   const { user: ctxUser } = useUser();
   const dk = (d, l) => (dark ? d : l);
 
-  const [items,     setItems]     = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [search,    setSearch]    = useState('');
-  const [catFilter, setCatFilter] = useState('all');
-  const [selected,  setSelected]  = useState(null);
+  const [items,      setItems]      = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [search,     setSearch]     = useState('');
+  const [catFilter,  setCatFilter]  = useState('all');
+  const [categories, setCategories] = useState(CATEGORIES);
+  const [selected,   setSelected]   = useState(null);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/categories`);
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.categories)) {
+        setCategories(['all', ...data.categories.filter(c => c && c.trim())]);
+      }
+    } catch (err) {
+      console.warn('Failed to load eco shopping categories:', err);
+    }
+  };
+
   const handleSelectItem = async (item) => {
     setSelected(item);
     try {
@@ -267,6 +272,10 @@ const EcoShoppingPage = () => {
       console.error("Failed to fetch item details:", err);
     }
   };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   const [buying,    setBuying]    = useState(false);
   const [sortBy,    setSortBy]    = useState('newest');
@@ -322,7 +331,7 @@ const EcoShoppingPage = () => {
     if (!token) { toast?.error('Please log in to buy items.'); return; }
     setBuying(true);
     try {
-      const res  = await fetch(`${itemId}/buy`, {
+      const res  = await fetch(`${API_BASE}/${itemId}/buy`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -334,9 +343,8 @@ const EcoShoppingPage = () => {
       if (!res.ok) { toast?.error(data.message || 'Purchase failed.'); return; }
       toast?.success(data.message || 'Item purchased successfully!');
       setSelected(null);
-    } catch { toast?.error('Network error. Please try again.'); }
-    finally { setBuying(false); }
-  };
+      } catch { toast?.error('Network error. Please try again.'); } finally { setBuying(false); }
+    };
 
   return (
     <div className="flex-1 animate-in fade-in duration-500 px-4 sm:px-6 md:px-8 lg:px-10 py-4 sm:py-6">
@@ -351,103 +359,60 @@ const EcoShoppingPage = () => {
           />
         )}
 
-        {/* ── Page Header ── */}
+        {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h1 className={`text-lg font-bold tracking-tight ${dk('text-white', 'text-slate-900')}`}>Eco Shopping</h1>
             <p className={`text-sm font-medium mt-0.5 ${dk('text-slate-400', 'text-slate-500')}`}>Sustainable products from recycled materials</p>
           </div>
+          <button
+            type="button"
+            onClick={() => navigate('/citizen/my-orders')}
+            className="h-10 rounded-xl border border-green-500 bg-green-500/10 px-4 text-sm font-semibold text-green-700 transition hover:bg-green-500/20"
+          >
+            View My Orders
+          </button>
         </div>
 
-        {/* ── Search & Filter ── */}
-        <div className="flex flex-col gap-5">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 w-full">
-            {/* Search */}
-            <div className="relative w-full lg:w-72 shrink-0">
-              <HiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5" />
-              <input 
-                type="text" 
-                placeholder="Search products..." 
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className={`w-full h-11 pl-11 pr-4 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-green-500 ${dk('bg-[#11151c] border-white/10 text-white focus:bg-[#1c212a]', 'bg-white border-gray-200 text-slate-900 shadow-sm')}`}
-              />
-            </div>
+        {/* Search & Filter (compact) */}
+        <div className="flex flex-col gap-4">
+          <div className="relative w-full">
+            <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search products, categories or keywords..."
+              className={`w-full h-11 pl-11 pr-4 rounded-2xl border text-sm outline-none transition ${dk('bg-[#11151c] border-white/10 text-white', 'bg-white border-gray-200 text-slate-900')}`}
+            />
+          </div>
 
-            {/* Categories */}
-            <div className="flex-1 w-full flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex flex-wrap gap-2">
+            {categories.map((cat) => (
               <button
-                onClick={() => { setCatFilter('all'); setSearch(''); }}
-                className={`h-11 px-5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center justify-center border ${
-                  catFilter === 'all'
-                    ? 'bg-green-600 text-white border-green-600 shadow-sm'
-                    : dk('bg-[#171b22] text-slate-400 border-white/5 hover:bg-white/5', 'bg-white text-slate-600 border-gray-200 hover:border-gray-300')
-                }`}
-              >All</button>
-              <div className="h-5 w-px bg-slate-200 dark:bg-white/10 shrink-0" />
-              {CATEGORIES.slice(0, 5).map(c => (
-                <button key={c} onClick={() => setCatFilter(c)}
-                  className={`h-11 px-4 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center justify-center gap-2 border ${
-                    catFilter === c
-                      ? 'bg-green-600 text-white border-green-600 shadow-sm'
-                      : dk('bg-[#171b22] text-slate-400 border-white/5 hover:bg-white/5', 'bg-white text-slate-600 border-gray-200 hover:border-gray-300')
-                  }`}>
-                  <span className={`shrink-0 ${catFilter === c ? 'text-white' : 'text-green-600'}`}>{CAT_ICONS[c]}</span>
-                  {c}
-                </button>
-              ))}
-              <Dropdown
-                value={CATEGORIES.slice(5).includes(catFilter) ? catFilter : ''}
-                onChange={e => e.target.value && setCatFilter(e.target.value)}
-                className={`!h-11 !min-w-[130px] !rounded-xl border !text-xs font-bold ${dk('bg-[#171b22] border-white/5 text-slate-400', 'bg-white border-gray-200 text-slate-600')}`}
+                key={cat}
+                type="button"
+                onClick={() => setCatFilter(cat)}
+                className={`h-10 rounded-full px-4 text-xs font-semibold transition ${catFilter === cat ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 dark:bg-[#11151c] dark:border-white/10 dark:text-slate-200 dark:hover:bg-[#1e2634]'}`}
               >
-                <option value="">More Items</option>
-                {CATEGORIES.slice(5).map(c => <option key={c} value={c}>{c}</option>)}
-              </Dropdown>
-            </div>
-          </div>
-
-          {/* Sort */}
-          <div className="flex items-center gap-2 w-full lg:w-auto self-start">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Sort Results:</span>
-            <Dropdown
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value)}
-              className={`!h-10 w-40 !rounded-lg border !text-xs font-bold ${dk('bg-[#171b22] border-white/5 text-white', 'bg-white border-gray-200 text-slate-800 shadow-sm')}`}
-            >
-              <option value="newest">Latest Added</option>
-              <option value="price-low">Lowest Price</option>
-              <option value="price-high">Highest Price</option>
-            </Dropdown>
+                {cat === 'all' ? 'All Categories' : cat}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* ── All / Filtered Items ── */}
+        {/* Items list */}
         <div className="space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/5">
-            <div className="flex items-center gap-4">
-              <h2 className={`text-lg font-bold tracking-tight ${dk('text-white', 'text-slate-900')}`}>
-                {catFilter === 'all' ? 'Recently Added' : catFilter}
-              </h2>
-              <div className="h-5 w-px bg-slate-200 dark:bg-white/10" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                {items.length} {items.length === 1 ? 'Item' : 'Items'} Found
-              </span>
-            </div>
-          </div>
-
           {loading ? (
             <div className="flex items-center justify-center py-24">
-              <div className="h-10 w-10 rounded-sm border-4 border-green-500 border-t-transparent animate-spin" />
+              <div className="h-10 w-10 rounded-lg border-4 border-green-500 border-t-transparent animate-spin" />
             </div>
           ) : items.length === 0 ? (
-            <div className="py-24 text-center rounded-sm border-2 border-dashed dark:border-white/5 dark:bg-white/2 overflow-hidden">
-               <MdRecycling className="h-16 w-16 mx-auto mb-4 text-slate-300 dark:text-white/10" />
-               <h2 className={`text-lg font-bold ${dk('text-white', 'text-slate-800')}`}>No items found</h2>
-               <p className={`text-sm ${dk('text-slate-500', 'text-slate-400')}`}>Try adjusting your filters or search terms.</p>
+            <div className="py-24 text-center rounded-lg border-2 border-dashed overflow-hidden">
+              <h2 className="text-lg font-bold">No items found</h2>
+              <p className="text-sm text-slate-500">Try adjusting your filters or search terms.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
               {items.map(item => (
                 <ItemCard key={item._id} item={item} dark={dark} onClick={() => handleSelectItem(item)} />
               ))}
@@ -457,6 +422,7 @@ const EcoShoppingPage = () => {
       </div>
     </div>
   );
+
 };
 
 export default EcoShoppingPage;

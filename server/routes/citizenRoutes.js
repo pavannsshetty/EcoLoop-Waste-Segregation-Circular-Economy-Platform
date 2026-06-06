@@ -1,6 +1,7 @@
 const express = require('express');
 const router  = express.Router();
 const { protect } = require('../middleware/auth');
+const { updateStreak } = require('../utils/streakManager');
 const {
     getCommunityPosts,
     getCampaigns,
@@ -19,6 +20,7 @@ const isWithinChangeWindow = (date) => date && (Date.now() - new Date(date).getT
 
 router.get('/profile', protect, async (req, res) => {
   try {
+    await updateStreak(req.user.id);
     const user = await User.findById(req.user.id).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found.' });
 
@@ -41,6 +43,8 @@ router.get('/profile', protect, async (req, res) => {
       streetArea:   user.streetArea,
       landmark:     user.landmark,
       addressType:  user.addressType,
+      latitude:     user.latitude,
+      longitude:    user.longitude,
       ecoPoints:    user.ecoPoints    || 0,
       badges:       user.badges       || [],
       profilePhoto: user.profilePhoto || '',
@@ -70,7 +74,7 @@ router.post('/upload-photo', protect, upload.single('photo'), async (req, res) =
 
 router.put('/profile', protect, async (req, res) => {
   try {
-    const { name, email, phone, locality, village, profilePhoto, houseNo, streetArea, landmark, addressType, currentPassword } = req.body;
+    const { name, email, phone, locality, village, profilePhoto, houseNo, streetArea, landmark, addressType, latitude, longitude, currentPassword } = req.body;
     const existing = await User.findById(req.user.id).select('+password');
     if (!existing) return res.status(404).json({ message: 'User not found.' });
 
@@ -115,6 +119,8 @@ router.put('/profile', protect, async (req, res) => {
     if (streetArea !== undefined)       update.streetArea      = streetArea ? streetArea.trim() : '';
     if (landmark !== undefined)         update.landmark        = landmark ? landmark.trim() : '';
     if (addressType !== undefined)      update.addressType     = addressType || '';
+    if (latitude !== undefined)         update.latitude        = typeof latitude === 'number' ? latitude : parseFloat(latitude);
+    if (longitude !== undefined)        update.longitude       = typeof longitude === 'number' ? longitude : parseFloat(longitude);
 
     if (Object.keys(update).length === 0) {
       return res.status(400).json({ message: 'No valid changes provided.' });

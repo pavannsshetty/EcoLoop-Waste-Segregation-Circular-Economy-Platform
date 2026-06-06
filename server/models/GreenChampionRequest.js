@@ -13,6 +13,9 @@ const greenChampionRequestSchema = new mongoose.Schema(
       trim: true,
       minlength: [3, 'Name must be at least 3 characters'],
     },
+    gender: {
+      type: String,
+    },
     email: {
       type: String,
       required: [true, 'Email is required'],
@@ -35,14 +38,6 @@ const greenChampionRequestSchema = new mongoose.Schema(
     },
     reason: {
       type: String,
-      enum: [
-        'Community cleanliness',
-        'Environmental protection',
-        'Recycling awareness',
-        'Volunteer social service',
-        'Waste management interest',
-        'Other',
-      ],
     },
     otherReason: {
       type: String,
@@ -59,7 +54,6 @@ const greenChampionRequestSchema = new mongoose.Schema(
     idProofType: {
       type: String,
       required: [true, 'ID proof type is required'],
-      enum: ['Aadhar Card', 'Voter ID', 'PAN Card', 'Driving License', 'Passport', 'Other'],
     },
     otherIdProofType: {
       type: String,

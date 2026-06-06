@@ -5,12 +5,12 @@ import EcoLoopLogo from '../components/EcoLoopLogo';
 import { ToastContainer, useToast } from '../components/Toast';
 import DarkBg from '../components/DarkBg';
 import { useTheme } from '../context/ThemeContext';
-import { useUser } from '../context/UserContext';
+import { useUser, parseStoredUser } from '../context/UserContext';
 
 const NAV_MAIN = [
   { path: '/green-champion/dashboard', Icon: () => <HiChartBar className="h-5 w-5" />, label: 'Dashboard' },
   { path: '/green-champion/awareness', Icon: () => <HiSpeakerphone className="h-5 w-5" />, label: 'Awareness' },
-  { path: '/green-champion/community', Icon: () => <HiUserGroup className="h-5 w-5" />, label: 'Community' },
+  { path: '/green-champion/community', Icon: () => <HiUserGroup className="h-5 w-5" />, label: 'Community Updates' },
   { path: '/green-champion/campaigns', Icon: () => <HiFlag className="h-5 w-5" />, label: 'Campaigns' },
 ];
 const NAV_ACTION = [
@@ -38,14 +38,14 @@ const NavItem = ({ item, collapsed, dark, onClick }) => {
       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-sm transition-all duration-200 group ${
         active
           ? dark ? 'bg-green-900/40 text-green-400' : 'bg-green-50 text-green-700'
-          : dark ? 'text-slate-400 hover:bg-white/5 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+          : dark ? 'text-slate-300 hover:bg-white/5 hover:text-slate-100' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
       }`}
     >
       <span className={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${active ? 'text-green-500' : ''}`}>
         <item.Icon />
       </span>
       <span className={`whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>{item.label}</span>
-      {active && !collapsed && <span className="ml-auto h-1.5 w-1.5 rounded-sm bg-green-500 shrink-0" />}
+      {active && !collapsed && <span className="ml-auto h-1.5 w-1.5 rounded-lg bg-green-500 shrink-0" />}
     </button>
   );
 };
@@ -55,7 +55,7 @@ const GreenChampionLayout = () => {
   const { toasts, toast, remove } = useToast();
   const { dark, toggleDark } = useTheme();
   const { user: ctxUser, loading: userLoading, clearUser } = useUser();
-  const user = ctxUser || JSON.parse(localStorage.getItem('user') || '{}');
+  const user = ctxUser || parseStoredUser();
 
   useEffect(() => {
     if (!userLoading) {
@@ -87,7 +87,7 @@ const GreenChampionLayout = () => {
 
   const sidebarBg = dark ? 'bg-black/60 border-white/10' : 'bg-white border-slate-200';
   const headerBg = dark ? 'bg-black/80 border-white/10' : 'bg-white/90 border-slate-200';
-  const sectionLbl = dark ? 'text-slate-500' : 'text-slate-400';
+  const sectionLbl = dark ? 'text-slate-400' : 'text-slate-500';
 
   return (
     <div
@@ -109,7 +109,7 @@ const GreenChampionLayout = () => {
       <aside
         className={`fixed top-0 left-0 h-full z-50 flex flex-col border-r shadow-lg transition-all duration-300 ease-in-out ${sidebarBg} ${
           mobileOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64'
-        } lg:translate-x-0 ${sideW} rounded-sm`}
+        } lg:translate-x-0 ${sideW} rounded-lg`}
       >
         <div
           className={`h-16 flex items-center border-b shrink-0 px-4 ${dark ? 'border-white/10' : 'border-slate-200'} ${
@@ -126,7 +126,7 @@ const GreenChampionLayout = () => {
           <button
             type="button"
             onClick={() => setCollapsed((c) => !c)}
-            className={`hidden lg:flex items-center justify-center h-8 w-8 rounded-sm transition shrink-0 ${
+            className={`hidden lg:flex items-center justify-center h-8 w-8 rounded-lg transition shrink-0 ${
               dark ? 'text-slate-500 hover:bg-white/10 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
             }`}
             aria-label="Toggle sidebar"
@@ -163,8 +163,8 @@ const GreenChampionLayout = () => {
             type="button"
             onClick={logout}
             title={collapsed ? 'Sign Out' : undefined}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm transition group ${
-              dark ? 'text-slate-400 hover:bg-red-900/30 hover:text-red-400' : 'text-slate-500 hover:bg-red-50 hover:text-red-500'
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition group ${
+              dark ? 'text-slate-300 hover:bg-red-900/30 hover:text-red-400' : 'text-slate-600 hover:bg-red-50 hover:text-red-500'
             }`}
           >
             <HiLogout className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110" />
@@ -177,7 +177,7 @@ const GreenChampionLayout = () => {
           <button
             type="button"
             onClick={() => setMobileOpen((o) => !o)}
-            className={`flex items-center justify-center h-9 w-9 rounded-sm transition lg:hidden ${
+            className={`flex items-center justify-center h-9 w-9 rounded-lg transition lg:hidden ${
               dark ? 'text-slate-400 hover:bg-white/10 hover:text-green-400' : 'text-slate-500 hover:bg-slate-100 hover:text-green-600'
             }`}
             aria-label="Menu"
@@ -196,13 +196,13 @@ const GreenChampionLayout = () => {
             type="button"
             onClick={toggleDark}
             aria-label="Toggle dark mode"
-            className={`flex items-center justify-center h-9 w-9 rounded-sm transition ${
+            className={`flex items-center justify-center h-9 w-9 rounded-lg transition ${
               dark ? 'text-yellow-400 hover:bg-white/10' : 'text-slate-500 hover:bg-slate-100'
             }`}
           >
             {dark ? <HiSun className="h-5 w-5" /> : <HiMoon className="h-5 w-5" />}
           </button>
-          <div className="h-9 w-9 rounded-sm overflow-hidden bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
+          <div className="h-9 w-9 rounded-lg overflow-hidden bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
             {(user.name || 'G')[0].toUpperCase()}
           </div>
         </header>

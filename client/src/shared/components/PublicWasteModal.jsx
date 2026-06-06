@@ -24,6 +24,51 @@ const SEVERITY_OPTIONS = [
 
 const SEEN_OPTIONS = ['Just Now', 'Few Hours Ago', 'Today', 'Yesterday', 'Multiple Days Ago'];
 
+const DuplicateWarningModal = ({ duplicates, onClose, onContinue, onViewReport, onSupport, dark }) => (
+  <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+    <div className={`relative z-10 w-full max-w-md rounded-none shadow-2xl p-6 space-y-4 ${dark ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}>
+      <div className="flex items-center gap-3">
+        <HiExclamation className="h-6 w-6 text-amber-500 shrink-0" />
+        <p className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>Similar report{duplicates.length > 1 ? 's' : ''} already exist nearby</p>
+      </div>
+      <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+        The following similar report{duplicates.length > 1 ? 's were' : ' was'} found within 100 meters:
+      </p>
+      <div className="space-y-2 max-h-40 overflow-y-auto">
+        {duplicates.map((d) => (
+          <div key={d._id} className={`p-3 rounded-none border text-xs space-y-1 ${dark ? 'bg-white/5 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+            <div className="flex items-center justify-between">
+              <span className="font-mono font-bold text-green-600">{d.reportId}</span>
+              <span className={`px-1.5 py-0.5 rounded-none text-[10px] font-bold ${d.status === 'Verified' ? 'bg-green-100 text-green-700' : d.status === 'Submitted' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`}>{d.status}</span>
+            </div>
+            <p className={dark ? 'text-slate-300' : 'text-slate-600'}>{d.wasteType} · {d.distance}m away</p>
+            <p className={dark ? 'text-slate-300' : 'text-slate-600'}>
+              Supported by <span className="font-semibold text-green-600">{d.supportedByCount || 0}</span> citizen{d.supportedByCount === 1 ? '' : 's'}
+            </p>
+            <div className="flex gap-2 mt-1">
+              <button type="button" onClick={() => onViewReport(d._id)}
+                className="text-[10px] font-semibold text-blue-600 hover:underline">View</button>
+              <button type="button" onClick={() => onSupport(d._id)}
+                className="text-[10px] font-semibold text-green-600 hover:underline">Support</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2 pt-1">
+        <button type="button" onClick={onClose}
+          className={`flex-1 rounded-none border py-2.5 text-sm font-semibold transition ${dark ? 'border-slate-600 text-slate-300 hover:bg-slate-800' : 'border-slate-300 text-slate-600 hover:bg-slate-50'}`}>
+          Cancel
+        </button>
+        <button type="button" onClick={onContinue}
+          className="flex-1 rounded-none bg-amber-600 py-2.5 text-sm font-semibold text-white hover:bg-amber-500 transition">
+          Continue Anyway
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
 const SuccessModal = ({ reportId, onClose, dark }) => (
   <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
@@ -57,12 +102,14 @@ const PublicWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
     wasteType: '', severity: '', wasteSeenAt: '', description: '',
   });
   const [location,     setLocation]     = useState(null);
+  const [detectedLocation, setDetectedLocation] = useState(null);
   const [regionValid,  setRegionValid]  = useState(null);
   const [imageFile,    setImageFile]    = useState(null);
   const [preview,      setPreview]      = useState('');
   const [errors,       setErrors]       = useState({});
   const [loading,      setLoading]      = useState(false);
   const [submittedId,  setSubmittedId]  = useState('');
+  const [duplicates,   setDuplicates]   = useState(null);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -71,8 +118,30 @@ const PublicWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   }, [isOpen, refreshUser]);
 
   const handleLocationSelect = (loc) => {
-    setLocation(loc);
-    setRegionValid(loc.regionValid !== false ? (loc.regionValid ?? null) : false);
+    // loc can be null (clear) with optional second arg clearedSource
+    const clearedSource = arguments[1] || null;
+    console.debug('[PublicWasteModal] handleLocationSelect called', { loc, clearedSource });
+    if (!loc) {
+      console.debug('[PublicWasteModal] clearing location', { clearedSource });
+      if (clearedSource === 'detect') {
+        setDetectedLocation(null);
+      } else if (clearedSource === 'map') {
+        setLocation(null);
+        setRegionValid(null);
+      } else {
+        // unknown - clear both
+        setDetectedLocation(null);
+        setLocation(null);
+        setRegionValid(null);
+      }
+    } else if (loc.source === 'detect') {
+      console.debug('[PublicWasteModal] setting detected location', { lat: loc.lat, lng: loc.lng, address: loc.displayAddress, regionValid: loc.regionValid });
+      setDetectedLocation(loc);
+    } else {
+      console.debug('[PublicWasteModal] setting selected location', { lat: loc.lat, lng: loc.lng, address: loc.displayAddress, regionValid: loc.regionValid });
+      setLocation(loc);
+      setRegionValid(loc.regionValid !== false ? (loc.regionValid ?? null) : false);
+    }
     setErrors(e => ({ ...e, location: '' }));
   };
 
@@ -90,11 +159,24 @@ const PublicWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
     return e;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const errs = validate();
-    if (Object.keys(errs).length) { setErrors(errs); return; }
+  const checkDuplicates = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const lat = location?.lat;
+      const lng = location?.lng;
+      if (!lat || !lng) return null;
+      const res = await fetch(`${API}/api/waste/check-duplicate-enhanced?lat=${lat}&lng=${lng}&wasteType=${encodeURIComponent(form.wasteType)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.hasDuplicates ? data.duplicates : null;
+      }
+    } catch {}
+    return null;
+  };
 
+  const doSubmit = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -120,10 +202,42 @@ const PublicWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
     } finally { setLoading(false); }
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+
+    if (location && form.wasteType) {
+      const found = await checkDuplicates();
+      if (found && found.length > 0) {
+        setDuplicates(found);
+        return;
+      }
+    }
+    doSubmit();
+  };
+
+  const handleContinueAnyway = () => {
+    setDuplicates(null);
+    doSubmit();
+  };
+
+  const handleSupportDuplicate = async (dupId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${API}/api/waste/report/${dupId}/support`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setDuplicates(null);
+      onClose();
+    } catch {}
+  };
+
   const handleClose = () => {
     setForm({ wasteType: '', severity: '', wasteSeenAt: '', description: '' });
-    setLocation(null); setImageFile(null); setPreview(''); setErrors({});
-    setSubmittedId('');
+    setLocation(null); setDetectedLocation(null); setImageFile(null); setPreview(''); setErrors({});
+    setSubmittedId(''); setDuplicates(null);
     onClose();
   };
 
@@ -138,6 +252,16 @@ const PublicWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
 
   return createPortal(
     <>
+      {duplicates && (
+        <DuplicateWarningModal
+          duplicates={duplicates}
+          dark={dark}
+          onClose={() => setDuplicates(null)}
+          onContinue={handleContinueAnyway}
+          onViewReport={(id) => window.open(`/citizen/public-reports?id=${id}`, '_blank')}
+          onSupport={handleSupportDuplicate}
+        />
+      )}
       {submittedId && <SuccessModal reportId={submittedId} dark={dark} onClose={handleClose} />}
 
       <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center sm:p-4 overflow-hidden pointer-events-none">
@@ -159,6 +283,39 @@ const PublicWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
             <div className={card}>
               <p className={`text-xs font-bold uppercase tracking-wide text-orange-500`}>Service Area: {user?.village}, Kundapura Taluk</p>
               <MapPicker onLocationSelect={handleLocationSelect} villageName={user?.village} dark={dark} />
+              {detectedLocation && (
+                <div className={`mt-3 rounded-none border p-3 ${dark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                  <p className={`text-xs font-semibold ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Detected location</p>
+                  <p className={`text-sm mt-1 ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
+                    {detectedLocation.displayAddress || detectedLocation.address || `${detectedLocation.lat?.toFixed(6)}, ${detectedLocation.lng?.toFixed(6)}`}
+                  </p>
+                  <p className={`text-[11px] mt-1 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+                    {detectedLocation.village ? `Village: ${detectedLocation.village}` : ''}
+                    {detectedLocation.village && detectedLocation.taluk ? ` · ` : ''}
+                    {detectedLocation.taluk ? `Taluk: ${detectedLocation.taluk}` : ''}
+                  </p>
+                  <p className={`text-[11px] mt-1 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+                    Lat: {detectedLocation.lat?.toFixed(6)} | Lng: {detectedLocation.lng?.toFixed(6)}
+                  </p>
+                </div>
+              )}
+
+              {location && (
+                <div className={`mt-3 rounded-none border p-3 ${dark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                  <p className={`text-xs font-semibold ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Selected Location</p>
+                  <p className={`text-sm mt-1 ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
+                    {location.displayAddress || location.address || `${location.lat?.toFixed(6)}, ${location.lng?.toFixed(6)}`}
+                  </p>
+                  <p className={`text-[11px] mt-1 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+                    {location.village ? `Village: ${location.village}` : ''}
+                    {location.village && location.taluk ? ` · ` : ''}
+                    {location.taluk ? `Taluk: ${location.taluk}` : ''}
+                  </p>
+                  <p className={`text-[11px] mt-1 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+                    Lat: {location.lat?.toFixed(6)} | Lng: {location.lng?.toFixed(6)}
+                  </p>
+                </div>
+              )}
               {errors.location && <p className={errCls}>{errors.location}</p>}
             </div>
 

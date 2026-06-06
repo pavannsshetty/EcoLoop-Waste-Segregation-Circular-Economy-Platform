@@ -41,7 +41,7 @@ const wasteReportSchema = new mongoose.Schema({
   pickupTime:   { type: Date,   required: true },
   status: { 
     type: String, 
-    enum: ['Submitted', 'Assigned', 'In Progress', 'Resolved', 'Reopened', 'Cancelled'], 
+    enum: ['Submitted', 'Verified', 'Under Re-Verification', 'Assigned', 'In Progress', 'Resolved', 'Reopened', 'Cancelled', 'Rejected', 'Scheduled', 'Picked Up', 'Clarification Requested', 'Resubmitted', 'Clarification Expired'], 
     default: 'Submitted' 
   },
   assignedCollector: { type: mongoose.Schema.Types.ObjectId, ref: 'Collector', default: null },
@@ -67,13 +67,44 @@ const wasteReportSchema = new mongoose.Schema({
   rejectionReason: { type: String, default: '' },
   duplicateImage: { type: Boolean, default: false },
   aiGeneratedDetected: { type: Boolean, default: false },
+  // Collector verification fields
+  verificationChecklist: {
+    wasteVisible:     { type: Boolean, default: false },
+    typeCorrect:      { type: Boolean, default: false },
+    descriptionMatches: { type: Boolean, default: false },
+    locationReasonable: { type: Boolean, default: false },
+  },
+  verificationNotes: { type: String, default: '' },
+  verifiedBy:    { type: mongoose.Schema.Types.ObjectId, ref: 'Collector', default: null },
+  verifiedAt:    { type: Date, default: null },
+  clarificationRequests: [{
+    reason:      { type: String, required: true },
+    notes:       { type: String, default: '' },
+    requestedAt: { type: Date, default: Date.now },
+    requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Collector' },
+  }],
+  clarificationCount: { type: Number, default: 0 },
+  clarificationExpiresAt: { type: Date, default: null },
+  resubmittedAt: { type: Date, default: null },
+  supportedBy: [{
+    userId:      { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    supportedAt: { type: Date, default: Date.now },
+  }],
+  duplicateOf:  { type: mongoose.Schema.Types.ObjectId, ref: 'WasteReport', default: null },
   gcVerification: {
     verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     status:     { type: String, enum: ['Pending', 'Verified', 'Rejected'], default: 'Pending' },
     comment:    { type: String, default: '' },
     proofImage: { type: String, default: '' },
     verifiedAt: { type: Date, default: null }
-  }
+  },
+  // Revoke completion tracking
+  completedAt:          { type: Date, default: null },
+  revokedAt:            { type: Date, default: null },
+  revokedBy:            { type: mongoose.Schema.Types.ObjectId, ref: 'Collector', default: null },
+  revokePreviousStatus: { type: String, default: '' },
+  completionPhoto:      { type: String, default: '' },
+  completionNotes:      { type: String, default: '' }
 }, { timestamps: true });
 
 wasteReportSchema.index({ location: '2dsphere' });

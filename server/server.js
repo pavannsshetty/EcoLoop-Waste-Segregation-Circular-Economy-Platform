@@ -46,6 +46,19 @@ app.use('/api/green-champion', require('./routes/greenChampionRoutes'));
 app.use('/api/villages',       require('./routes/villageRoutes'));
 app.get('/', (req, res) => res.send('EcoLoop API is running...'));
 
+// Global error handler (catches multer, validation, and unexpected errors)
+app.use((err, req, res, next) => {
+  console.error('[ErrorHandler]', err.message || err);
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({ message: 'File too large. Maximum size is 5MB.' });
+  }
+  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+    return res.status(400).json({ message: 'Unexpected file field.' });
+  }
+  const status = err.status || err.statusCode || 500;
+  res.status(status).json({ message: err.message || 'Internal server error' });
+});
+
 socket.init(server);
 
 const { startReportJobs } = require('./jobs/reportJobs');

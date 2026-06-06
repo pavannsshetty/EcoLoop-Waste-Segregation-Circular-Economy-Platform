@@ -1,6 +1,7 @@
 const express = require('express');
 const router  = express.Router();
 const { protect } = require('../middleware/auth');
+const { updateStreak } = require('../utils/streakManager');
 const User    = require('../models/User');
 const Collector = require('../models/Collector');
 const WasteReport = require('../models/WasteReport');
@@ -15,6 +16,7 @@ const isWithinChangeWindow = (date) => date && (Date.now() - new Date(date).getT
 
 router.get('/profile', protect, async (req, res) => {
   try {
+    await updateStreak(req.user.id);
     const user = await User.findById(req.user.id).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found.' });
 
@@ -183,6 +185,95 @@ router.post('/email-change-request', protect, async (req, res) => {
     } catch {}
 
     res.status(201).json({ message: 'Email updates require verification.', request });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+});
+
+router.get('/assigned-collector', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    if (!user.village) return res.status(404).json({ message: 'No village assigned to your profile.' });
+
+    const collector = await Collector.findOne({
+      villages: user.village,
+      status: 'Active',
+    }).select('-password').lean();
+
+    if (!collector) return res.status(404).json({ message: 'No collector assigned to your village yet.' });
+
+    const activeCount = await WasteReport.countDocuments({
+      assignedCollector: collector._id,
+      status: { $in: ['Assigned', 'In Progress'] },
+    });
+
+    let derivedStatus = collector.availability;
+    if (collector.availability === 'Available' && activeCount > 0) {
+      derivedStatus = 'On Duty';
+    }
+
+    res.json({
+      _id: collector._id,
+      name: collector.name,
+      teamLeader: collector.teamLeader,
+      mobile: collector.mobile,
+      photo: collector.photo || '',
+      villages: collector.villages || [],
+      vehicleType: collector.vehicleType,
+      vehicleNumber: collector.vehicleNumber,
+      workingShift: collector.workingShift || [],
+      availability: collector.availability,
+      status: derivedStatus,
+      activeTasks: activeCount,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+});
+
+router.get('/account-deletion-status', protect, async (req, res) => {
+  try {
+    const request = await ApprovalRequest.findOne({
+      citizen: req.user.id,
+      type: 'account_deletion',
+    }).sort({ createdAt: -1 }).lean();
+    res.json({ request: request || null });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+});
+
+router.post('/account-deletion-request', protect, async (req, res) => {
+  try {
+    const { currentPassword } = req.body;
+
+    const user = await User.findById(req.user.id).select('+password');
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    if (user.accountStatus === 'Inactive') return res.status(400).json({ message: 'Account is already inactive.' });
+    if (!currentPassword || !(await user.matchPassword(currentPassword))) {
+      return res.status(401).json({ message: 'Incorrect password.' });
+    }
+
+    const pending = await ApprovalRequest.findOne({
+      citizen: user._id,
+      type: 'account_deletion',
+      status: 'Pending',
+    });
+    if (pending) return res.status(409).json({ message: 'An account deletion request is already pending.' });
+
+    const request = await ApprovalRequest.create({
+      citizen: user._id,
+      type: 'account_deletion',
+      reason: 'Citizen requested account deletion.',
+    });
+
+    try {
+      const { emitToAll } = require('../socket');
+      emitToAll('approval_request_created', { requestId: request._id, type: request.type });
+    } catch {}
+
+    res.status(201).json({ message: 'Account deletion request submitted.', request });
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }

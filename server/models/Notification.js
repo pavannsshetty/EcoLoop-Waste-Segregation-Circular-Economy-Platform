@@ -55,7 +55,7 @@ const notificationSchema = new mongoose.Schema({
 
   // Metadata
   senderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Can be admin ID
-  status: { type: String, enum: ['Active', 'Archived', 'Scheduled'], default: 'Active' },
+  status: { type: String, enum: ['Active', 'Draft', 'Archived', 'Scheduled'], default: 'Active' },
   scheduledFor: { type: Date },
   isPinned: { type: Boolean, default: false },
 

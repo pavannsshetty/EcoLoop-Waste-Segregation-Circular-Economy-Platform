@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   HiX, HiPhotograph, HiCheckCircle, HiHome,
-  HiCamera, HiPencil, HiCalendar, HiClock
+  HiCamera, HiPencil, HiCalendar, HiClock,
+  HiLocationMarker, HiExclamationCircle, HiArrowRight
 } from 'react-icons/hi';
 import { API } from '../constants';
 import { useUser } from '../context/UserContext';
@@ -67,36 +68,24 @@ const HomePickupModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
     setImageFile(file); setPreview(URL.createObjectURL(file));
   };
 
+  const hasAddress = !!(user?.houseNo || user?.streetArea);
+  const hasGPS = !!(user?.latitude && user?.longitude);
+
   const validate = () => {
     const e = {};
     if (!form.wasteType)  e.wasteType  = 'Select a waste type.';
     if (!form.pickupDate) e.pickupDate = 'Select a pickup date.';
     if (!form.pickupTime) e.pickupTime = 'Select a pickup time.';
-    
-    // Check if address is complete
-    if (!user?.houseNo && !user?.streetArea) {
-      e.address = 'Please complete your address setup first to request home pickup.';
+    if (!hasAddress && !hasGPS) {
+      e.address = 'Please complete your address details in your profile before requesting pickup.';
     }
-    
     return e;
-  };
-
-  const handleAddressError = () => {
-    // Navigate to complete profile
-    navigate('/citizen/complete-profile');
-    handleClose();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
-    
-    // If address error exists, show it and don't submit
-    if (errs.address) {
-      setErrors(errs);
-      return;
-    }
-    
+
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
     setLoading(true);
@@ -104,17 +93,24 @@ const HomePickupModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
       const token = localStorage.getItem('token');
       const formData = new FormData();
       Object.keys(form).forEach(key => formData.append(key, form[key]));
-      
+
+      const displayAddr = [user.houseNo, user.streetArea, user.landmark, `${user.village} Village`].filter(Boolean).join(', ');
+
       const location = {
-        lat: 0,
-        lng: 0,
-        address: `${user.houseNo ? user.houseNo + ', ' : ''}${user.streetArea || ''}`,
-        displayAddress: `${user.houseNo ? user.houseNo + ', ' : ''}${user.streetArea || ''}, ${user.village}`
+        address: displayAddr || user.streetArea || user.village,
+        displayAddress: displayAddr,
       };
-      
+      if (user.latitude && user.longitude) {
+        location.lat = user.latitude;
+        location.lng = user.longitude;
+      }
+
       formData.append('location', JSON.stringify(location));
       formData.append('village', user?.village || '');
       formData.append('reportType', 'Home Pickup');
+      formData.append('houseNo', user?.houseNo || '');
+      formData.append('street', user?.streetArea || '');
+      formData.append('wardNumber', '');
       if (imageFile) formData.append('image', imageFile);
 
       const res = await fetch(`${API}/api/waste/report`, {
@@ -122,9 +118,16 @@ const HomePickupModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-      
+
       const data = await res.json();
-      if (!res.ok) { setErrors({ submit: data.message || 'Submission failed.' }); return; }
+      if (!res.ok) {
+        if (res.status === 409) {
+          setErrors({ duplicate: data, submit: data.message });
+        } else {
+          setErrors({ submit: data.message || 'Submission failed.' });
+        }
+        return;
+      }
       setSubmittedId(data.report.reportId);
       onSuccess(data.report);
     } catch (err) { 
@@ -148,6 +151,8 @@ const HomePickupModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   const errCls = 'text-xs text-red-500 mt-0.5';
   const card   = `rounded-none border p-4 space-y-3 ${dark ? 'bg-white/5 border-gray-700' : 'bg-slate-50 border-slate-200'}`;
 
+  const addressComplete = hasAddress || hasGPS;
+
   return createPortal(
     <>
       {submittedId && <SuccessModal reportId={submittedId} dark={dark} onClose={handleClose} />}
@@ -167,20 +172,20 @@ const HomePickupModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
           </div>
 
           <form onSubmit={handleSubmit} noValidate className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 space-y-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pointer-events-auto">
-            
+
             <div className={card}>
               <div className="flex items-center justify-between">
                 <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Pickup Address</p>
-                <button type="button" onClick={() => navigate('/citizen/profile')}
+                <button type="button" onClick={() => { handleClose(); navigate('/citizen/profile'); }}
                   className="text-[10px] font-bold text-green-600 hover:underline flex items-center gap-1">
                   <HiPencil className="h-3 w-3" /> EDIT ADDRESS
                 </button>
               </div>
-              
-              {user?.houseNo || user?.streetArea ? (
+
+              {addressComplete ? (
                 <div className={`p-4 rounded-none border border-dashed ${dark ? 'bg-white/5 border-slate-700' : 'bg-white border-slate-300'}`}>
                   {user?.addressType && (
-                    <span className="inline-block bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-sm mb-1 uppercase tracking-wider dark:bg-[#0AAF29]/20 dark:text-[#0AAF29]">
+                    <span className="inline-block bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-lg mb-1 uppercase tracking-wider dark:bg-[#0AAF29]/20 dark:text-[#0AAF29]">
                       {user.addressType}
                     </span>
                   )}
@@ -188,12 +193,33 @@ const HomePickupModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
                     {user.houseNo && `${user.houseNo}, `}{user.streetArea}
                   </p>
                   <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{user.landmark && `${user.landmark}, `}{user.village} Village</p>
-                  <p className={`text-[10px] mt-2 opacity-50 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>Kundapura Taluk</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    {hasGPS ? (
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg ${dark ? 'bg-green-900/30 text-green-400' : 'bg-green-50 text-green-700'}`}>
+                        <HiCheckCircle className="h-3 w-3" /> GPS Verified
+                      </span>
+                    ) : (
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg ${dark ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-50 text-amber-700'}`}>
+                        <HiExclamationCircle className="h-3 w-3" /> No GPS
+                      </span>
+                    )}
+                  </div>
+                  {hasGPS && (
+                    <div className={`mt-2 text-[10px] font-mono ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      Lat: {user.latitude.toFixed(6)} &middot; Lng: {user.longitude.toFixed(6)}
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="p-4 rounded-none bg-red-50 border border-red-200 text-center">
-                  <p className="text-xs text-red-600 font-bold uppercase">No Address Found</p>
-                  <p className="text-[10px] text-red-500 mt-1">Please update your address in profile before requesting pickup.</p>
+                <div className="p-4 rounded-none bg-red-50 border border-red-200 text-center space-y-2.5">
+                  <div>
+                    <p className="text-xs text-red-600 font-bold uppercase">Address Not Set</p>
+                    <p className="text-[10px] text-red-500 mt-1">Set your home address and GPS location in profile before requesting pickup.</p>
+                  </div>
+                  <button type="button" onClick={() => { handleClose(); navigate('/citizen/profile'); }}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 transition active:scale-95">
+                    Complete Address <HiArrowRight className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               )}
               {errors.address && <p className={errCls}>{errors.address}</p>}
@@ -261,8 +287,30 @@ const HomePickupModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
               </div>
             </div>
 
-            {errors.submit && (
+            {errors.submit && !errors.duplicate && (
               <div className="rounded-none bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-600">{errors.submit}</div>
+            )}
+            {errors.duplicate && (
+              <div className={`rounded-lg border p-4 space-y-3 ${dark ? 'bg-amber-900/10 border-amber-700/50' : 'bg-amber-50 border-amber-200'}`}>
+                <div className="flex items-center gap-2 text-amber-600">
+                  <HiExclamationCircle className="h-5 w-5 shrink-0" />
+                  <p className="text-sm font-bold">{errors.duplicate.message}</p>
+                </div>
+                <div className="text-xs space-y-1 pl-7">
+                  <p className={dark ? 'text-slate-300' : 'text-slate-600'}>
+                    <span className="font-semibold">Existing Request ID:</span> <span className="font-mono font-bold text-green-600">{errors.duplicate.existingReportId}</span>
+                  </p>
+                  <p className={dark ? 'text-slate-300' : 'text-slate-600'}>
+                    <span className="font-semibold">Status:</span> <span className="font-bold uppercase tracking-wider">{errors.duplicate.status}</span>
+                  </p>
+                </div>
+                <div className="pl-7">
+                  <button type="button" onClick={() => { handleClose(); navigate('/citizen/home-reports'); }}
+                    className="text-xs font-bold text-[#0AAF29] hover:underline flex items-center gap-1">
+                    View Existing Request &rarr;
+                  </button>
+                </div>
+              </div>
             )}
 
             <div className="flex flex-col sm:flex-row gap-3 pt-1 pb-2">
@@ -272,7 +320,7 @@ const HomePickupModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
                 }`}>
                 Cancel
               </button>
-              <button type="submit" disabled={loading || (!user?.houseNo && !user?.streetArea)}
+              <button type="submit" disabled={loading || !addressComplete}
                 className="w-full sm:w-auto flex-1 rounded-none bg-[#0AAF29] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#0AAF29]/90 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed text-center uppercase">
                 {loading ? 'Requesting...' : 'Request Home Pickup'}
               </button>

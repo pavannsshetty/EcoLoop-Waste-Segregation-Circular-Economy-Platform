@@ -56,7 +56,7 @@ const Dropdown = ({ value, onChange, name, className, children, placeholder, dis
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className={`w-full flex items-center justify-between gap-2 transition-all duration-200 px-3.5 py-2.5 text-sm border rounded-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 ${
+        className={`w-full flex items-center justify-between gap-2 transition-all duration-200 px-3.5 py-2.5 text-sm border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 ${
           dark
             ? 'bg-slate-800 border-slate-600 text-slate-100 hover:border-slate-500'
             : 'bg-white border-slate-300 text-slate-900 hover:border-slate-400'
@@ -68,7 +68,7 @@ const Dropdown = ({ value, onChange, name, className, children, placeholder, dis
 
       {open && (
         <div
-          className={`absolute z-[100] mt-1 min-w-[220px] rounded-sm border overflow-hidden ${dk('bg-[#11151c] border-white/10 shadow-2xl', 'bg-white border-slate-200 shadow-xl')
+          className={`absolute z-[100] mt-1 min-w-[220px] rounded-lg border overflow-hidden ${dk('bg-[#11151c] border-white/10 shadow-2xl', 'bg-white border-slate-200 shadow-xl')
             } ${align === 'right' ? 'right-0' : 'left-0'}`}
           style={{
             maxHeight: 'min(50vh, 320px)',
@@ -79,7 +79,7 @@ const Dropdown = ({ value, onChange, name, className, children, placeholder, dis
 
           {(!disableSearch && options.length > 8) && (
             <div className={`p-2.5 border-b sticky top-0 z-10 backdrop-blur-md ${dk('border-white/5 bg-[#171b22]/95', 'border-slate-100 bg-white/90')}`}>
-              <div className={`flex items-center gap-2 px-3 rounded-sm border transition-all duration-200 focus-within:ring-2 focus-within:ring-green-500/20 group ${dk('bg-[#0f1115] border-white/5 focus-within:border-green-500/50 shadow-inner', 'bg-slate-100 border-slate-200 focus-within:border-green-500')
+              <div className={`flex items-center gap-2 px-3 rounded-lg border transition-all duration-200 focus-within:ring-2 focus-within:ring-green-500/20 group ${dk('bg-[#0f1115] border-white/5 focus-within:border-green-500/50 shadow-inner', 'bg-slate-100 border-slate-200 focus-within:border-green-500')
                 }`}>
                 <HiSearch className={`h-4 w-4 shrink-0 transition-colors ${dk('text-[#8b95a7] group-focus-within:text-green-500', 'text-slate-400 group-focus-within:text-green-500')}`} />
                 <input
@@ -107,7 +107,7 @@ const Dropdown = ({ value, onChange, name, className, children, placeholder, dis
                   type="button"
                   disabled={o.disabled}
                   onClick={() => handleSelect(o.value, o.disabled)}
-                  className={`w-full text-left px-4 py-3 text-sm rounded-sm flex items-center justify-between transition-all duration-150 ${o.disabled
+                  className={`w-full text-left px-4 py-3 text-sm rounded-lg flex items-center justify-between transition-all duration-150 ${o.disabled
                       ? dk('opacity-50 cursor-not-allowed text-slate-500', 'opacity-50 cursor-not-allowed text-slate-400')
                       : isSelected
                         ? dk('bg-green-500/15 text-green-500 font-bold', 'bg-green-500/20 text-green-500 font-bold')

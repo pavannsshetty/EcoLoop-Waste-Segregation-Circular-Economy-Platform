@@ -57,14 +57,14 @@ const RecyclingPickups = () => {
             {loading ? (
                 <div className="py-20 text-center"><div className="h-8 w-8 rounded-full border-4 border-green-500 border-t-transparent animate-spin mx-auto" /></div>
             ) : requests.length === 0 ? (
-                <div className={`py-20 text-center rounded-2xl border-2 border-dashed ${dk('border-gray-800 text-slate-600', 'border-slate-200 text-slate-400')}`}>
+                <div className={`py-20 text-center rounded-lg border-2 border-dashed ${dk('border-gray-800 text-slate-600', 'border-slate-200 text-slate-400')}`}>
                     <HiInbox className="h-12 w-12 mx-auto mb-3 opacity-20" />
                     <p>No active recycling pickup requests.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {requests.map(req => (
-                        <div key={req._id} className={`p-4 rounded-2xl border flex flex-col gap-4 ${dk('bg-white/5 border-gray-800', 'bg-white border-slate-100 shadow-sm')}`}>
+                        <div key={req._id} className={`p-4 rounded-lg border flex flex-col gap-4 ${dk('bg-white/5 border-gray-800', 'bg-white border-slate-100 shadow-sm')}`}>
                             <div className="flex justify-between items-start">
                                 <div>
                                     <div className="flex items-center gap-2">
@@ -83,7 +83,7 @@ const RecyclingPickups = () => {
                                 </div>
                             </div>
                             
-                            <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-gray-800">
+                            <div className="space-y-1.5 p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-gray-800">
                                 <div className="flex items-start gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
                                     <HiLocationMarker className="h-4 w-4 shrink-0 text-green-500 mt-0.5" />
                                     <span>{req.address}</span>
@@ -96,17 +96,17 @@ const RecyclingPickups = () => {
 
                             <div className="flex gap-2">
                                 {req.status === 'Requested' && (
-                                    <button onClick={() => handleUpdateStatus(req._id, 'Accepted')} className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-500 transition active:scale-95">
+                                    <button onClick={() => handleUpdateStatus(req._id, 'Accepted')} className="flex-1 py-2.5 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-500 transition active:scale-95">
                                         Accept Request
                                     </button>
                                 )}
                                 {req.status === 'Accepted' && (
-                                    <button onClick={() => handleUpdateStatus(req._id, 'Collected')} className="flex-1 py-2.5 rounded-xl bg-green-500 text-white text-xs font-bold hover:bg-green-500 transition active:scale-95 flex items-center justify-center gap-2">
+                                    <button onClick={() => handleUpdateStatus(req._id, 'Collected')} className="flex-1 py-2.5 rounded-lg bg-green-500 text-white text-xs font-bold hover:bg-green-500 transition active:scale-95 flex items-center justify-center gap-2">
                                         <HiCheckCircle className="h-4 w-4" /> Mark Collected
                                     </button>
                                 )}
                                 {req.status !== 'Collected' && (
-                                    <button onClick={() => handleUpdateStatus(req._id, 'Cancelled')} className={`px-4 py-2.5 rounded-xl border text-xs font-bold font-bold transition ${dk('border-gray-700 text-slate-400 hover:text-red-400', 'border-slate-200 text-slate-500 hover:text-red-500')}`}>
+                                    <button onClick={() => handleUpdateStatus(req._id, 'Cancelled')} className={`px-4 py-2.5 rounded-lg border text-xs font-bold font-bold transition ${dk('border-gray-700 text-slate-400 hover:text-red-400', 'border-slate-200 text-slate-500 hover:text-red-500')}`}>
                                         Cancel
                                     </button>
                                 )}

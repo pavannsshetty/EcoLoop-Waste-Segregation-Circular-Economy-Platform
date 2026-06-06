@@ -5,7 +5,10 @@ const {
   markRead, 
   markAllRead, 
   getUnreadCount, 
+  adminGetBroadcasts,
   adminCreateNotification,
+  adminUpdateNotification,
+  adminDeleteNotification,
   deleteNotification
 } = require('../controllers/notificationController');
 const { protect } = require('../middleware/auth');
@@ -18,6 +21,9 @@ router.put('/read-all',      protect, markAllRead);
 router.delete('/:id',        protect, deleteNotification);
 
 // Admin Routes
-router.post('/admin',        protect, adminProtect, adminCreateNotification);
+router.get('/admin',         adminProtect, adminGetBroadcasts);
+router.post('/admin',        adminProtect, adminCreateNotification);
+router.put('/admin/:id',     adminProtect, adminUpdateNotification);
+router.delete('/admin/:id',  adminProtect, adminDeleteNotification);
 
 module.exports = router;

@@ -15,18 +15,25 @@ const normalizeVillages = (data) => {
     .sort((a, b) => a.name.localeCompare(b.name, 'en-IN'));
 };
 
+const MAX_RETRIES = 3;
+
 export const fetchVillages = () => {
   if (!villagePromise) {
-    villagePromise = fetch(apiUrl('/api/villages'))
-      .then((res) => {
-        if (!res.ok) throw new Error('Error fetching villages');
-        return res.json();
-      })
-      .then(normalizeVillages)
-      .catch((err) => {
-        villagePromise = null;
-        throw err;
-      });
+    const attempt = (retries) =>
+      fetch(apiUrl('/api/villages'))
+        .then((res) => {
+          if (!res.ok) throw new Error('Error fetching villages');
+          return res.json();
+        })
+        .catch((err) => {
+          if (retries > 0) {
+            return new Promise((resolve) => setTimeout(resolve, 1000)).then(() => attempt(retries - 1));
+          }
+          villagePromise = null;
+          throw err;
+        });
+
+    villagePromise = attempt(MAX_RETRIES).then(normalizeVillages);
   }
   return villagePromise;
 };

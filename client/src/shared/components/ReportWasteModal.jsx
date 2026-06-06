@@ -170,10 +170,16 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   }, [isOpen, refreshUser]);
 
   const handleLocationSelect = (loc) => {
-    setLocation(loc);
-    setRegionValid(loc.regionValid !== false ? (loc.regionValid ?? null) : false);
+    if (!loc) {
+      setLocation(null);
+      setRegionValid(null);
+      setPhotoWarning(false);
+    } else {
+      setLocation(loc);
+      setRegionValid(loc.regionValid !== false ? (loc.regionValid ?? null) : false);
+      if (photoLoc) setPhotoWarning(haversineMeters(photoLoc.lat, photoLoc.lng, loc.lat, loc.lng) > 200);
+    }
     setErrors(e => ({ ...e, location: '' }));
-    if (photoLoc && loc) setPhotoWarning(haversineMeters(photoLoc.lat, photoLoc.lng, loc.lat, loc.lng) > 200);
   };
 
   const handleImage = async (file) => {

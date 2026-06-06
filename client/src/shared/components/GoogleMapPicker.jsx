@@ -246,7 +246,7 @@ const GoogleMapPicker = ({ onLocationSelect, dark = false }) => {
 
       <div className="relative w-full">
         <div className="flex w-full items-center gap-2">
-          <div className={`flex flex-1 items-center rounded-xl border overflow-hidden shadow-sm transition-all focus-within:ring-2 focus-within:ring-green-500 focus-within:border-green-500 ${dark ? 'border-slate-600 bg-slate-800' : 'border-gray-200 bg-white'}`}>
+          <div className={`flex flex-1 items-center rounded-lg border overflow-hidden shadow-sm transition-all focus-within:ring-2 focus-within:ring-green-500 focus-within:border-green-500 ${dark ? 'border-slate-600 bg-slate-800' : 'border-gray-200 bg-white'}`}>
             <HiSearch className={`ml-3 h-4 w-4 shrink-0 ${dark ? 'text-slate-500' : 'text-slate-400'}`} />
             <input
               ref={searchRef}
@@ -274,7 +274,7 @@ const GoogleMapPicker = ({ onLocationSelect, dark = false }) => {
             type="button"
             onMouseDown={(e) => { e.preventDefault(); onSearchClick(); }}
             disabled={loading || query.trim().length < 2}
-            className="shrink-0 flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl border-none outline-none focus:ring-0 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="shrink-0 flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg border-none outline-none focus:ring-0 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <HiSearch className="h-3.5 w-3.5" />
             <span>Search</span>
@@ -282,7 +282,7 @@ const GoogleMapPicker = ({ onLocationSelect, dark = false }) => {
         </div>
 
         {showDrop && suggestions.length > 0 && (
-          <ul className={`absolute z-50 left-0 right-0 mt-1 rounded-xl border shadow-2xl overflow-hidden max-h-64 overflow-y-auto ${dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <ul className={`absolute z-50 left-0 right-0 mt-1 rounded-lg border shadow-2xl overflow-hidden max-h-64 overflow-y-auto ${dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
             {suggestions.map((s) => (
               <li key={s.place_id} className={`border-b last:border-0 ${dark ? 'border-slate-700' : 'border-gray-100'}`}>
                 <button
@@ -314,7 +314,7 @@ const GoogleMapPicker = ({ onLocationSelect, dark = false }) => {
         </p>
       )}
 
-      <div className={`relative w-full rounded-xl overflow-hidden border ${dark ? 'border-slate-700' : 'border-gray-200'}`}>
+      <div className={`relative w-full rounded-lg overflow-hidden border ${dark ? 'border-slate-700' : 'border-gray-200'}`}>
         {loading && (
           <div className={`absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 ${dark ? 'bg-slate-800' : 'bg-slate-50'}`}>
             <div className="h-7 w-7 rounded-full border-[3px] border-green-500 border-t-transparent animate-spin" />
@@ -325,7 +325,7 @@ const GoogleMapPicker = ({ onLocationSelect, dark = false }) => {
       </div>
 
       {locInfo ? (
-        <div className={`rounded-xl border p-3.5 ${dark ? 'bg-slate-800 border-slate-700' : 'bg-green-50 border-green-200'}`}>
+        <div className={`rounded-lg border p-3.5 ${dark ? 'bg-slate-800 border-slate-700' : 'bg-green-50 border-green-200'}`}>
           <div className="flex items-start gap-2.5">
             <HiLocationMarker className="h-4 w-4 shrink-0 mt-0.5 text-green-500" />
             <div className="flex-1 min-w-0">

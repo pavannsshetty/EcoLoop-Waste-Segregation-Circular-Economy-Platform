@@ -18,7 +18,7 @@ export const SocketProvider = ({ children }) => {
       }
       socket.emit('join', user._id);
       console.log('Socket joining room:', user._id);
-      socket.on('profile_updated', refreshUser);
+      socket.on('profile_updated', () => { refreshUser(); });
     } else {
       if (socket.connected) {
         socket.disconnect();

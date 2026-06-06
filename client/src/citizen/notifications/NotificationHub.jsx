@@ -74,8 +74,8 @@ const NotificationPage = () => {
           </h1>
           <p className="page-subheading">Stay updated with community events & alerts</p>
         </div>
-        <div className="flex items-center gap-3">
-           <button onClick={markAllRead} className="px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest bg-green-500 text-white shadow-lg shadow-green-500/20 hover:scale-105 transition-all active:scale-95">Mark All Read</button>
+        <div className="flex items-center gap-3 flex-wrap">
+           <button onClick={markAllRead} className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest bg-green-500 text-white shadow-lg shadow-green-500/20 hover:scale-105 transition-all active:scale-95">Mark All Read</button>
            <button onClick={fetchAll} className="btn-refresh" title="Refresh">
               <HiRefresh className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
            </button>
@@ -90,7 +90,7 @@ const NotificationPage = () => {
             placeholder="Search updates..." 
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className={`w-full pl-11 pr-4 py-3 rounded-2xl border focus:ring-2 focus:ring-green-500/20 outline-none transition-all shadow-sm ${dk('bg-white/5 border-white/10 text-white', 'bg-white border-black/5 text-slate-900')}`}
+            className={`w-full pl-11 pr-4 py-3 rounded-lg border focus:ring-2 focus:ring-green-500/20 outline-none transition-all shadow-sm ${dk('bg-white/5 border-white/10 text-white', 'bg-white border-black/5 text-slate-900')}`}
           />
         </div>
         <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -98,7 +98,7 @@ const NotificationPage = () => {
             <button 
               key={f} 
               onClick={() => setFilter(f)}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${filter === f ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : dk('bg-white/5 text-slate-400 hover:bg-white/10', 'bg-white text-slate-500 border border-slate-200 hover:border-slate-300 shadow-sm')}`}
+              className={`px-5 py-3 sm:py-2.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${filter === f ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : dk('bg-white/5 text-slate-400 hover:bg-white/10', 'bg-white text-slate-500 border border-slate-200 hover:border-slate-300 shadow-sm')}`}
             >
               {f}
             </button>
@@ -129,10 +129,10 @@ const NotificationPage = () => {
             return (
               <div 
                 key={n._id} 
-                className={`relative group rounded-[2.5rem] border p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${!n.isRead ? dk('bg-green-500/5 border-green-500/20 shadow-lg shadow-green-500/5', 'bg-green-500/50 border-green-500 shadow-lg shadow-green-500/5') : dk('bg-white/5 border-white/10', 'bg-white border-black/[0.04] shadow-sm')}`}
+                className={`relative group rounded-2xl sm:rounded-[2.5rem] border p-4 sm:p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${!n.isRead ? dk('bg-green-500/5 border-green-500/20 shadow-lg shadow-green-500/5', 'bg-green-500/50 border-green-500 shadow-lg shadow-green-500/5') : dk('bg-white/5 border-white/10', 'bg-white border-black/[0.04] shadow-sm')}`}
               >
-                <div className="flex flex-col sm:flex-row gap-6">
-                   <div className={`h-14 w-14 rounded-2xl shrink-0 flex items-center justify-center ${meta.bg} ${meta.color} shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+                   <div className={`h-14 w-14 rounded-lg shrink-0 flex items-center justify-center ${meta.bg} ${meta.color} shadow-sm group-hover:scale-110 transition-transform duration-300`}>
                       <meta.icon size={28} />
                    </div>
                    <div className="flex-1 min-w-0">
@@ -144,14 +144,14 @@ const NotificationPage = () => {
                             </div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{new Date(n.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                          </div>
-                         <button onClick={() => deleteNotif(n._id)} className="h-10 w-10 flex items-center justify-center rounded-xl bg-red-50 text-red-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-100">
+                          <button onClick={() => deleteNotif(n._id)} className="h-10 w-10 flex items-center justify-center rounded-lg bg-red-50 text-red-400 opacity-60 sm:opacity-0 group-hover:opacity-100 transition-all hover:bg-red-100">
                             <HiTrash size={20} />
                          </button>
                       </div>
                       <p className={`text-sm leading-relaxed font-medium ${dk('text-slate-400', 'text-slate-600')}`}>{n.description || n.message}</p>
                       
                       {n.isEvent && (
-                        <div className={`mt-4 p-4 rounded-2xl grid grid-cols-1 sm:grid-cols-2 gap-4 ${dk('bg-white/5', 'bg-slate-50')}`}>
+                        <div className={`mt-4 p-3.5 sm:p-4 rounded-lg grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 ${dk('bg-white/5', 'bg-slate-50')}`}>
                            <div className="flex items-center gap-3 text-xs text-slate-500">
                              <HiCalendar className="text-green-500 h-4 w-4" />
                              <div>
@@ -179,7 +179,7 @@ const NotificationPage = () => {
                       {!n.isRead && (
                         <button 
                           onClick={() => markRead(n._id)}
-                          className="mt-3 text-[10px] items-center gap-1.5 flex uppercase tracking-widest font-black text-green-500 hover:text-green-500 hover:translate-x-1 transition-all"
+                          className="mt-3 py-1.5 text-[10px] items-center gap-1.5 flex uppercase tracking-widest font-black text-green-500 hover:text-green-500 hover:translate-x-1 transition-all"
                         >
                           Mark as Read <HiCheckCircle size={14} />
                         </button>

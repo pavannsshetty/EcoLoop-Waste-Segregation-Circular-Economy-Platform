@@ -3,6 +3,7 @@ const router  = express.Router();
 const {
   addItem, updateItem, deleteItem, getStoreAnalytics,
   getItems, getItem, buyItem, getCategories,
+  getMyOrders,
 } = require('../controllers/ecoShoppingController');
 const { protect }      = require('../middleware/auth');
 const { adminProtect } = require('../middleware/adminAuth');
@@ -17,6 +18,7 @@ router.get   ('/analytics',   adminProtect, getStoreAnalytics);
 // ── Public / Citizen routes ────────────────────────────────────────────────
 router.get   ('/categories',  getCategories);
 router.get   ('/',            getItems);
+router.get   ('/orders',       protect, getMyOrders);
 router.get   ('/:id',         getItem);
 router.post  ('/:id/view',       protect, require('../controllers/ecoShoppingController').viewItem);
 router.post  ('/:id/buy',        protect, buyItem);

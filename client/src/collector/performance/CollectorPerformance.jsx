@@ -36,10 +36,10 @@ const CollectorPerformance = () => {
   ];
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6 animate-in fade-in duration-500 overflow-hidden">
       <div>
-        <h1 className={`text-xl font-extrabold ${dk('text-slate-200', 'text-slate-800')}`}>Performance</h1>
-        <p className={`text-sm mt-0.5 ${dk('text-slate-400', 'text-slate-500')}`}>Track your workload and efficiency</p>
+        <h1 className={`text-lg font-bold tracking-tight text-left ${dk('text-slate-200', 'text-slate-800')}`}>Performance</h1>
+        <p className={`text-sm font-medium text-left mt-0.5 ${dk('text-slate-400', 'text-slate-500')}`}>Track your workload and efficiency</p>
       </div>
 
       {loading ? (
@@ -54,7 +54,7 @@ const CollectorPerformance = () => {
               return (
               <div
                 key={c.label}
-                className={`rounded-2xl border shadow-sm p-4 text-center hover:shadow-md transition ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-100')}`}
+                className={`rounded-lg border shadow-sm p-4 text-center hover:shadow-md transition ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-100')}`}
               >
                 <CardIcon className={`h-5 w-5 mx-auto mb-1 ${c.color}`} />
                 <p className={`text-2xl font-extrabold ${c.color}`}>{c.value}</p>
@@ -64,7 +64,7 @@ const CollectorPerformance = () => {
             })}
           </div>
 
-          <div className={`rounded-2xl border shadow-sm p-4 sm:p-5 space-y-4 ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-100')}`}>
+          <div className={`rounded-lg border shadow-sm p-4 sm:p-5 space-y-4 ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-100')}`}>
             <h2 className={`text-sm font-semibold ${dk('text-slate-200', 'text-slate-800')}`}>Efficiency</h2>
             <div className="space-y-2">
               <div className={`flex justify-between text-xs ${dk('text-slate-400', 'text-slate-500')}`}>
@@ -87,7 +87,7 @@ const CollectorPerformance = () => {
               ].map(({ label, value }) => (
                 <div
                   key={label}
-                  className={`rounded-xl p-3 border ${dk('bg-black/20 border-gray-700', 'bg-slate-50 border-slate-100')}`}
+                  className={`rounded-lg p-3 border ${dk('bg-black/20 border-gray-700', 'bg-slate-50 border-slate-100')}`}
                 >
                   <p className={`text-xs ${dk('text-slate-500', 'text-slate-500')}`}>{label}</p>
                   <p className={`text-sm font-semibold mt-0.5 ${dk('text-slate-200', 'text-slate-800')}`}>{value}</p>

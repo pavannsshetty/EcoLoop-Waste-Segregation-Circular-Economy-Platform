@@ -10,7 +10,7 @@ const approvalRequestSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['village_change', 'email_change'],
+      enum: ['village_change', 'email_change', 'account_deletion'],
       required: true,
     },
     currentVillage: { type: String, trim: true, default: '' },

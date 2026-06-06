@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { API } from '../../shared/constants';
-import { HiLocationMarker, HiPencil, HiSave, HiLogout, HiLockClosed, HiShieldCheck, HiCheckCircle, HiClipboardList, HiOfficeBuilding, HiSparkles, HiCalendar, HiExclamationCircle } from 'react-icons/hi';
+import { HiLocationMarker, HiPencil, HiSave, HiLogout, HiLockClosed, HiShieldCheck, HiCheckCircle, HiClipboardList, HiOfficeBuilding, HiSparkles, HiCalendar, HiExclamationCircle, HiMap } from 'react-icons/hi';
 import { useTheme } from '../../shared/context/ThemeContext';
-import { useUser } from '../../shared/context/UserContext';
+import { useUser, parseStoredUser } from '../../shared/context/UserContext';
 import VillageDropdown from '../../shared/components/VillageDropdown';
 import { fetchVillages } from '../../shared/services/villageService';
+import MapPicker from '../../shared/components/MapPicker';
 
 import Female1 from '../../assets/Avatar/Female1.png';
 import Female2 from '../../assets/Avatar/Female2.png';
@@ -30,7 +31,7 @@ const CitizenProfile = () => {
   const { dark } = useTheme();
   const { user: ctxUser, refreshUser, updateUser } = useUser();
   const dk = (d, l) => dark ? d : l;
-  const stored = ctxUser || JSON.parse(localStorage.getItem('user') || '{}');
+  const stored = ctxUser || parseStoredUser();
 
   const [editPersonal, setEditPersonal] = useState(false);
   const [editAddress, setEditAddress] = useState(false);
@@ -51,6 +52,10 @@ const CitizenProfile = () => {
     landmark: stored.landmark || '',
     addressType: stored.addressType || '',
   });
+  const [homeLat, setHomeLat] = useState(stored.latitude || null);
+  const [homeLng, setHomeLng] = useState(stored.longitude || null);
+  const [showMapEditor, setShowMapEditor] = useState(false);
+  const mapKeyRef = useRef(0);
   const [notifs, setNotifs] = useState({ reportUpdates: true, rewards: true, system: false });
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
   const [pwMsg,  setPwMsg]  = useState('');
@@ -76,10 +81,12 @@ const CitizenProfile = () => {
       };
       setForm(u);
       setOriginalForm(u);
+      setHomeLat(ctxUser.latitude || null);
+      setHomeLng(ctxUser.longitude || null);
     }
   }, [ctxUser]);
 
-  const isChanged = JSON.stringify(form) !== JSON.stringify(originalForm) || file !== null || (avatar !== stored.profilePhoto && avatar !== null);
+  const isChanged = JSON.stringify(form) !== JSON.stringify(originalForm) || file !== null || (avatar !== stored.profilePhoto && avatar !== null) || homeLat !== (stored.latitude || null) || homeLng !== (stored.longitude || null);
 
   const [reports,     setReports]     = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -193,6 +200,8 @@ const CitizenProfile = () => {
         ...form,
         email: originalForm.email,
         profilePhoto: currentPhoto,
+        latitude: homeLat ?? null,
+        longitude: homeLng ?? null,
         ...(phoneChanged ? { currentPassword: confirmPassword } : {}),
       };
 
@@ -276,40 +285,40 @@ const CitizenProfile = () => {
     ? new Date(stored.createdAt).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
     : 'Recently joined';
 
-  const inp = `w-full rounded-xl border px-3.5 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${dk('bg-white/5 border-gray-700 text-slate-200 placeholder-slate-500 disabled:bg-white/5 disabled:text-slate-500','bg-white border-slate-200 text-slate-800 placeholder-slate-400 disabled:bg-slate-50 disabled:text-slate-400')}`;
+  const inp = `w-full rounded-lg border px-3.5 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${dk('bg-white/5 border-gray-700 text-slate-200 placeholder-slate-500 disabled:bg-white/5 disabled:text-slate-500','bg-white border-slate-200 text-slate-800 placeholder-slate-400 disabled:bg-slate-50 disabled:text-slate-400')}`;
   const lbl = `text-xs mb-1 block ${dk('text-slate-400','text-slate-500')}`;
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-4xl mx-auto">
 
-        <div className="relative rounded-sm overflow-hidden bg-gradient-to-br from-green-600 to-emerald-500 p-6 sm:p-8 shadow-lg">
+        <div className="relative rounded-lg overflow-hidden bg-gradient-to-br from-green-600 to-emerald-500 p-6 sm:p-8 shadow-lg">
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
           <div className="relative flex flex-col sm:flex-row items-center sm:items-end gap-5">
             <div className="relative shrink-0">
-              <div className="h-24 w-24 rounded-2xl overflow-hidden border-4 border-white/40 shadow-lg bg-white/20">
+              <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-lg overflow-hidden border-4 border-white/40 shadow-lg bg-white/20">
                 {preview || avatar
                   ? <img src={preview || avatar} alt="avatar" className="h-full w-full object-cover" />
                   : <div className="h-full w-full flex items-center justify-center text-white text-3xl font-bold">{(form.name || 'C')[0].toUpperCase()}</div>
                 }
               </div>
               <button onClick={() => setShowAvatarPicker(true)}
-                className="absolute -bottom-2 -right-2 h-7 w-7 rounded-full bg-white text-green-600 shadow flex items-center justify-center hover:bg-green-50 transition">
+                className="absolute -bottom-2 -right-2 h-8 w-8 sm:h-7 sm:w-7 rounded-full bg-white text-green-600 shadow flex items-center justify-center hover:bg-green-50 transition">
                 <HiPencil className="h-3.5 w-3.5" />
               </button>
             </div>
             <div className="text-center sm:text-left flex-1">
-              <h1 className="text-2xl font-bold text-white">{form.name || 'Citizen'}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-white">{form.name || 'Citizen'}</h1>
               <p className="text-green-100 text-sm mt-0.5">Citizen</p>
               <p className="text-green-200 text-xs mt-1">Member since {memberSince}</p>
             </div>
             {(file || (avatar !== null && avatar !== stored.profilePhoto)) && (
-              <div className="shrink-0 flex items-center gap-2">
+              <div className="shrink-0 flex items-center gap-2 flex-wrap justify-center">
                 <button onClick={() => { setFile(null); setPreview(null); setAvatar(stored.profilePhoto); }}
-                  className="text-sm font-bold px-4 py-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition active:scale-95 shadow">
+                  className="text-sm font-bold px-4 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition active:scale-95 shadow">
                   Revert
                 </button>
                 <button onClick={saveProfile}
-                  className="flex items-center gap-1.5 bg-green-600 text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-green-500 transition active:scale-95 shadow">
+                  className="flex items-center gap-1.5 bg-green-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-green-500 transition active:scale-95 shadow">
                   <HiSave className="h-4 w-4" /> Save Photo
                 </button>
               </div>
@@ -319,7 +328,7 @@ const CitizenProfile = () => {
 
         {showAvatarPicker && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4">
+            <div className="bg-white rounded-lg shadow-2xl p-6 w-full max-w-[95vw] sm:max-w-sm space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-bold text-slate-800">Update Profile Photo</p>
@@ -328,7 +337,7 @@ const CitizenProfile = () => {
                 <button onClick={() => setShowAvatarPicker(false)} className="text-slate-400 hover:text-slate-600 transition">✕</button>
               </div>
               
-              <label className="block w-full border-2 border-dashed border-slate-200 rounded-xl p-4 text-center cursor-pointer hover:border-green-400 hover:bg-green-50 transition group">
+              <label className="block w-full border-2 border-dashed border-slate-200 rounded-lg p-5 sm:p-4 text-center cursor-pointer hover:border-green-400 hover:bg-green-50 transition group">
                 <input type="file" className="hidden" accept="image/jpeg,image/png" onChange={handleFileChange} />
                 <span className="text-xs text-slate-500 group-hover:text-green-600">Upload from device</span>
                 <p className="text-[10px] text-slate-400 mt-1">JPG, PNG up to 2MB</p>
@@ -339,22 +348,22 @@ const CitizenProfile = () => {
                 <div className="relative flex justify-center text-[10px] uppercase font-bold text-slate-300 bg-white px-2">OR CHOOSE AVATAR</div>
               </div>
 
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
                 {AVATARS.map((src, i) => (
                   <button key={i} onClick={() => pickAvatar(src)}
-                    className={`rounded-xl overflow-hidden border-2 transition hover:scale-105 ${avatar === src ? 'border-green-500' : 'border-transparent'}`}>
+                    className={`rounded-lg overflow-hidden border-2 transition hover:scale-105 ${avatar === src ? 'border-green-500' : 'border-transparent'}`}>
                     <img src={src} alt={`avatar-${i}`} className="h-16 w-full object-cover" />
                   </button>
                 ))}
               </div>
-              <button onClick={removeAvatar} className="w-full py-2 text-xs text-slate-400 hover:text-red-500 transition">Remove photo</button>
+              <button onClick={removeAvatar} className="w-full py-3 sm:py-2 text-xs text-slate-400 hover:text-red-500 transition">Remove photo</button>
             </div>
           </div>
         )}
 
 
 
-        <div className={`rounded-sm border p-5 sm:p-6 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
+        <div className={`rounded-lg border p-5 sm:p-6 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-3">
               <h2 className={`text-sm font-bold ${dk('text-slate-200','text-slate-700')}`}>Personal Information</h2>
@@ -410,7 +419,7 @@ const CitizenProfile = () => {
         </div>
 
         {/* Home Location & Address Section */}
-        <div className={`rounded-sm border p-5 sm:p-6 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
+        <div className={`rounded-lg border p-5 sm:p-6 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-3">
               <h2 className={`text-sm font-bold ${dk('text-slate-200','text-slate-700')}`}>Home Location & Address</h2>
@@ -446,11 +455,11 @@ const CitizenProfile = () => {
               <div className="space-y-2">
                 <input type="text" value={form.village ? `${form.village} Village` : ''} readOnly className={`${inp} opacity-80`} />
                 <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-sm ${dk('bg-green-900/30 text-green-400','bg-green-50 text-green-700')}`}>
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg ${dk('bg-green-900/30 text-green-400','bg-green-50 text-green-700')}`}>
                     <HiShieldCheck className="h-3.5 w-3.5" /> Verified Service Area
                   </span>
                   <button type="button" onClick={() => setShowVillageRequest(true)}
-                    className={`text-xs font-bold px-3 py-1.5 rounded-sm transition ${dk('bg-white/10 text-slate-200 hover:bg-white/20','bg-white border text-slate-700 hover:bg-slate-50')}`}>
+                    className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${dk('bg-white/10 text-slate-200 hover:bg-white/20','bg-white border text-slate-700 hover:bg-slate-50')}`}>
                     Request Village Change
                   </button>
                 </div>
@@ -483,6 +492,65 @@ const CitizenProfile = () => {
               </select>
             </div>
           </div>
+
+          { /* ─── Home Map Location ─── */ }
+          <div className={`border-t pt-4 ${dk('border-slate-700', 'border-slate-200')}`}>
+            <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <HiMap className={`h-4 w-4 ${dk('text-green-400', 'text-green-600')}`} />
+                <p className={`text-xs font-bold ${dk('text-slate-300', 'text-slate-700')}`}>Home Map Location</p>
+                {homeLat != null && homeLng != null && (
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg ${dk('bg-green-900/30 text-green-400', 'bg-green-50 text-green-700')}`}>
+                    <HiCheckCircle className="h-3 w-3" /> GPS Verified
+                  </span>
+                )}
+              </div>
+              {editAddress && (
+                <button type="button" onClick={() => { setShowMapEditor(!showMapEditor); if (!showMapEditor) mapKeyRef.current++; }}
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition active:scale-95 ${showMapEditor ? dk('bg-green-900/30 text-green-400', 'bg-green-50 text-green-700') : dk('bg-white/10 text-slate-200 hover:bg-white/20', 'bg-white border text-slate-700 hover:bg-slate-50')}`}>
+                  <HiMap className="h-3.5 w-3.5" /> {showMapEditor ? 'Done Selecting' : (homeLat ? 'Edit Location' : 'Set Location')}
+                </button>
+              )}
+            </div>
+
+            {showMapEditor && editAddress && (
+              <MapPicker
+                key={mapKeyRef.current}
+                villageName={form.village}
+                dark={dark}
+                onLocationSelect={(data) => {
+                  if (data.regionValid) {
+                    setHomeLat(data.lat);
+                    setHomeLng(data.lng);
+                    if (data.street && !form.streetArea) set('streetArea', data.street);
+                    if (data.pincode) set('locality', data.pincode);
+                  }
+                }}
+              />
+            )}
+
+            {homeLat != null && homeLng != null && !showMapEditor && (
+              <div className={`rounded-lg border p-3.5 ${dk('bg-white/5 border-slate-700', 'bg-green-50 border-green-200')}`}>
+                <div className="flex items-start gap-2.5">
+                  <HiLocationMarker className={`h-4 w-4 shrink-0 mt-0.5 ${dk('text-green-400', 'text-green-600')}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className={`text-xs font-semibold ${dk('text-green-400', 'text-green-700')}`}>Saved Home Location</p>
+                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-lg ${dk('bg-slate-800 text-slate-400', 'bg-white text-slate-500 border')}`}>
+                        <HiCheckCircle className="h-3 w-3 inline -mt-0.5 text-green-500" /> GPS
+                      </span>
+                    </div>
+                    <div className={`mt-1 flex items-center gap-1.5 text-[10px] font-mono ${dk('text-slate-500', 'text-slate-400')}`}>
+                      <span>Lat: {homeLat.toFixed(6)}</span>
+                      <span className="w-px h-3 bg-slate-300 dark:bg-slate-700" />
+                      <span>Lng: {homeLng.toFixed(6)}</span>
+                    </div>
+                    <p className={`text-[10px] mt-1 ${dk('text-slate-600', 'text-slate-400')}`}>Last updated: {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {showVillageRequest && createPortal(
@@ -493,7 +561,7 @@ const CitizenProfile = () => {
               onClick={() => setShowVillageRequest(false)}
               className={`absolute inset-0 h-full w-full cursor-default ${dk('bg-black/75','bg-slate-950/55')} backdrop-blur-[2px]`}
             />
-            <form onSubmit={submitVillageRequest} className={`relative z-10 w-full max-w-md max-h-[92vh] overflow-y-auto rounded-sm border shadow-2xl p-5 space-y-4 ${dk('bg-slate-900 border-slate-700','bg-white border-slate-200')}`}>
+            <form onSubmit={submitVillageRequest} className={`relative z-10 w-full max-w-[95vw] sm:max-w-md max-h-[92vh] overflow-y-auto rounded-lg border shadow-2xl p-5 space-y-4 ${dk('bg-slate-900 border-slate-700','bg-white border-slate-200')}`}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className={`text-sm font-bold ${dk('text-slate-100','text-slate-800')}`}>Request Village Change</h3>
@@ -502,7 +570,7 @@ const CitizenProfile = () => {
                 <button type="button" onClick={() => setShowVillageRequest(false)} className={`text-sm font-bold ${dk('text-slate-400 hover:text-slate-200','text-slate-400 hover:text-slate-700')}`}>X</button>
               </div>
 
-              <div className={`flex gap-2 rounded-sm border px-3 py-2 text-xs ${dk('bg-amber-500/10 border-amber-500/30 text-amber-300','bg-amber-50 border-amber-200 text-amber-700')}`}>
+              <div className={`flex gap-2 rounded-lg border p-3 sm:px-3 sm:py-2 text-xs ${dk('bg-amber-500/10 border-amber-500/30 text-amber-300','bg-amber-50 border-amber-200 text-amber-700')}`}>
                 <HiExclamationCircle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>Changing village may affect your service area, reports, and pickup availability.</span>
               </div>
@@ -534,10 +602,10 @@ const CitizenProfile = () => {
               )}
               <div className="flex flex-col sm:flex-row gap-2">
                 <button type="button" onClick={() => setShowVillageRequest(false)}
-                  className={`flex-1 text-sm px-4 py-2.5 rounded-sm border ${dk('border-slate-700 text-slate-300 hover:bg-white/5','border-slate-200 text-slate-600 hover:bg-slate-50')}`}>
+                  className={`flex-1 text-sm px-4 py-3 sm:py-2.5 rounded-lg border ${dk('border-slate-700 text-slate-300 hover:bg-white/5','border-slate-200 text-slate-600 hover:bg-slate-50')}`}>
                   Cancel
                 </button>
-                <button type="submit" className="flex-1 text-sm px-4 py-2.5 rounded-sm bg-green-600 text-white font-bold hover:bg-green-500">
+                <button type="submit" className="flex-1 text-sm px-4 py-3 sm:py-2.5 rounded-lg bg-green-600 text-white font-bold hover:bg-green-500">
                   Submit Request
                 </button>
               </div>
@@ -546,11 +614,11 @@ const CitizenProfile = () => {
           document.body
         )}
 
-        <div className={`rounded-sm border p-5 sm:p-6 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
+        <div className={`rounded-lg border p-5 sm:p-6 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
           <h2 className={`text-sm font-bold ${dk('text-slate-200','text-slate-700')}`}>Rewards & Achievements</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {BADGES.map(b => (
-              <div key={b.id} className={`rounded-sm border p-3 text-center space-y-1.5 transition-colors duration-200 ${b.earned ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800' : dk('bg-white/5 border-gray-700 opacity-50','bg-slate-50 border-slate-200 opacity-50')}`}>
+              <div key={b.id} className={`rounded-lg border p-3 text-center space-y-1.5 transition-colors duration-200 ${b.earned ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800' : dk('bg-white/5 border-gray-700 opacity-50','bg-slate-50 border-slate-200 opacity-50')}`}>
                 <b.Icon className={`h-8 w-8 mx-auto block ${b.earned ? 'text-green-600' : 'text-slate-400'}`} />
                 <p className={`text-xs font-bold ${b.earned ? 'text-green-700' : 'text-slate-500'}`}>{b.label}</p>
                 <p className="text-xs text-slate-400 leading-snug">{b.desc}</p>
@@ -560,7 +628,7 @@ const CitizenProfile = () => {
           </div>
         </div>
 
-        <div className={`rounded-sm border p-5 sm:p-6 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
+        <div className={`rounded-lg border p-5 sm:p-6 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
           <h2 className={`text-sm font-bold ${dk('text-slate-200','text-slate-700')}`}>Your Impact</h2>
           <div className="space-y-3">
             {[
@@ -580,7 +648,7 @@ const CitizenProfile = () => {
           </div>
         </div>
 
-        <div className={`rounded-sm border p-5 sm:p-6 space-y-3 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
+        <div className={`rounded-lg border p-5 sm:p-6 space-y-3 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
           <h2 className={`text-sm font-bold ${dk('text-slate-200','text-slate-700')}`}>Notification Preferences</h2>
           {[
             { k: 'reportUpdates', label: 'Report Updates',        sub: 'Get notified when your report status changes' },
@@ -597,7 +665,7 @@ const CitizenProfile = () => {
           ))}
         </div>
 
-        <div className={`rounded-sm border p-5 sm:p-6 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
+        <div className={`rounded-lg border p-5 sm:p-6 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
           <h2 className={`text-sm font-bold flex items-center gap-2 ${dk('text-slate-200','text-slate-700')}`}>
             <HiShieldCheck className="h-4 w-4 text-green-500" /> Security
           </h2>
@@ -617,7 +685,7 @@ const CitizenProfile = () => {
               <p className={`text-xs ${pwMsg.includes('success') ? 'text-green-600' : 'text-red-500'}`}>{pwMsg}</p>
             )}
             <button type="submit"
-              className="flex items-center gap-2 bg-slate-900 text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-slate-800 transition active:scale-95">
+              className="flex items-center gap-2 bg-slate-900 text-white text-sm font-bold px-4 py-3 sm:py-2.5 rounded-lg hover:bg-slate-800 transition active:scale-95">
               <HiLockClosed className="h-4 w-4" /> Update Password
             </button>
           </form>

@@ -77,8 +77,8 @@ const NotificationHub = () => {
           <p className={`small-text ${dk('text-slate-500', 'text-slate-400')}`}>Stay updated with community events & alerts</p>
         </div>
         <div className="flex items-center gap-2">
-           <button onClick={markAllRead} className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest bg-green-500 text-white shadow-lg shadow-green-500/20 hover:scale-105 transition-all">Mark All Read</button>
-           <button onClick={fetchAll} className={`p-2 rounded-xl border ${dk('border-slate-800 text-slate-400 hover:text-white', 'border-slate-200 text-slate-500 hover:text-green-500')}`}>
+           <button onClick={markAllRead} className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest bg-green-500 text-white shadow-lg shadow-green-500/20 hover:scale-105 transition-all">Mark All Read</button>
+           <button onClick={fetchAll} className={`p-2 rounded-lg border ${dk('border-slate-800 text-slate-400 hover:text-white', 'border-slate-200 text-slate-500 hover:text-green-500')}`}>
               <HiRefresh className={loading ? 'animate-spin' : ''} />
            </button>
         </div>
@@ -92,7 +92,7 @@ const NotificationHub = () => {
             placeholder="Search updates..." 
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className={`w-full pl-10 pr-4 py-2.5 rounded-xl border focus:ring-2 focus:ring-green-500 outline-none transition-all ${dk('bg-white/5 border-slate-800 text-white', 'bg-white border-slate-200 text-slate-900')}`}
+            className={`w-full pl-10 pr-4 py-2.5 rounded-lg border focus:ring-2 focus:ring-green-500 outline-none transition-all ${dk('bg-white/5 border-slate-800 text-white', 'bg-white border-slate-200 text-slate-900')}`}
           />
         </div>
         <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -100,7 +100,7 @@ const NotificationHub = () => {
             <button 
               key={f} 
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${filter === f ? 'bg-green-500 text-white' : dk('bg-white/5 text-slate-400', 'bg-white text-slate-500 border border-slate-200')}`}
+              className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${filter === f ? 'bg-green-500 text-white' : dk('bg-white/5 text-slate-400', 'bg-white text-slate-500 border border-slate-200')}`}
             >
               {f}
             </button>
@@ -114,7 +114,7 @@ const NotificationHub = () => {
            <p className="small-text text-slate-500">Retrieving your updates...</p>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-24 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
+        <div className="text-center py-24 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-lg">
            <div className="h-16 w-16 bg-slate-100 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
               <HiBell className="h-8 w-8 text-slate-300" />
            </div>
@@ -128,10 +128,10 @@ const NotificationHub = () => {
             return (
               <div 
                 key={n._id} 
-                className={`relative group rounded-3xl border p-5 transition-all duration-300 ${!n.isRead ? dk('bg-green-500/5 border-green-500/20 shadow-lg', 'bg-green-500/30 border-green-500 shadow-lg') : dk('bg-white/5 border-slate-800', 'bg-white border-slate-100 shadow-sm')}`}
+                className={`relative group rounded-lg border p-5 transition-all duration-300 ${!n.isRead ? dk('bg-green-500/5 border-green-500/20 shadow-lg', 'bg-green-500/30 border-green-500 shadow-lg') : dk('bg-white/5 border-slate-800', 'bg-white border-slate-100 shadow-sm')}`}
               >
                 <div className="flex flex-col sm:flex-row gap-5">
-                   <div className={`h-12 w-12 rounded-2xl shrink-0 flex items-center justify-center ${meta.bg} ${meta.color} shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+                   <div className={`h-12 w-12 rounded-lg shrink-0 flex items-center justify-center ${meta.bg} ${meta.color} shadow-sm group-hover:scale-110 transition-transform duration-300`}>
                       <meta.icon size={24} />
                    </div>
                    <div className="flex-1 space-y-2">
@@ -151,7 +151,7 @@ const NotificationHub = () => {
                       <p className={`text-sm leading-relaxed ${dk('text-slate-400', 'text-slate-600')}`}>{n.description || n.message}</p>
                       
                       {n.isEvent && (
-                        <div className={`mt-4 p-4 rounded-2xl grid grid-cols-1 sm:grid-cols-2 gap-4 ${dk('bg-white/5', 'bg-slate-50')}`}>
+                        <div className={`mt-4 p-4 rounded-lg grid grid-cols-1 sm:grid-cols-2 gap-4 ${dk('bg-white/5', 'bg-slate-50')}`}>
                            <div className="flex items-center gap-3 text-xs text-slate-500">
                              <HiCalendar className="text-green-500 h-4 w-4" />
                              <div>

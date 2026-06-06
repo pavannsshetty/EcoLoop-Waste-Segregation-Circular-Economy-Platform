@@ -16,22 +16,63 @@ import {
   HiShoppingCart,
   HiBadgeCheck,
   HiShieldCheck,
+  HiClock,
+  HiExclamation,
+  HiHome,
 } from 'react-icons/hi';
 import DarkBg from '../components/DarkBg';
 import EcoLoopLogo from '../components/EcoLoopLogo';
 import { useTheme } from '../context/ThemeContext';
 
-const NAV = [
-  { path: '/admin/dashboard', icon: HiChartBar, label: 'Dashboard' },
-  { path: '/admin/add-collector', icon: HiUserAdd, label: 'Add Collector' },
-  { path: '/admin/collectors', icon: HiUsers, label: 'View Collectors' },
-  { path: '/admin/champions', icon: HiStar, label: 'Green Champions' },
-  { path: '/admin/champion-requests', icon: HiBadgeCheck, label: 'Champion Requests' },
-  { path: '/admin/approval-requests', icon: HiShieldCheck, label: 'Approval Requests' },
-  { path: '/admin/reports', icon: HiClipboardList, label: 'Reports' },
-  { path: '/admin/eco-shopping', icon: HiShoppingCart, label: 'Eco Shopping' },
-  { path: '/admin/notifications', icon: HiBell, label: 'Notifications' },
-  { path: '/admin/settings', icon: HiCog, label: 'Settings' },
+const SECTIONS = [
+  {
+    title: 'Overview',
+    items: [
+      { path: '/admin/dashboard', icon: HiChartBar, label: 'Dashboard' },
+    ],
+  },
+  {
+    title: 'User Management',
+    items: [
+      { path: '/admin/add-collector', icon: HiUserAdd, label: 'Add Collector' },
+      { path: '/admin/collectors', icon: HiUsers, label: 'View Collectors' },
+      { path: '/admin/champions', icon: HiStar, label: 'Green Champions' },
+    ],
+  },
+  {
+    title: 'Approvals',
+    items: [
+      { path: '/admin/champion-requests', icon: HiBadgeCheck, label: 'Champion Requests' },
+      { path: '/admin/approval-requests', icon: HiShieldCheck, label: 'Approval Requests' },
+    ],
+  },
+  {
+    title: 'Waste Management',
+    items: [
+      { path: '/admin/reports/public', icon: HiExclamation, label: 'Public Waste Reports' },
+      { path: '/admin/reports/home-pickup', icon: HiHome, label: 'Home Pickup Requests' },
+    ],
+  },
+  {
+    title: 'Marketplace',
+    items: [
+      { path: '/admin/eco-shopping', icon: HiShoppingCart, label: 'Eco Shopping' },
+      { path: '/admin/eco-shopping/buyers', icon: HiShoppingCart, label: 'Eco Product Buyers' },
+    ],
+  },
+  {
+    title: 'Notifications',
+    items: [
+      { path: '/admin/sendbrodcastnotifications', icon: HiBell, label: 'Broadcast Center' },
+      { path: '/admin/broadcasthistory', icon: HiClock, label: 'Broadcast History' },
+    ],
+  },
+  {
+    title: 'System',
+    items: [
+      { path: '/admin/settings', icon: HiCog, label: 'Settings' },
+    ],
+  },
 ];
 
 const NavItem = ({ path, Icon, label, collapsed, dark, onNavigate }) => {
@@ -45,14 +86,14 @@ const NavItem = ({ path, Icon, label, collapsed, dark, onNavigate }) => {
       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-sm transition-all duration-200 group ${
         active
           ? dark ? 'bg-green-900/40 text-green-400' : 'bg-green-50 text-green-700'
-          : dark ? 'text-slate-400 hover:bg-white/5 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+          : dark ? 'text-slate-300 hover:bg-white/5 hover:text-slate-100' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
       }`}
     >
       <span className={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${active ? 'text-green-500' : ''}`}>
         <Icon className="h-5 w-5" />
       </span>
       <span className={`whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>{label}</span>
-      {active && !collapsed && <span className="ml-auto h-1.5 w-1.5 rounded-sm bg-green-500 shrink-0" />}
+      {active && !collapsed && <span className="ml-auto h-1.5 w-1.5 rounded-lg bg-green-500 shrink-0" />}
     </button>
   );
 };
@@ -80,11 +121,11 @@ const AdminLayout = () => {
 
   const sidebarBg = dark ? 'bg-black/60 border-white/10' : 'bg-white border-slate-200';
   const headerBg = dark ? 'bg-black/80 border-white/10' : 'bg-white/90 border-slate-200';
-  const sectionLbl = dark ? 'text-slate-500' : 'text-slate-400';
+  const sectionLbl = dark ? 'text-slate-400' : 'text-slate-500';
 
   return (
     <div
-      className="min-h-screen relative"
+      className="min-h-screen relative overflow-x-hidden"
       style={
         dark
           ? { background: '#000000' }
@@ -108,7 +149,7 @@ const AdminLayout = () => {
       <aside
         className={`fixed top-0 left-0 h-full z-50 flex flex-col border-r shadow-lg transition-all duration-300 ease-in-out ${sidebarBg} ${
           mobileOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64'
-        } lg:translate-x-0 ${sideW} rounded-sm`}
+        } lg:translate-x-0 ${sideW} rounded-lg`}
       >
         <div
           className={`h-16 flex items-center border-b shrink-0 px-4 ${dark ? 'border-white/10' : 'border-slate-200'} ${
@@ -125,7 +166,7 @@ const AdminLayout = () => {
           <button
             type="button"
             onClick={() => setCollapsed((c) => !c)}
-            className={`hidden lg:flex items-center justify-center h-8 w-8 rounded-sm transition shrink-0 ${
+            className={`hidden lg:flex items-center justify-center h-8 w-8 rounded-lg transition shrink-0 ${
               dark ? 'text-slate-500 hover:bg-white/10 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
             }`}
             aria-label="Toggle sidebar width"
@@ -135,11 +176,16 @@ const AdminLayout = () => {
         </div>
 
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <p className={`text-xs font-bold px-3 mb-1 uppercase tracking-wider ${collapsed ? 'lg:hidden' : ''} ${sectionLbl}`}>
-            Management
-          </p>
-          {NAV.map(({ path, icon, label }) => (
-            <NavItem key={path} path={path} Icon={icon} label={label} collapsed={collapsed} dark={dark} onNavigate={go} />
+          {SECTIONS.map((section, i) => (
+            <div key={section.title}>
+              {i > 0 && <div className={`pt-3 ${collapsed ? 'lg:hidden' : ''}`} />}
+              <p className={`text-xs font-bold px-3 mb-1 uppercase tracking-wider ${collapsed ? 'lg:hidden' : ''} ${sectionLbl}`}>
+                {section.title}
+              </p>
+              {section.items.map(({ path, icon, label }) => (
+                <NavItem key={path} path={path} Icon={icon} label={label} collapsed={collapsed} dark={dark} onNavigate={go} />
+              ))}
+            </div>
           ))}
         </nav>
 
@@ -147,13 +193,13 @@ const AdminLayout = () => {
           <button
             type="button"
             onClick={logout}
-            title={collapsed ? 'Sign Out' : undefined}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm transition group ${
-              dark ? 'text-slate-400 hover:bg-red-900/30 hover:text-red-400' : 'text-slate-500 hover:bg-red-50 hover:text-red-500'
+            title={collapsed ? 'Log Out' : undefined}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition group ${
+              dark ? 'text-slate-300 hover:bg-red-900/30 hover:text-red-400' : 'text-slate-600 hover:bg-red-50 hover:text-red-500'
             }`}
           >
             <HiLogout className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110" />
-            <span className={`whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>Sign Out</span>
+            <span className={`whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:hidden' : ''}`}>Log Out</span>
           </button>
         </div>
       </aside>
@@ -165,7 +211,7 @@ const AdminLayout = () => {
           <button
             type="button"
             onClick={() => setMobileOpen((o) => !o)}
-            className={`flex items-center justify-center h-9 w-9 rounded-sm transition lg:hidden ${
+            className={`flex items-center justify-center h-9 w-9 rounded-lg transition lg:hidden ${
               dark ? 'text-slate-400 hover:bg-white/10 hover:text-green-400' : 'text-slate-500 hover:bg-slate-100 hover:text-green-600'
             }`}
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
@@ -184,13 +230,13 @@ const AdminLayout = () => {
             type="button"
             onClick={toggleDark}
             aria-label="Toggle dark mode"
-            className={`flex items-center justify-center h-9 w-9 rounded-sm transition ${
+            className={`flex items-center justify-center h-9 w-9 rounded-lg transition ${
               dark ? 'text-yellow-400 hover:bg-white/10' : 'text-slate-500 hover:bg-slate-100'
             }`}
           >
             {dark ? <HiSun className="h-5 w-5" /> : <HiMoon className="h-5 w-5" />}
           </button>
-          <div className="h-9 w-9 rounded-sm overflow-hidden bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
+          <div className="h-9 w-9 rounded-lg overflow-hidden bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
             {username[0].toUpperCase()}
           </div>
         </header>

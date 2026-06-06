@@ -144,12 +144,23 @@ const userSchema = new mongoose.Schema(
     lastActiveDate: { type: Date,   default: null },
     streakRewardsTotal: { type: Number, default: 0 },
     createdByAdmin: { type: Boolean, default: false },
-    accountStatus:  { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
+    accountStatus:  { type: String, enum: ['Active', 'Inactive', 'Suspended', 'Deleted'], default: 'Active' },
+    suspensionReason:   { type: String, default: '' },
+    suspensionDuration: { type: String, default: '' },
+    suspendedUntil:     { type: Date, default: null },
+    suspensionDate:     { type: Date, default: null },
+    suspendedBy:        { type: String, default: '' },
+    deletionReason:     { type: String, default: '' },
+    deletedAt:          { type: Date, default: null },
+    deletedBy:          { type: String, default: '' },
   },
   {
     timestamps: true,
   }
 );
+
+userSchema.index({ role: 1, 'rewards.totalEarned': -1 });
+userSchema.index({ role: 1, 'rewards.monthlyPoints': -1 });
 
 userSchema.pre('save', async function () {
   if (!this.isModified('password')) return;

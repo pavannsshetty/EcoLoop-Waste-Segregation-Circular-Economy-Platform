@@ -89,7 +89,7 @@ const CompleteModal = ({ report, onClose, onDone, dk }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className={`rounded-2xl border w-full max-w-md p-5 space-y-4 shadow-xl ${panel}`}>
+      <div className={`rounded-lg border w-full max-w-md p-5 space-y-4 shadow-xl ${panel}`}>
         <div className="flex items-center justify-between">
           <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Mark as Completed</p>
           <button type="button" onClick={onClose} className={dk('text-slate-400 hover:text-white', 'text-slate-500 hover:text-slate-800')}>
@@ -101,7 +101,7 @@ const CompleteModal = ({ report, onClose, onDone, dk }) => {
             Completion Photo <span className="text-red-500">*</span>
           </label>
           <label
-            className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed cursor-pointer py-5 transition ${dash}`}
+            className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed cursor-pointer py-5 transition ${dash}`}
           >
             {preview ? (
               <img src={preview} alt="" className="h-28 rounded-lg object-cover" />
@@ -121,19 +121,19 @@ const CompleteModal = ({ report, onClose, onDone, dk }) => {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Describe what was done..."
-            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none ${input}`}
+            className={`w-full rounded-lg border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none ${input}`}
           />
         </div>
         {error && <p className="text-xs text-red-500">{error}</p>}
         <div className="flex gap-3">
-          <button type="button" onClick={onClose} className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition ${btnGhost}`}>
+          <button type="button" onClick={onClose} className={`flex-1 rounded-lg border py-2.5 text-sm font-semibold transition ${btnGhost}`}>
             Cancel
           </button>
           <button
             type="button"
             onClick={submit}
             disabled={loading}
-            className="flex-1 rounded-xl bg-green-600 text-white py-2.5 text-sm font-semibold hover:bg-green-500 transition disabled:opacity-60"
+            className="flex-1 rounded-lg bg-green-600 text-white py-2.5 text-sm font-semibold hover:bg-green-500 transition disabled:opacity-60"
           >
             {loading ? 'Saving...' : 'Mark Completed'}
           </button>
@@ -179,7 +179,7 @@ const DelayModal = ({ report, onClose, onDone, dk }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className={`rounded-2xl border w-full max-w-sm p-5 space-y-4 shadow-xl ${panel}`}>
+      <div className={`rounded-lg border w-full max-w-sm p-5 space-y-4 shadow-xl ${panel}`}>
         <div className="flex items-center justify-between">
           <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Report Delay</p>
           <button type="button" onClick={onClose} className={dk('text-slate-400 hover:text-white', 'text-slate-500 hover:text-slate-800')}>
@@ -193,18 +193,18 @@ const DelayModal = ({ report, onClose, onDone, dk }) => {
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. Heavy rain, Vehicle issue..."
-            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none ${input}`}
+            className={`w-full rounded-lg border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none ${input}`}
           />
         </div>
         <div className="flex gap-3">
-          <button type="button" onClick={onClose} className={`flex-1 rounded-xl border py-2 text-sm font-semibold transition ${btnGhost}`}>
+          <button type="button" onClick={onClose} className={`flex-1 rounded-lg border py-2 text-sm font-semibold transition ${btnGhost}`}>
             Cancel
           </button>
           <button
             type="button"
             onClick={submit}
             disabled={loading || !reason.trim()}
-            className="flex-1 rounded-xl bg-yellow-600 text-white py-2 text-sm font-semibold hover:bg-yellow-500 transition disabled:opacity-60"
+            className="flex-1 rounded-lg bg-yellow-600 text-white py-2 text-sm font-semibold hover:bg-yellow-500 transition disabled:opacity-60"
           >
             {loading ? 'Saving...' : 'Submit'}
           </button>
@@ -282,8 +282,8 @@ const AssignedReports = () => {
   const onDone = (updated) => setReports((rs) => rs.map((r) => (r._id === updated._id ? updated : r)));
 
   const selectCls = dk(
-    'rounded-xl border border-gray-700 bg-white/5 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500',
-    'rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm'
+    'rounded-lg border border-gray-700 bg-white/5 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500',
+    'rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm'
   );
 
   return (
@@ -330,16 +330,16 @@ const AssignedReports = () => {
         reports.map((r) => (
           <div
             key={r._id}
-            className={`rounded-2xl border p-4 space-y-3 shadow-sm transition ${dk('bg-white/5 border-gray-700 hover:bg-white/[0.07]', 'bg-white border-slate-100 hover:shadow-md')}`}
+            className={`rounded-lg border p-4 space-y-3 shadow-sm transition ${dk('bg-white/5 border-gray-700 hover:bg-white/[0.07]', 'bg-white border-slate-100 hover:shadow-md')}`}
           >
             <div className="flex items-start justify-between gap-2 flex-wrap">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${r.taskType === 'scrap' ? 'bg-purple-600 text-white' : 'bg-blue-600 text-white'}`}>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg uppercase ${r.taskType === 'scrap' ? 'bg-purple-600 text-white' : 'bg-blue-600 text-white'}`}>
                     {r.taskType === 'scrap' ? 'Scrap' : 'Waste'}
                   </span>
                   {r.reportId && (
-                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-sm bg-green-50 text-green-600 border border-green-100">
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-lg bg-green-50 text-green-600 border border-green-100">
                       {r.reportId}
                     </span>
                   )}

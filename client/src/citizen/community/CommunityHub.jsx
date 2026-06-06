@@ -99,7 +99,7 @@ const CommunityHub = () => {
         }
     };
 
-    const inp = `w-full px-4 py-3 rounded-xl border text-sm transition focus:ring-2 focus:ring-green-500 outline-none ${dk('bg-white/5 border-gray-700 text-white', 'bg-slate-50 border-slate-200 text-slate-900')}`;
+    const inp = `w-full px-4 py-3 rounded-lg border text-sm transition focus:ring-2 focus:ring-green-500 outline-none ${dk('bg-white/5 border-gray-700 text-white', 'bg-slate-50 border-slate-200 text-slate-900')}`;
 
     return (
         <div className="page-container animate-in fade-in duration-500">
@@ -127,9 +127,9 @@ const CommunityHub = () => {
                     {tab === 'awareness' && (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {posts.map(post => (
-                                <div key={post._id} className={`rounded-3xl border overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${dk('bg-white/5 border-white/10', 'bg-white border-black/[0.04] shadow-[0_4px_14px_rgba(0,0,0,0.05)]')}`}>
+                                <div key={post._id} className={`rounded-lg border overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${dk('bg-white/5 border-white/10', 'bg-white border-black/[0.04] shadow-[0_4px_14px_rgba(0,0,0,0.05)]')}`}>
                                     <div className="p-5 flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-xl bg-green-500 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                                        <div className="h-10 w-10 rounded-lg bg-green-500 flex items-center justify-center text-white text-sm font-bold shadow-sm">
                                             {post.author?.name ? post.author.name[0].toUpperCase() : 'G'}
                                         </div>
                                         <div>
@@ -163,7 +163,7 @@ const CommunityHub = () => {
                     {tab === 'campaigns' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {campaigns.map(c => (
-                                <div key={c._id} className={`rounded-3xl border overflow-hidden flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${dk('bg-white/5 border-white/10', 'bg-white border-black/[0.04] shadow-[0_4px_14px_rgba(0,0,0,0.05)]')}`}>
+                                <div key={c._id} className={`rounded-lg border overflow-hidden flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${dk('bg-white/5 border-white/10', 'bg-white border-black/[0.04] shadow-[0_4px_14px_rgba(0,0,0,0.05)]')}`}>
                                     <div className="aspect-video bg-slate-100 dark:bg-white/5 relative">
                                         {c.image ? <img src={c.image} alt={c.title} className="w-full h-full object-cover" /> : <div className="h-full flex items-center justify-center"><HiUserGroup className="h-12 w-12 text-green-500/20" /></div>}
                                         <div className="absolute top-3 left-3 px-2.5 py-1 bg-green-500 text-white text-[10px] font-bold rounded-lg shadow-lg uppercase tracking-wider">{c.status}</div>
@@ -182,7 +182,7 @@ const CommunityHub = () => {
                                         </div>
                                         <button 
                                             onClick={() => handleJoinCampaign(c._id)}
-                                            className="w-full py-3 rounded-xl bg-green-500 text-white text-xs font-bold hover:bg-green-500 transition active:scale-95 shadow-lg shadow-green-500/20"
+                                            className="w-full py-3 rounded-lg bg-green-500 text-white text-xs font-bold hover:bg-green-500 transition active:scale-95 shadow-lg shadow-green-500/20"
                                         >
                                             Join Campaign
                                         </button>
@@ -201,7 +201,7 @@ const CommunityHub = () => {
 
                     {tab === 'recycling' && (
                         <div className={`p-10 rounded-[2.5rem] border text-center space-y-6 ${dk('bg-white/5 border-white/10', 'bg-white border-black/[0.04] shadow-xl shadow-black/5')}`}>
-                            <div className="h-20 w-20 rounded-3xl bg-green-500/10 flex items-center justify-center mx-auto shadow-inner">
+                            <div className="h-20 w-20 rounded-lg bg-green-500/10 flex items-center justify-center mx-auto shadow-inner">
                                 <HiRefresh className="h-10 w-10 text-green-500" />
                             </div>
                             <div className="max-w-md mx-auto">
@@ -210,7 +210,7 @@ const CommunityHub = () => {
                             </div>
                             <button 
                                 onClick={() => setShowPickupModal(true)}
-                                className="px-10 py-4 rounded-2xl bg-green-500 text-white font-bold shadow-lg shadow-green-500/30 hover:bg-green-500 transition-all hover:scale-105 active:scale-95"
+                                className="px-10 py-4 rounded-lg bg-green-500 text-white font-bold shadow-lg shadow-green-500/30 hover:bg-green-500 transition-all hover:scale-105 active:scale-95"
                             >
                                 Request a Pickup
                             </button>
@@ -228,7 +228,7 @@ const CommunityHub = () => {
                                 <h2 className={`text-2xl font-black tracking-tight ${dk('text-white', 'text-slate-900')}`}>Request Pickup</h2>
                                 <p className="text-xs font-bold text-slate-500 tracking-wide mt-1">Schedule a waste collection from your doorstep</p>
                             </div>
-                            <button onClick={() => setShowPickupModal(false)} className={`h-10 w-10 flex items-center justify-center rounded-xl transition-all ${dk('bg-white/5 text-slate-500 hover:text-white', 'bg-slate-50 text-slate-400 hover:text-slate-600')}`}>
+                            <button onClick={() => setShowPickupModal(false)} className={`h-10 w-10 flex items-center justify-center rounded-lg transition-all ${dk('bg-white/5 text-slate-500 hover:text-white', 'bg-slate-50 text-slate-400 hover:text-slate-600')}`}>
                                 <HiX className="h-6 w-6" />
                             </button>
                          </div>
@@ -282,7 +282,7 @@ const CommunityHub = () => {
                                 />
                             </div>
                              
-                            <div className={`p-5 rounded-2xl flex gap-3 border ${dk('bg-blue-500/10 border-blue-500/20', 'bg-blue-50 border-blue-100')}`}>
+                            <div className={`p-5 rounded-lg flex gap-3 border ${dk('bg-blue-500/10 border-blue-500/20', 'bg-blue-50 border-blue-100')}`}>
                                 <HiInformationCircle className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
                                 <p className="text-[11px] text-blue-700 dark:text-blue-400 leading-relaxed font-bold">Your request will be visible to Green Champions in your village. You will receive an SMS confirmation when a champion accepts.</p>
                             </div>
@@ -290,7 +290,7 @@ const CommunityHub = () => {
                             <button 
                                 type="submit"
                                 disabled={submitting}
-                                className="w-full py-4 rounded-2xl bg-green-500 text-white font-black hover:bg-green-500 transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-green-500/30 disabled:opacity-50"
+                                className="w-full py-4 rounded-lg bg-green-500 text-white font-black hover:bg-green-500 transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-green-500/30 disabled:opacity-50"
                             >
                                 {submitting ? 'Submitting...' : 'Submit Pickup Request'}
                             </button>

@@ -76,12 +76,12 @@ const MyRewards = () => {
         </button>
       </div>
 
-      <div className="relative rounded-sm overflow-hidden bg-gradient-to-br from-yellow-400 to-orange-400 p-6 sm:p-8 shadow-sm text-white border border-yellow-300/40">
+      <div className="relative rounded-lg overflow-hidden bg-gradient-to-br from-yellow-400 to-orange-400 p-6 sm:p-8 shadow-sm text-white border border-yellow-300/40">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
         <div className="relative flex items-center justify-between gap-4">
           <div>
             <p className="text-sm opacity-80">Total Eco Points</p>
-            <p className="text-5xl font-bold mt-1">{loading ? '—' : ecoPoints}</p>
+            <p className="text-3xl sm:text-5xl font-bold mt-1">{loading ? '—' : ecoPoints}</p>
             {currentBadge && (
               <div className="flex items-center gap-2 mt-2">
                 <currentBadge.Icon className="h-5 w-5 opacity-90" />
@@ -110,13 +110,13 @@ const MyRewards = () => {
         )}
       </div>
 
-      <div className={`rounded-sm border p-5 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-200')}`}>
+      <div className={`rounded-lg border p-5 space-y-4 transition-colors duration-200 ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-200')}`}>
         <h2 className={`text-sm font-bold ${dk('text-slate-200', 'text-slate-700')}`}>Badges & Achievements</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {ALL_BADGES.map(b => {
             const earned = badges.includes(b.name);
             return (
-              <div key={b.name} className={`rounded-sm border p-3 text-center space-y-1.5 transition-colors duration-200 ${earned ? b.color : dk('bg-white/5 border-gray-700 opacity-50', 'bg-slate-50 border-slate-200 opacity-50')}`}>
+              <div key={b.name} className={`rounded-lg border p-3 text-center space-y-1.5 transition-colors duration-200 ${earned ? b.color : dk('bg-white/5 border-gray-700 opacity-50', 'bg-slate-50 border-slate-200 opacity-50')}`}>
                 <b.Icon className={`h-7 w-7 mx-auto ${earned ? '' : 'text-slate-400'}`} />
                 <p className={`text-xs font-bold ${earned ? '' : 'text-slate-500'}`}>{b.name}</p>
                 <p className="text-xs text-slate-400">{b.threshold} pts</p>
@@ -127,7 +127,7 @@ const MyRewards = () => {
         </div>
       </div>
 
-      <div className={`rounded-sm border p-5 space-y-1 transition-colors duration-200 ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-200')}`}>
+      <div className={`rounded-lg border p-5 space-y-1 transition-colors duration-200 ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-200')}`}>
         <h2 className={`text-sm font-bold mb-3 ${dk('text-slate-200', 'text-slate-700')}`}>How to Earn Points</h2>
         {HOW_TO_EARN.map(({ action, pts, Icon }) => (
           <div key={action} className={`flex items-center justify-between py-2 border-b last:border-0 ${dk('border-slate-700', 'border-slate-100')}`}>
@@ -140,7 +140,7 @@ const MyRewards = () => {
         ))}
       </div>
 
-      <div className={`rounded-sm border p-5 space-y-3 transition-colors duration-200 ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-200')}`}>
+      <div className={`rounded-lg border p-5 space-y-3 transition-colors duration-200 ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-200')}`}>
         <h2 className={`text-sm font-bold ${dk('text-slate-200', 'text-slate-700')}`}>Points History</h2>
         {loading ? (
           <div className="flex items-center justify-center py-8">
@@ -154,7 +154,7 @@ const MyRewards = () => {
             return (
               <div key={h._id} className={`flex items-center justify-between py-2 border-b last:border-0 ${dk('border-slate-700', 'border-slate-100')}`}>
                 <div className="flex items-center gap-3">
-                  <div className={`h-8 w-8 rounded-sm flex items-center justify-center ${dk('bg-green-900/30', 'bg-green-50')}`}>
+                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${dk('bg-green-900/30', 'bg-green-50')}`}>
                     <PointIcon className="h-4 w-4 text-green-500" />
                   </div>
                   <div>

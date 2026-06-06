@@ -24,7 +24,7 @@ const generateRequestId = async () => {
 // PUBLIC: Submit Green Champion Request
 const submitRequest = async (req, res) => {
     try {
-        const { fullName, email, mobile, village, reason, otherReason, idProofType, otherIdProofType } = req.body;
+        const { fullName, email, mobile, village, reason, otherReason, idProofType, otherIdProofType, gender } = req.body;
 
         // Basic validations
         if (!fullName || !email || !mobile || !village || !idProofType) {
@@ -48,34 +48,62 @@ const submitRequest = async (req, res) => {
             return res.status(400).json({ message: 'Invalid mobile number. Must be 10 digits and start with 6-9.' });
         }
 
-        // 1. Check for duplicates in requests (PENDING, APPROVED, SUSPENDED)
+        // 1. Check for duplicates in Green Champion Requests with detailed status info
         const existingReq = await GreenChampionRequest.findOne({ 
             $or: [{ email: searchEmail }, { mobile: searchMobile }],
-            status: { $in: ['PENDING', 'APPROVED', 'SUSPENDED'] }
-        });
+        }).sort({ createdAt: -1 });
+
         if (existingReq) {
             if (existingReq.status === 'PENDING') {
-                return res.status(409).json({ message: 'A pending Green Champion request already exists with this mobile number/email.' });
+                return res.status(409).json({ 
+                    message: 'A Green Champion application is already under review for this email.',
+                    requestId: existingReq.requestId,
+                    status: existingReq.status,
+                    field: 'email'
+                });
             } else if (existingReq.status === 'APPROVED') {
-                return res.status(409).json({ message: 'This mobile number/email is already associated with an approved Green Champion account.' });
+                return res.status(409).json({ message: 'A Green Champion account already exists with this email.' });
             } else if (existingReq.status === 'SUSPENDED') {
-                return res.status(403).json({ message: 'This account request has been suspended. Re-application is not allowed.' });
+                return res.status(403).json({ message: 'This Green Champion account has been suspended. Please contact the administrator.' });
             }
         }
 
-        // 2. Check for duplicates in Users (Citizens & Green Champions)
+        // Check by mobile separately for PENDING only
+        const existingReqMobile = await GreenChampionRequest.findOne({ 
+            mobile: searchMobile,
+            status: { $in: ['PENDING', 'APPROVED', 'SUSPENDED'] }
+        });
+        if (existingReqMobile && existingReqMobile.email !== searchEmail) {
+            if (existingReqMobile.status === 'PENDING') {
+                return res.status(409).json({ 
+                    message: 'A Green Champion application is already under review for this mobile number.',
+                    requestId: existingReqMobile.requestId,
+                    status: existingReqMobile.status,
+                    field: 'mobile'
+                });
+            } else if (existingReqMobile.status === 'APPROVED') {
+                return res.status(409).json({ message: 'A Green Champion account already exists with this mobile number.' });
+            } else if (existingReqMobile.status === 'SUSPENDED') {
+                return res.status(403).json({ message: 'This Green Champion account has been suspended. Please contact the administrator.' });
+            }
+        }
+
+        // 2. Check for duplicates in Users (Citizens, Green Champions, Admin)
         const existingUser = await User.findOne({ $or: [{ email: searchEmail }, { phone: searchMobile }] });
         if (existingUser) {
-            const msg = existingUser.role === 'green_champion'
-                ? 'This mobile number/email is already associated with a Green Champion account.'
-                : 'This mobile number/email belongs to a registered Citizen account.';
+            const msgs = {
+                'green_champion': 'A Green Champion account already exists with this email.',
+                'admin': 'This email or mobile number is already associated with an administrator account.',
+                'citizen': 'You are already registered as a Citizen.',
+            };
+            const msg = msgs[existingUser.role] || 'This email or mobile number is already registered.';
             return res.status(409).json({ message: msg });
         }
 
         // 3. Check for duplicates in Collectors
         const existingColl = await Collector.findOne({ $or: [{ email: searchEmail }, { mobile: searchMobile }] });
         if (existingColl) {
-            return res.status(409).json({ message: 'This mobile number/email is already associated with a Collector account.' });
+            return res.status(409).json({ message: 'You are already registered as a Collector.' });
         }
 
         // Check files
@@ -88,6 +116,7 @@ const submitRequest = async (req, res) => {
         const newRequest = await GreenChampionRequest.create({
             requestId,
             fullName,
+            gender: gender || '',
             email: searchEmail,
             mobile: searchMobile,
             village: canonicalVillage,
@@ -187,11 +216,16 @@ const reviewRequest = async (req, res) => {
         
         if (status) {
             if (status === 'APPROVED') {
+                if (request.status === 'APPROVED') {
+                    return res.status(400).json({ message: 'This request has already been approved.' });
+                }
+
                 // Check if all checklist items are true
                 const allChecked = Object.values(request.verificationChecklist).every(v => v === true);
                 if (!allChecked) {
                     return res.status(400).json({ message: 'Cannot approve request. All verification steps must be completed.' });
                 }
+
 
                 // Generate Green Champion ID
                 const date = new Date();
@@ -214,6 +248,7 @@ const reviewRequest = async (req, res) => {
                     user.greenChampionId = gcId;
                     user.village = request.village;
                     user.isVerified = true;
+                    user.isFirstLogin = true;
                     if (request.profilePhoto) user.profilePhoto = request.profilePhoto;
                     await user.save();
                 } else {
@@ -261,10 +296,75 @@ const reviewRequest = async (req, res) => {
     }
 };
 
+// PUBLIC: Check duplicate email or phone in real-time
+const checkDuplicateField = async (req, res) => {
+    try {
+        const { field, value } = req.body;
+        if (!field || !value) return res.status(400).json({ message: 'Field and value required.' });
+        if (!['email', 'mobile'].includes(field)) return res.status(400).json({ message: 'Invalid field.' });
+
+        const searchValue = field === 'email' ? value.toLowerCase().trim() : value.trim();
+        const query = field === 'email' 
+            ? { email: searchValue } 
+            : { mobile: searchValue };
+
+        // Check Green Champion Requests
+        const existingReq = await GreenChampionRequest.findOne({
+            ...query,
+            status: { $in: ['PENDING', 'APPROVED', 'SUSPENDED'] }
+        });
+        if (existingReq) {
+            return res.json({
+                available: false,
+                type: 'green_champion_request',
+                status: existingReq.status,
+                requestId: existingReq.requestId,
+                message: existingReq.status === 'PENDING'
+                    ? `A Green Champion application is already under review for this ${field}.`
+                    : existingReq.status === 'APPROVED'
+                        ? `A Green Champion account already exists with this ${field}.`
+                        : 'This Green Champion account has been suspended.'
+            });
+        }
+
+        // Check Users
+        const userQuery = field === 'email' ? { email: searchValue } : { phone: searchValue };
+        const existingUser = await User.findOne(userQuery);
+        if (existingUser) {
+            const msgs = {
+                'green_champion': `A Green Champion account already exists with this ${field}.`,
+                'admin': 'This email or mobile number is already associated with an administrator account.',
+                'citizen': 'You are already registered as a Citizen.',
+            };
+            return res.json({
+                available: false,
+                type: `user_${existingUser.role}`,
+                message: msgs[existingUser.role] || 'This email or mobile number is already registered.'
+            });
+        }
+
+        // Check Collectors
+        const collectorQuery = field === 'email' ? { email: searchValue } : { mobile: searchValue };
+        const existingColl = await Collector.findOne(collectorQuery);
+        if (existingColl) {
+            return res.json({
+                available: false,
+                type: 'collector',
+                message: 'You are already registered as a Collector.'
+            });
+        }
+
+        res.json({ available: true });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error.', error: err.message });
+    }
+};
+
 module.exports = {
     submitRequest,
     checkRequestStatus,
     forgotRequestId,
     getAllRequests,
-    reviewRequest
+    reviewRequest,
+    checkDuplicateField
 };

@@ -77,15 +77,15 @@ const CleanupVerification = () => {
             {loading ? (
                 <div className="py-20 text-center"><div className="h-8 w-8 rounded-full border-4 border-green-500 border-t-transparent animate-spin mx-auto" /></div>
             ) : pending.length === 0 ? (
-                <div className={`py-20 text-center rounded-2xl border-2 border-dashed ${dk('border-gray-800 text-slate-600', 'border-slate-200 text-slate-400')}`}>
+                <div className={`py-20 text-center rounded-lg border-2 border-dashed ${dk('border-gray-800 text-slate-600', 'border-slate-200 text-slate-400')}`}>
                     <HiClipboardCheck className="h-12 w-12 mx-auto mb-3 opacity-20" />
                     <p>Great job! No pending cleanup verifications.</p>
                 </div>
             ) : (
                 <div className="space-y-4">
                     {pending.map(report => (
-                        <div key={report._id} className={`p-4 rounded-2xl border flex flex-col sm:flex-row gap-4 group ${dk('bg-white/5 border-gray-800', 'bg-white border-slate-100 shadow-sm')}`}>
-                            <div className="h-24 w-24 rounded-xl overflow-hidden shrink-0 bg-slate-200">
+                        <div key={report._id} className={`p-4 rounded-lg border flex flex-col sm:flex-row gap-4 group ${dk('bg-white/5 border-gray-800', 'bg-white border-slate-100 shadow-sm')}`}>
+                            <div className="h-24 w-24 rounded-lg overflow-hidden shrink-0 bg-slate-200">
                                 <img src={report.completionPhoto || report.image} alt="Resolved" className="w-full h-full object-cover transition group-hover:scale-110" />
                             </div>
                             <div className="flex-1 space-y-1">
@@ -101,7 +101,7 @@ const CleanupVerification = () => {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 self-end sm:self-center">
-                                <button onClick={() => setVerifying(report)} className="px-4 py-2 rounded-xl bg-green-500 text-white text-xs font-bold shadow-sm hover:bg-green-500 transition active:scale-95">
+                                <button onClick={() => setVerifying(report)} className="px-4 py-2 rounded-lg bg-green-500 text-white text-xs font-bold shadow-sm hover:bg-green-500 transition active:scale-95">
                                     Verify Audit
                                 </button>
                             </div>
@@ -112,7 +112,7 @@ const CleanupVerification = () => {
 
             {verifying && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className={`w-full max-w-lg rounded-2xl border p-6 space-y-5 animate-in zoom-in duration-200 ${dk('bg-slate-900 border-gray-800 text-slate-100', 'bg-white border-slate-200 text-slate-900')}`}>
+                    <div className={`w-full max-w-lg rounded-lg border p-6 space-y-5 animate-in zoom-in duration-200 ${dk('bg-slate-900 border-gray-800 text-slate-100', 'bg-white border-slate-200 text-slate-900')}`}>
                         <div>
                             <h3 className="text-lg font-bold">Audit Verification</h3>
                             <p className="text-sm text-slate-500 mt-1">Provide feedback on the cleanup status of this report.</p>
@@ -125,14 +125,14 @@ const CleanupVerification = () => {
                                     value={comment}
                                     onChange={e => setComment(e.target.value)}
                                     placeholder="Add any observations or confirmation details..."
-                                    className={`w-full rounded-xl border p-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`}
+                                    className={`w-full rounded-lg border p-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`}
                                     rows={3}
                                 />
                             </div>
                             
                             <div>
                                 <label className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-2">Proof Image (Optional)</label>
-                                <label className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 border-dashed cursor-pointer transition hover:border-green-500 ${dk('border-gray-700 bg-white/5', 'bg-slate-50 border-slate-200')}`}>
+                                <label className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 border-dashed cursor-pointer transition hover:border-green-500 ${dk('border-gray-700 bg-white/5', 'bg-slate-50 border-slate-200')}`}>
                                     <HiUpload className="h-6 w-6 text-slate-400 mb-2" />
                                     <span className="text-[10px] text-slate-500">{proof ? proof.name : 'Upload cleanup proof'}</span>
                                     <input type="file" onChange={e => setProof(e.target.files[0])} className="hidden" accept="image/*" />
@@ -144,14 +144,14 @@ const CleanupVerification = () => {
                             <button 
                                 onClick={() => handleVerify(verifying._id, 'Verified')}
                                 disabled={submitting}
-                                className="flex-1 py-3 rounded-xl bg-green-500 text-white text-sm font-bold shadow-sm hover:bg-green-500 transition active:scale-95 disabled:opacity-50"
+                                className="flex-1 py-3 rounded-lg bg-green-500 text-white text-sm font-bold shadow-sm hover:bg-green-500 transition active:scale-95 disabled:opacity-50"
                             >
                                 {submitting ? 'Confirming...' : 'Approve & Close'}
                             </button>
                             <button 
                                 onClick={() => handleVerify(verifying._id, 'Rejected')}
                                 disabled={submitting}
-                                className="flex-1 py-3 rounded-xl bg-red-600 text-white text-sm font-bold shadow-sm hover:bg-red-500 transition active:scale-95 disabled:opacity-50"
+                                className="flex-1 py-3 rounded-lg bg-red-600 text-white text-sm font-bold shadow-sm hover:bg-red-500 transition active:scale-95 disabled:opacity-50"
                             >
                                 Reject & Reopen
                             </button>

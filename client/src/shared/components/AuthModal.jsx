@@ -147,7 +147,7 @@ const MOCK_REGISTERED = ['test@example.com', 'user@gmail.com'];
 const initFields  = () => ({ fullName: '', email: '', identifier: '', mobile: '', collectorId: '', password: '', confirmPassword: '', address: '', assignedArea: '', areaLocality: '', village: '' });
 const initTouched = () => Object.fromEntries(Object.keys(initFields()).map(k => [k, false]));
 
-const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
+const AuthModal = ({ isOpen, onClose, toast, dark = false, onRestricted, onGreenChampionSelect }) => {
   const navigate = useNavigate();
   const { refreshUser } = useUser();
   const [screen,     setScreen]     = useState('role-select');
@@ -187,7 +187,15 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false }) => {
     setFields(initFields()); setTouched(initTouched()); setForgotSent(false);
   };
   const handleClose = () => { reset('role-select', null); onClose(); };
-  const selectRole  = role => reset('login', role);
+  const selectRole  = role => {
+    if (role === 'Green Champion') {
+      if (onGreenChampionSelect) onGreenChampionSelect();
+      handleClose();
+    } else {
+      reset('login', role);
+    }
+  };
+
 
   const getRolePath = (userObj) => {
     const titleRegex = userObj?.role?.toLowerCase().replace('_', '');

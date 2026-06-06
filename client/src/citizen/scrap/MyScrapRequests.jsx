@@ -64,7 +64,7 @@ const MyScrapRequests = () => {
         </div>
         <button 
           onClick={fetchRequests} 
-          className={`p-2 rounded-sm border transition-colors duration-200 ${dk('border-slate-700 text-slate-400 hover:bg-slate-700', 'border-slate-200 text-slate-600 hover:bg-slate-50')}`}
+          className={`p-2.5 sm:p-2 rounded-lg border transition-colors duration-200 ${dk('border-slate-700 text-slate-400 hover:bg-slate-700', 'border-slate-200 text-slate-600 hover:bg-slate-50')}`}
           title="Refresh"
         >
           <HiRefresh className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
@@ -77,12 +77,12 @@ const MyScrapRequests = () => {
           <p className="text-sm text-slate-500">Loading your requests...</p>
         </div>
       ) : error ? (
-        <div className="rounded-2xl bg-red-50 border border-red-100 p-8 text-center space-y-3">
+        <div className="rounded-lg bg-red-50 border border-red-100 p-8 text-center space-y-3">
           <p className="text-red-600">{error}</p>
           <button onClick={fetchRequests} className="text-sm text-red-700 underline font-bold">Try again</button>
         </div>
       ) : requests.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white/5 rounded-3xl border-2 border-dashed border-slate-200 p-8 text-center space-y-4">
+        <div className="flex flex-col items-center justify-center py-20 bg-white/5 rounded-lg border-2 border-dashed border-slate-200 p-8 text-center space-y-4">
           <div className="h-16 w-16 bg-slate-100 rounded-full flex items-center justify-center">
             <HiClipboardList className="h-8 w-8 text-slate-400" />
           </div>
@@ -92,7 +92,7 @@ const MyScrapRequests = () => {
           </div>
           <button 
             onClick={() => navigate('/citizen/sell-scrap')}
-            className="bg-green-600 text-white px-6 py-2.5 rounded-sm font-bold hover:bg-green-500 transition"
+            className="bg-green-600 text-white px-6 py-3 sm:py-2.5 rounded-lg font-bold hover:bg-green-500 transition w-full sm:w-auto"
           >
             Sell Scrap Now
           </button>
@@ -102,11 +102,11 @@ const MyScrapRequests = () => {
           {requests.map((r) => (
             <div 
               key={r._id} 
-              className={`group rounded-sm border p-4 sm:p-5 transition-colors duration-200 hover:shadow-sm ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-200')}`}
+              className={`group rounded-lg border p-4 sm:p-5 transition-colors duration-200 hover:shadow-sm ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-200')}`}
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-start gap-4">
-                  <div className={`h-12 w-12 rounded-sm flex items-center justify-center shrink-0 ${dk('bg-green-900/30 text-green-400', 'bg-green-50 text-green-600')}`}>
+                  <div className={`h-12 w-12 rounded-lg flex items-center justify-center shrink-0 ${dk('bg-green-900/30 text-green-400', 'bg-green-50 text-green-600')}`}>
                     <HiTruck className="h-6 w-6" />
                   </div>
                   <div className="min-w-0">
@@ -122,7 +122,7 @@ const MyScrapRequests = () => {
                     </p>
                     <p className="text-xs text-slate-500 mt-1.5 flex items-center gap-1.5">
                       <HiLocationMarker className="h-3.5 w-3.5 text-red-400 shrink-0" />
-                      <span className="truncate max-w-[200px]">{r.location?.address}</span>
+                      <span className="truncate max-w-[160px] sm:max-w-[200px]">{r.location?.address}</span>
                     </p>
                   </div>
                 </div>
@@ -147,7 +147,7 @@ const MyScrapRequests = () => {
               </div>
               
               {r.description && (
-                <div className={`mt-4 p-3 rounded-sm text-xs ${dk('bg-slate-900 text-slate-400', 'bg-slate-50 text-slate-600')}`}>
+                <div className={`mt-4 p-3 rounded-lg text-xs ${dk('bg-slate-900 text-slate-400', 'bg-slate-50 text-slate-600')}`}>
                   <p className="font-bold mb-1 uppercase text-[10px] text-slate-400">Notes:</p>
                   {r.description}
                 </div>

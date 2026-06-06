@@ -34,7 +34,7 @@ const Leaderboard = () => {
                     <h1 className={`text-xl font-extrabold ${dk('text-slate-100', 'text-slate-900')}`}>Champion Rankings</h1>
                     <p className={`text-sm ${dk('text-slate-400', 'text-slate-500')}`}>Rewarding our top community leaders for their impact.</p>
                 </div>
-                <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 ${dk('bg-white/5 border-gray-800 text-slate-400', 'bg-white border-slate-200 text-slate-600 shadow-sm')}`}>
+                <div className={`px-4 py-2 rounded-lg border flex items-center gap-2 ${dk('bg-white/5 border-gray-800 text-slate-400', 'bg-white border-slate-200 text-slate-600 shadow-sm')}`}>
                     <HiUsers className="h-5 w-5 text-indigo-500" />
                     <span className="text-sm font-bold">Community Leaderboard</span>
                 </div>
@@ -46,7 +46,7 @@ const Leaderboard = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                      {/* Top 3 Spotlight */}
                      {champions.slice(0, 3).map((champion, idx) => (
-                        <div key={champion._id} className={`p-6 rounded-3xl border relative transition hover:scale-105 duration-300 ${
+                        <div key={champion._id} className={`p-6 rounded-lg border relative transition hover:scale-105 duration-300 ${
                             idx === 0 ? 'bg-gradient-to-br from-yellow-400/10 to-amber-600/10 border-yellow-500/20' : 
                             idx === 1 ? 'bg-gradient-to-br from-slate-400/10 to-slate-600/10 border-slate-500/20' : 
                             'bg-gradient-to-br from-orange-400/10 to-orange-600/10 border-orange-500/20'
@@ -76,7 +76,7 @@ const Leaderboard = () => {
                 </div>
             )}
 
-            <div className={`rounded-2xl border overflow-hidden ${dk('bg-white/5 border-gray-800', 'bg-white border-slate-100 shadow-sm')}`}>
+            <div className={`rounded-lg border overflow-hidden ${dk('bg-white/5 border-gray-800', 'bg-white border-slate-100 shadow-sm')}`}>
                 <div className={`p-4 border-b ${dk('border-gray-800 bg-black/20', 'border-slate-50 bg-slate-50/50')}`}>
                     <div className="grid grid-cols-12 gap-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                         <div className="col-span-1">Rank</div>

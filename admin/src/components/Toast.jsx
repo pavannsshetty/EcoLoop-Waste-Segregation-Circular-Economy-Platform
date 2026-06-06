@@ -33,7 +33,7 @@ const ToastItem = ({ id, type = 'info', message, onRemove }) => {
       aria-live="assertive"
       style={{ transition: 'opacity 300ms, transform 300ms' }}
       className={[
-        'relative flex items-start gap-3 rounded-xl shadow-xl px-4 py-3.5 w-full',
+        'relative flex items-start gap-3 rounded-lg shadow-xl px-4 py-3.5 w-full',
         v.bg,
         visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2',
       ].join(' ')}
@@ -46,7 +46,7 @@ const ToastItem = ({ id, type = 'info', message, onRemove }) => {
       </button>
       {/* Progress bar */}
       <div
-        className={`absolute bottom-0 left-0 h-0.5 rounded-b-xl ${v.bar}`}
+        className={`absolute bottom-0 left-0 h-0.5 rounded-b-lg ${v.bar}`}
         style={{ animation: `shrinkWidth ${DURATION}ms linear forwards` }}
       />
     </div>

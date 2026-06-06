@@ -7,7 +7,9 @@ const User = require('../models/User');
 // 1. Get Awareness Posts (in user's village)
 exports.getCommunityPosts = async (req, res) => {
     try {
-        const posts = await AwarenessPost.find({ village: req.user.village })
+        const user = await User.findById(req.user.id).select('village');
+        const village = user?.village || '';
+        const posts = await AwarenessPost.find({ village })
             .populate('author', 'name profilePhoto')
             .sort({ createdAt: -1 });
         res.json(posts);
@@ -19,7 +21,9 @@ exports.getCommunityPosts = async (req, res) => {
 // 2. Get Campaigns (in user's village)
 exports.getCampaigns = async (req, res) => {
     try {
-        const campaigns = await Campaign.find({ village: req.user.village, status: 'Upcoming' })
+        const user = await User.findById(req.user.id).select('village');
+        const village = user?.village || '';
+        const campaigns = await Campaign.find({ village, status: 'Upcoming' })
             .populate('organizer', 'name profilePhoto')
             .sort({ date: 1 });
         res.json(campaigns);
@@ -32,18 +36,19 @@ exports.getCampaigns = async (req, res) => {
 exports.joinCampaign = async (req, res) => {
     try {
         const { campaignId } = req.params;
+        const userId = req.user.id;
         const campaign = await Campaign.findById(campaignId);
         if (!campaign) return res.status(404).json({ message: 'Campaign not found' });
         
-        if (campaign.volunteers.includes(req.user._id)) {
+        if (campaign.volunteers.includes(userId)) {
             return res.status(400).json({ message: 'Already joined this campaign' });
         }
 
-        campaign.volunteers.push(req.user._id);
+        campaign.volunteers.push(userId);
         await campaign.save();
         
         // Reward citizen for volunteering promise
-        await User.findByIdAndUpdate(req.user._id, { $inc: { ecoPoints: 5 } });
+        await User.findByIdAndUpdate(userId, { $inc: { ecoPoints: 5 } });
 
         res.json({ message: 'Joined successfully', campaign });
     } catch (err) {
@@ -55,9 +60,10 @@ exports.joinCampaign = async (req, res) => {
 exports.requestRecyclingPickup = async (req, res) => {
     try {
         const { type, quantity, address, notes } = req.body;
+        const userId = req.user.id;
         
         // Get user's complete profile for address validation
-        const user = await User.findById(req.user._id);
+        const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         // Check if address is provided or use user's home address
@@ -88,11 +94,11 @@ exports.requestRecyclingPickup = async (req, res) => {
         }
 
         const pickup = await RecyclingPickup.create({
-            citizen: req.user._id,
+            citizen: userId,
             type,
             quantity,
             address: pickupAddress,
-            village: user.village || req.user.village,
+            village: user.village || '',
             notes
         });
         
@@ -110,7 +116,7 @@ exports.submitGCFeedback = async (req, res) => {
     try {
         const { championId, rating, comment } = req.body;
         const feedback = await GCFeedback.create({
-            citizen: req.user._id,
+            citizen: req.user.id,
             champion: championId,
             rating,
             comment

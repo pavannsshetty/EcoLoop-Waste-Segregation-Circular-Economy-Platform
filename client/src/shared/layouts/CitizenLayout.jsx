@@ -8,7 +8,7 @@ import NotificationBell from '../components/NotificationBell';
 import DarkBg from '../components/DarkBg';
 import { ToastContainer, useToast } from '../components/Toast';
 import { useTheme } from '../context/ThemeContext';
-import { useUser } from '../context/UserContext';
+import { useUser, parseStoredUser } from '../context/UserContext';
 
 
 const NAV_MAIN = [
@@ -27,6 +27,7 @@ const NAV_CIRCULAR = [
   { path: '/citizen/sell-scrap',     Icon: () => <MdRecycling className="h-5 w-5" />,    label: 'Sell Scrap'     },
   { path: '/citizen/scrap-requests', Icon: () => <HiClipboardList className="h-5 w-5" />, label: 'My Scrap Requests' },
   { path: '/citizen/eco-shopping',   Icon: () => <HiShoppingCart className="h-5 w-5" />,  label: 'Eco-Shopping'     },
+  { path: '/citizen/my-orders',      Icon: () => <HiClipboardList className="h-5 w-5" />, label: 'My Orders'        },
 ];
 const NAV_USER = [
   { path: '/citizen/profile',      Icon: () => <HiUser className="h-5 w-5" />,              label: 'Profile'       },
@@ -59,13 +60,21 @@ const CitizenLayout = () => {
   const { toasts, toast, remove } = useToast();
   const { dark, toggleDark } = useTheme();
   const { user: ctxUser, loading: userLoading, clearUser } = useUser();
-  const user = ctxUser || JSON.parse(localStorage.getItem('user') || '{}');
+  const user = ctxUser || parseStoredUser();
 
   useEffect(() => {
     if (!userLoading) {
       const r = user?.role?.toLowerCase().replace('_', '');
-      if (!user || (r !== 'citizen' && r !== 'greenchampion')) {
+      if (!user) {
         navigate('/');
+        return;
+      }
+      if (r !== 'citizen') {
+        if (r === 'greenchampion') {
+          navigate('/green-champion/dashboard');
+        } else {
+          navigate('/');
+        }
       }
     }
   }, [user, userLoading, navigate]);

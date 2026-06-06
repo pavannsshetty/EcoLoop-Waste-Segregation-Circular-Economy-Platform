@@ -107,15 +107,15 @@ const ItemModal = ({ item, dark, onClose, onSaved }) => {
     } finally { setLoading(false); }
   };
 
-  const inp = `w-full rounded-xl border py-2.5 px-3.5 text-sm transition focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
+  const inp = `w-full rounded-lg border py-2.5 px-3.5 text-sm transition focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
     dark ? 'bg-[#171b22] border-white/10 text-[#f3f4f6] placeholder-[#748094]' : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400'
   }`;
   const lbl = `block text-xs font-semibold mb-1 ${dark ? 'text-[#8b95a7]' : 'text-slate-700'}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative z-10 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[92vh] ${dark ? 'bg-[#11151c] border border-white/10' : 'bg-white'}`}>
+      <div className={`relative z-10 w-full max-w-[95vw] sm:max-w-lg rounded-lg shadow-2xl flex flex-col max-h-[90vh] ${dark ? 'bg-[#11151c] border border-white/10' : 'bg-white'}`}>
         <div className={`flex items-center justify-between px-6 py-4 border-b ${dark ? 'border-white/10' : 'border-slate-100'}`}>
           <div className="flex items-center gap-2">
             <HiShoppingCart className="h-5 w-5 text-green-500" />
@@ -134,7 +134,7 @@ const ItemModal = ({ item, dark, onClose, onSaved }) => {
             <label className={lbl}>Product Image</label>
             <div
               onClick={() => fileRef.current?.click()}
-              className={`relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed cursor-pointer transition py-5 ${
+              className={`relative flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed cursor-pointer transition py-5 ${
                 dark ? 'border-slate-600 hover:border-green-500 bg-slate-800/50' : 'border-slate-300 hover:border-green-500 bg-slate-50'
               }`}
             >
@@ -230,11 +230,11 @@ const ItemModal = ({ item, dark, onClose, onSaved }) => {
 
         <div className={`flex gap-3 px-6 py-4 border-t ${dark ? 'border-white/10' : 'border-slate-100'}`}>
           <button type="button" onClick={onClose}
-            className={`flex-1 rounded-xl border py-2.5 text-sm transition ${dark ? 'border-white/10 text-[#b6bec9] hover:bg-[#1a2029]' : 'border-slate-300 text-slate-600 hover:bg-slate-50'}`}>
+            className={`flex-1 rounded-lg border py-2.5 text-sm transition ${dark ? 'border-white/10 text-[#b6bec9] hover:bg-[#1a2029]' : 'border-slate-300 text-slate-600 hover:bg-slate-50'}`}>
             Cancel
           </button>
           <button type="button" disabled={loading} onClick={handleSubmit}
-            className="flex-1 rounded-xl bg-green-500 py-2.5 text-sm font-bold text-white hover:bg-green-500 transition disabled:opacity-60 disabled:cursor-not-allowed">
+            className="flex-1 rounded-lg bg-green-500 py-2.5 text-sm font-bold text-white hover:bg-green-500 transition disabled:opacity-60 disabled:cursor-not-allowed">
             {loading ? 'Saving...' : isEdit ? 'Update Item' : 'Add Item'}
           </button>
         </div>
@@ -390,21 +390,21 @@ const EcoShopping = () => {
     }
   };
 
-  const card = `rounded-2xl border shadow-sm ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-100')}`;
+  const card = `rounded-lg border shadow-sm ${dk('bg-slate-800 border-gray-700', 'bg-white border-slate-100')}`;
   const textPrimary = dk('text-slate-100', 'text-slate-900');
   const textMuted   = dk('text-slate-400', 'text-slate-500');
 
   return (
-    <div className="page-container space-y-8 animate-in fade-in duration-500">
+    <div className="px-4 sm:px-6 md:px-8 lg:px-10 pt-4 sm:pt-6 md:pt-8 lg:pt-10 pb-6 space-y-5 animate-in fade-in duration-500">
       {/* Toast */}
       {toast && (
-        <div className="fixed top-4 right-4 z-[100] flex items-center gap-2 bg-green-500 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-xl animate-bounce-in">
+        <div className="fixed top-4 right-4 z-[100] flex items-center gap-2 bg-green-500 text-white text-sm font-medium px-4 py-2.5 rounded-lg shadow-xl animate-bounce-in">
           <HiCheckCircle className="h-4 w-4" /> {toast}
         </div>
       )}
 
       {alertToast && (
-        <div className="fixed top-20 right-4 z-[100] flex items-center gap-3 bg-red-600 text-white text-sm font-bold px-5 py-3 rounded-xl shadow-2xl animate-shake border-2 border-white/20">
+        <div className="fixed top-20 right-4 z-[100] flex items-center gap-3 bg-red-600 text-white text-sm font-bold px-5 py-3 rounded-lg shadow-2xl animate-shake border-2 border-white/20">
           <HiExclamation className="h-5 w-5" /> {alertToast}
         </div>
       )}
@@ -413,7 +413,7 @@ const EcoShopping = () => {
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteId(null)} />
-          <div className={`relative z-10 w-full max-w-sm rounded-2xl shadow-2xl p-6 space-y-4 ${dark ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
+          <div className={`relative z-10 w-full max-w-sm rounded-lg shadow-2xl p-6 space-y-4 ${dark ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
             <div className="flex items-start gap-3">
               <HiTrash className="h-6 w-6 text-red-500 shrink-0 mt-0.5" />
               <div>
@@ -422,8 +422,8 @@ const EcoShopping = () => {
               </div>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setDeleteId(null)} className={`flex-1 rounded-lg border py-2 text-sm ${dk('border-slate-600 text-slate-300 hover:bg-slate-800', 'border-slate-300 text-slate-600 hover:bg-slate-50')} transition`}>Cancel</button>
-              <button onClick={() => handleDelete(deleteId)} className="flex-1 rounded-lg bg-red-600 py-2 text-sm text-white hover:bg-red-500 font-bold transition">Delete</button>
+              <button onClick={() => setDeleteId(null)} className={`flex-1 rounded-lg border py-2.5 text-sm ${dk('border-slate-600 text-slate-300 hover:bg-slate-800', 'border-slate-300 text-slate-600 hover:bg-slate-50')} transition`}>Cancel</button>
+              <button onClick={() => handleDelete(deleteId)} className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm text-white hover:bg-red-500 font-bold transition">Delete</button>
             </div>
           </div>
         </div>
@@ -440,28 +440,30 @@ const EcoShopping = () => {
       )}
 
       {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="page-header flex items-center gap-2">
-            <HiShoppingCart className="h-7 w-7 text-green-500" /> Eco Shop Management
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div className="min-w-0">
+          <h1 className={`text-lg font-bold tracking-tight text-left ${dk('text-slate-200', 'text-slate-800')}`}>
+            Eco Shop Management
           </h1>
-          <p className="page-subheading">Manage eco-friendly products for platform citizens</p>
+          <p className={`text-sm font-medium text-left mt-0.5 ${dk('text-slate-400', 'text-slate-500')}`}>Manage eco-friendly products for platform citizens</p>
         </div>
         <button onClick={() => { setEditItem(null); setShowModal(true); }}
-          className="flex items-center gap-2 bg-green-500 text-white text-sm font-bold px-6 py-3 rounded-2xl hover:bg-green-500 transition active:scale-95 shadow-lg shadow-green-500/20">
+          className="flex items-center gap-2 justify-center text-white text-sm font-semibold px-4 rounded-lg transition shadow-sm h-10 min-w-[140px]"
+          style={{ backgroundColor: '#0BAF2A' }}
+        >
           <HiPlus className="h-5 w-5" /> Add Item
         </button>
       </div>
 
       {/* Analytics Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Total Items',    value: analytics?.totalItems    ?? '—', icon: HiCube,         color: 'text-blue-500' },
-          { label: 'Out of Stock',   value: analytics?.outOfStock    ?? '—', icon: HiExclamation,  color: 'text-red-500'  },
-          { label: 'Total Purchases', value: analytics?.totalRequests ?? '—', icon: HiShoppingCart,  color: 'text-purple-500' },
-          { label: 'Total Views',    value: analytics?.totalViews    ?? '—', icon: HiChartBar,     color: 'text-green-500' },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className={`${card} p-4 text-center hover:bg-[#1a2029] transition-colors`}>
+          { label: 'Total Items',    value: analytics?.totalItems    ?? '—', icon: HiCube,         color: 'text-blue-500', grad: 'from-blue-500/10 to-blue-500/5' },
+          { label: 'Out of Stock',   value: analytics?.outOfStock    ?? '—', icon: HiExclamation,  color: 'text-red-500',  grad: 'from-red-500/10 to-red-500/5' },
+          { label: 'Total Purchases', value: analytics?.totalRequests ?? '—', icon: HiShoppingCart,  color: 'text-purple-500', grad: 'from-purple-500/10 to-purple-500/5' },
+          { label: 'Total Views',    value: analytics?.totalViews    ?? '—', icon: HiChartBar,     color: 'text-green-500', grad: 'from-green-500/10 to-green-500/5' },
+        ].map(({ label, value, icon: Icon, color, grad }) => (
+          <div key={label} className={`${card} p-4 text-center bg-gradient-to-br ${grad}`}>
             <Icon className={`h-5 w-5 mx-auto mb-1 ${color}`} />
             <p className={`text-2xl font-extrabold ${color}`}>{value}</p>
             <p className={`text-xs mt-0.5 ${textMuted}`}>{label}</p>
@@ -469,26 +471,10 @@ const EcoShopping = () => {
         ))}
       </div>
 
-      {/* Category Stats */}
-      {analytics?.categoryStats?.length > 0 && (
-        <div className={`${card} p-4`}>
-          <h2 className={`text-sm font-bold mb-3 ${textPrimary}`}>Category Breakdown</h2>
-          <div className="flex flex-wrap gap-2">
-            {analytics.categoryStats.map(s => (
-              <div key={s._id} className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full ${dk('bg-[#1a2029] text-[#b6bec9] border border-white/5', 'bg-slate-100 text-slate-700')}`}>
-                <span>{CAT_ICONS[s._id] || '📦'}</span>
-                <span className="font-medium">{s._id}</span>
-                <span className={`text-[10px] ${textMuted}`}>{s.count} items · {s.views} views</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Filters */}
       <div className={`${card} p-4 flex flex-wrap gap-3`}>
-        <div className={`flex items-center gap-2.5 px-4 h-11 rounded-xl border transition-all duration-200 focus-within:ring-2 focus-within:ring-green-500/20 group flex-1 min-w-[240px] ${
-          dark ? 'bg-slate-800 border-slate-600 focus-within:border-green-500 shadow-inner' : 'bg-white border-slate-200 focus-within:border-green-500 shadow-sm'
+        <div className={`flex items-center gap-2.5 px-4 h-11 rounded-lg border transition-all duration-200 focus-within:ring-2 focus-within:ring-green-500/20 group flex-1 min-w-0 sm:min-w-[240px] ${
+          dark ? 'bg-slate-800 border-slate-600 focus-within:border-green-500' : 'bg-white border-slate-200 focus-within:border-green-500 shadow-sm'
         }`}>
           <HiSearch className={`h-4 w-4 shrink-0 transition-colors ${dark ? 'text-slate-500 group-focus-within:text-green-500' : 'text-slate-400 group-focus-within:text-green-500'}`} />
           <input
@@ -506,7 +492,7 @@ const EcoShopping = () => {
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </Dropdown>
         <button onClick={() => { setSearch(''); setCatFilter('all'); fetchItems(); }}
-          className={`h-11 flex items-center justify-center gap-1.5 px-4 rounded-xl border text-sm font-semibold transition ${dk('border-white/10 bg-[#171b22] text-[#8b95a7] hover:bg-[#1a2029]', 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50')} shadow-sm`}>
+          className={`h-11 flex items-center justify-center gap-1.5 px-4 rounded-lg border text-sm font-semibold transition shadow-sm ${dk('border-slate-600 bg-slate-800 text-slate-300', 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50')}`}>
           <HiRefresh className="h-4 w-4" /> Reset
         </button>
       </div>
@@ -520,15 +506,13 @@ const EcoShopping = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {items.map(item => (
-            <div key={item._id} className={`${card} rounded-2xl overflow-hidden flex flex-col transition hover:shadow-lg`}>
+            <div key={item._id} className={`${card} rounded-lg overflow-hidden flex flex-col`}>
               {/* Image */}
-              <div className="relative">
+              <div className="relative aspect-[4/3] overflow-hidden">
                 {item.image
-                  ? <img src={item.image} alt={item.itemName} className="w-full h-40 object-cover" />
-                  : <div className={`w-full h-40 flex items-center justify-center text-5xl ${dk('bg-[#151922]', 'bg-slate-100')}`}>
-                      <div className={`h-10 w-10 flex items-center justify-center text-xl rounded-xl transition ${dark ? 'bg-white/5' : 'bg-green-500'}`}>
-                        <span className="text-green-500">{CAT_ICONS[item.category] || <MdFolder />}</span>
-                      </div>
+                  ? <img src={item.image} alt={item.itemName} className="w-full h-full object-cover" />
+                  : <div className={`w-full h-full flex items-center justify-center ${dk('bg-slate-700', 'bg-slate-100')}`}>
+                      <span className="text-green-500 text-3xl">{CAT_ICONS[item.category] || <MdFolder />}</span>
                     </div>
                 }
                 {/* Badges */}
@@ -576,18 +560,18 @@ const EcoShopping = () => {
                     {item.stockType === 'Set' && (
                       <span className={`text-[10px] ${textMuted}`}>({item.itemsPerSet} items/set)</span>
                     )}
-                    <div className="flex items-center bg-slate-100 dark:bg-[#1a2029] rounded-lg p-0.5 border border-slate-200 dark:border-white/5">
+                    <div className={`flex items-center rounded-lg p-1 border ${dk('bg-slate-700 border-slate-600', 'bg-slate-100 border-slate-200')}`}>
                       <button 
                         onClick={(e) => { e.stopPropagation(); adjustStock(item, -1); }}
-                        className={`p-0.5 rounded-md hover:bg-white dark:hover:bg-[#252c38] transition ${item.stock === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                        className={`p-1 rounded-lg transition ${item.stock === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
                       >
-                        <HiPlus className="h-3 w-3 rotate-45 text-red-500" />
+                        <HiPlus className="h-4 w-4 rotate-45 text-red-500" />
                       </button>
                       <button 
                         onClick={(e) => { e.stopPropagation(); adjustStock(item, 1); }}
-                        className="p-0.5 rounded-md hover:bg-white dark:hover:bg-[#252c38] transition"
+                        className="p-1 rounded-lg transition"
                       >
-                        <HiPlus className="h-3 w-3 text-green-500" />
+                        <HiPlus className="h-4 w-4 text-green-500" />
                       </button>
                     </div>
                   </div>
@@ -599,24 +583,25 @@ const EcoShopping = () => {
               </div>
 
               {/* Actions */}
-              <div className={`flex gap-1 p-3 border-t ${dk('border-white/10', 'border-slate-100')}`}>
+              <div className={`flex gap-1 p-3 border-t ${dk('border-gray-700', 'border-slate-100')}`}>
                 <button onClick={() => setEditItem(item)} title="Edit"
-                  className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium transition ${dk('text-[#b6bec9] hover:bg-[#1a2029]', 'text-slate-600 hover:bg-slate-100')}`}>
+                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-medium text-white transition"
+                  style={{ backgroundColor: '#0BAF2A' }}>
                   <HiPencil className="h-3.5 w-3.5" /> Edit
                 </button>
                 <button onClick={() => toggleStatus(item)} title="Toggle Status"
                   disabled={item.stock === 0 && item.status === 'Out of Stock'}
-                  className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium transition ${
+                  className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-medium transition ${
                     item.stock === 0 && item.status === 'Out of Stock' ? 'opacity-30 cursor-not-allowed' :
                     item.status === 'Available'
-                      ? dk('text-yellow-400 hover:bg-yellow-900/30', 'text-yellow-600 hover:bg-yellow-50')
-                      : dk('text-green-500 hover:bg-green-500/30', 'text-green-500 hover:bg-green-500')
+                      ? dk('text-yellow-400', 'text-yellow-600')
+                      : dk('text-green-500', 'text-green-500')
                   }`}>
-                  {item.status === 'Available' ? <HiEyeOff className="h-3.5 w-3.5" /> : <HiEye className="h-3.5 w-3.5" />}
+                  {item.status === 'Available' ? <HiEyeOff className="h-4 w-4" /> : <HiEye className="h-4 w-4" />}
                   {item.status === 'Available' ? 'Disable' : 'Enable'}
                 </button>
                 <button onClick={() => setDeleteId(item._id)} title="Delete"
-                  className={`flex items-center justify-center p-1.5 rounded-lg transition ${dk('text-red-400 hover:bg-red-900/30', 'text-red-500 hover:bg-red-50')}`}>
+                  className={`flex items-center justify-center p-1.5 rounded-lg transition ${dk('text-red-400', 'text-red-500')}`}>
                   <HiTrash className="h-4 w-4" />
                 </button>
               </div>

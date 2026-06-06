@@ -21,11 +21,11 @@ const FAQItem = ({ q, a, dark }) => {
   return (
     <div className={`border-b ${border} last:border-0`}>
       <button onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left">
+        className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 sm:py-4 text-left">
         <span className={`text-sm ${qColor}`}>{q}</span>
         {open ? <HiChevronUp className={`h-4 w-4 shrink-0 ${iconCls}`} /> : <HiChevronDown className={`h-4 w-4 shrink-0 ${iconCls}`} />}
       </button>
-      {open && <p className={`px-5 pb-4 text-xs leading-relaxed ${aColor}`}>{a}</p>}
+      {open && <p className={`px-4 sm:px-5 pb-4 text-xs leading-relaxed ${aColor}`}>{a}</p>}
     </div>
   );
 };
@@ -39,7 +39,7 @@ const HelpSupport = () => {
   const title   = dark ? 'text-slate-200' : 'text-slate-800';
   const sub     = dark ? 'text-slate-400' : 'text-slate-500';
   const divider = dark ? 'border-slate-700' : 'border-slate-100';
-  const inp     = `w-full rounded-sm border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors duration-200 ${dark ? 'bg-slate-900 border-slate-700 text-slate-100 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-800 placeholder-slate-400'}`;
+  const inp     = `w-full rounded-lg border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors duration-200 ${dark ? 'bg-slate-900 border-slate-700 text-slate-100 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-800 placeholder-slate-400'}`;
 
   return (
     <div className="flex-1 px-4 sm:px-6 md:px-8 lg:px-10 pt-4 sm:pt-6 md:pt-8 lg:pt-10 pb-6 space-y-6">
@@ -48,7 +48,7 @@ const HelpSupport = () => {
         <p className={`text-sm font-medium mt-0.5 ${sub}`}>Find answers and get in touch</p>
       </div>
 
-      <div className={`rounded-sm border overflow-hidden transition-colors duration-200 ${card}`}>
+      <div className={`rounded-lg border overflow-hidden transition-colors duration-200 ${card}`}>
         <div className={`px-5 py-3 border-b ${divider}`}>
           <p className={`text-xs font-bold uppercase tracking-wider ${sub}`}>Frequently Asked Questions</p>
         </div>
@@ -62,8 +62,8 @@ const HelpSupport = () => {
           { icon: HiChat,  label: 'Live Chat',       desc: 'Chat with our support team',     color: dark ? 'bg-green-900/40 text-green-400' : 'bg-green-50 text-green-600' },
         ].map(({ icon: Icon, label, desc, color }) => (
           <button key={label}
-            className={`flex flex-col items-center gap-2 rounded-sm border p-5 text-center transition-colors duration-200 hover:shadow-sm ${card}`}>
-            <div className={`h-11 w-11 rounded-sm flex items-center justify-center ${color}`}>
+            className={`flex flex-col items-center gap-2 rounded-lg border p-5 sm:p-6 text-center transition-colors duration-200 hover:shadow-sm ${card}`}>
+            <div className={`h-11 w-11 rounded-lg flex items-center justify-center ${color}`}>
               <Icon className="h-5 w-5" />
             </div>
             <p className={`text-sm font-bold ${title}`}>{label}</p>
@@ -72,13 +72,13 @@ const HelpSupport = () => {
         ))}
       </div>
 
-      <div className={`rounded-sm border p-5 space-y-4 transition-colors duration-200 ${card}`}>
+      <div className={`rounded-lg border p-5 sm:p-6 space-y-4 transition-colors duration-200 ${card}`}>
         <div>
           <p className={`text-sm font-bold ${title}`}>Send Feedback</p>
           <p className={`text-xs mt-0.5 ${sub}`}>Help us improve EcoLoop</p>
         </div>
         {sent ? (
-          <div className={`rounded-xl px-4 py-3 text-sm flex items-center gap-2 ${dark ? 'bg-green-900/40 text-green-400' : 'bg-green-50 text-green-700'}`}>
+          <div className={`rounded-lg px-4 py-3 text-sm flex items-center gap-2 ${dark ? 'bg-green-900/40 text-green-400' : 'bg-green-50 text-green-700'}`}>
             <HiCheckCircle className="h-5 w-5" /> Thank you for your feedback!
           </div>
         ) : (
@@ -88,7 +88,7 @@ const HelpSupport = () => {
               className={`${inp} resize-none`} />
             <button onClick={() => { if (feedback.trim()) setSent(true); }}
               disabled={!feedback.trim()}
-              className="w-full rounded-sm bg-green-600 text-white text-sm font-bold py-2.5 hover:bg-green-500 transition disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]">
+              className="w-full rounded-lg bg-green-600 text-white text-sm font-bold py-3 sm:py-2.5 hover:bg-green-500 transition disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]">
               Submit Feedback
             </button>
           </>

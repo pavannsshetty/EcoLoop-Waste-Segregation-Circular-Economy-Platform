@@ -1,10 +1,14 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { HiArrowRight, HiMoon, HiSun, HiSparkles } from 'react-icons/hi';
 import AuthModal from '../components/AuthModal';
+import GreenChampionModal from '../components/GreenChampionModal';
+import AccountRestrictionOverlay from '../components/AccountRestrictionOverlay';
 import { ToastContainer, useToast } from '../components/Toast';
 import EcoLoopLogo from '../components/EcoLoopLogo';
 import DarkBg from '../components/DarkBg';
 import { useTheme } from '../context/ThemeContext';
+import { useUser } from '../context/UserContext';
 
 import citizenImg    from '../../assets/entrypagelogo/citizen.png';
 import collectorImg  from '../../assets/entrypagelogo/collector.png';
@@ -20,8 +24,13 @@ const ROLES = [
 
 const LandingPage = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isGreenChampionModalOpen, setIsGreenChampionModalOpen] = useState(false);
+
+  const [loginRestriction, setLoginRestriction] = useState(null);
   const { dark, toggleDark } = useTheme();
   const { toasts, toast, remove } = useToast();
+  const { clearUser } = useUser();
+  const navigate = useNavigate();
   const dk = (d, l) => dark ? d : l;
 
   return (
@@ -45,7 +54,7 @@ const LandingPage = () => {
             </p>
           </div>
           <button onClick={toggleDark} aria-label="Toggle dark mode"
-            className={`rounded-sm p-2 transition shrink-0 ${dk('text-green-300 hover:bg-white/10', 'text-slate-600 hover:bg-slate-100')}`}>
+            className={`rounded-lg p-2 transition shrink-0 ${dk('text-green-300 hover:bg-white/10', 'text-slate-600 hover:bg-slate-100')}`}>
             {dark ? <HiSun className="h-5 w-5" /> : <HiMoon className="h-5 w-5" />}
           </button>
         </nav>
@@ -73,7 +82,7 @@ const LandingPage = () => {
               </p>
 
               <button onClick={() => setIsAuthModalOpen(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-sm px-7 py-3.5 text-sm font-bold text-white transition active:scale-95"
+                className="inline-flex items-center justify-center gap-2 rounded-lg px-7 py-3.5 text-sm font-bold text-white transition active:scale-95"
                 style={{ backgroundColor: '#0EB02D' }}
                 onMouseEnter={e => e.currentTarget.style.backgroundColor = '#0a9626'}
                 onMouseLeave={e => e.currentTarget.style.backgroundColor = '#0EB02D'}>
@@ -94,10 +103,20 @@ const LandingPage = () => {
         </div>
       </div>
 
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} toast={toast} dark={dark} />
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} toast={toast} dark={dark}
+        onRestricted={(r) => { setIsAuthModalOpen(false); setLoginRestriction(r); }}
+        onGreenChampionSelect={() => setIsGreenChampionModalOpen(true)} />
+
+      <GreenChampionModal isOpen={isGreenChampionModalOpen} onClose={() => setIsGreenChampionModalOpen(false)} onChangeRole={() => { setIsGreenChampionModalOpen(false); setIsAuthModalOpen(true); }} toast={toast} dark={dark} />
+
+      {loginRestriction && (
+        <AccountRestrictionOverlay restriction={loginRestriction} clearUser={() => { clearUser(); setLoginRestriction(null); sessionStorage.removeItem('accountRestriction'); navigate('/'); }} dark={dark} />
+      )}
+
       <ToastContainer toasts={toasts} onRemove={remove} />
     </div>
   );
 };
+
 
 export default LandingPage;

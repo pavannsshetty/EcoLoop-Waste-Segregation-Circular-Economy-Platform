@@ -43,7 +43,7 @@ const NearbyReports = () => {
                     <h1 className={`text-xl font-extrabold ${dk('text-slate-100', 'text-slate-900')}`}>Nearby Waste Reports</h1>
                     <p className={`text-sm ${dk('text-slate-400', 'text-slate-500')}`}>Monitoring reports from your community area.</p>
                 </div>
-                <div className={`px-4 py-2 rounded-xl border text-sm font-semibold ${dk('bg-white/5 border-gray-800 text-slate-400', 'bg-white border-slate-200 text-slate-600 shadow-sm')}`}>
+                <div className={`px-4 py-2 rounded-lg border text-sm font-semibold ${dk('bg-white/5 border-gray-800 text-slate-400', 'bg-white border-slate-200 text-slate-600 shadow-sm')}`}>
                     {reports.length} Reports Found
                 </div>
             </div>
@@ -53,14 +53,14 @@ const NearbyReports = () => {
                     <div className="h-8 w-8 rounded-full border-4 border-green-500 border-t-transparent animate-spin mx-auto" />
                 </div>
             ) : reports.length === 0 ? (
-                <div className={`py-20 text-center rounded-2xl border-2 border-dashed ${dk('border-gray-800 text-slate-600', 'border-slate-200 text-slate-400')}`}>
+                <div className={`py-20 text-center rounded-lg border-2 border-dashed ${dk('border-gray-800 text-slate-600', 'border-slate-200 text-slate-400')}`}>
                     <HiCollection className="h-12 w-12 mx-auto mb-3 opacity-20" />
                     <p>No active waste reports found in your village.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {reports.map((report) => (
-                        <div key={report._id} className={`rounded-2xl border overflow-hidden transition hover:shadow-lg ${dk('bg-white/5 border-gray-800', 'bg-white border-slate-100 shadow-sm')}`}>
+                        <div key={report._id} className={`rounded-lg border overflow-hidden transition hover:shadow-lg ${dk('bg-white/5 border-gray-800', 'bg-white border-slate-100 shadow-sm')}`}>
                             <div className="aspect-video bg-slate-200 relative group overflow-hidden">
                                 {report.image ? (
                                     <img src={report.image} alt="Report" className="w-full h-full object-cover transition duration-500 group-hover:scale-110" />
@@ -69,7 +69,7 @@ const NearbyReports = () => {
                                         <HiLocationMarker className="h-10 w-10 opacity-30" />
                                     </div>
                                 )}
-                                <div className={`absolute top-3 left-3 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm ${getStatusColor(report.status)}`}>
+                                <div className={`absolute top-3 left-3 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm ${getStatusColor(report.status)}`}>
                                     {report.status}
                                 </div>
                             </div>

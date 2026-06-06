@@ -2,7 +2,7 @@ import { Route, Navigate } from 'react-router-dom';
 import GreenChampionLayout from '../../shared/layouts/GreenChampionLayout';
 import GreenChampionDashboard from '../dashboard/GreenChampionDashboard';
 import GreenChampionAwareness from '../awareness/GreenChampionAwareness';
-import GreenChampionCommunity from '../community/GreenChampionCommunity';
+import CommunityUpdates from '../../shared/pages/CommunityUpdates';
 import GreenChampionProfile from '../profile/GreenChampionProfile';
 import Settings from '../settings/Settings';
 import CampaignManager from '../campaigns/CampaignManager';
@@ -17,7 +17,7 @@ const greenRoutes = (
     <Route index element={<Navigate to="dashboard" replace />} />
     <Route path="dashboard" element={<GreenChampionDashboard />} />
     <Route path="awareness" element={<GreenChampionAwareness />} />
-    <Route path="community" element={<GreenChampionCommunity />} />
+    <Route path="community" element={<CommunityUpdates />} />
     <Route path="campaigns" element={<CampaignManager />} />
     <Route path="leaderboard" element={<GreenChampionLeaderboard />} />
     <Route path="recycling" element={<RecyclingPickups />} />

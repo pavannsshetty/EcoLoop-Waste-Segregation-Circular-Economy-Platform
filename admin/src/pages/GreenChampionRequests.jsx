@@ -11,7 +11,7 @@ import Dropdown from '../components/Dropdown';
 
 const STATUS_COLORS = {
   PENDING:   'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  APPROVED:  'bg-green-500 text-green-500 dark:bg-green-500/30 dark:text-green-500',
+  APPROVED:  'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   REJECTED:  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   SUSPENDED: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
 };
@@ -106,18 +106,18 @@ const GreenChampionRequests = () => {
   );
 
   return (
-    <div className="page-container space-y-8 animate-in fade-in duration-500">
+    <div className="px-4 sm:px-6 md:px-8 lg:px-10 pt-4 sm:pt-6 md:pt-8 lg:pt-10 pb-6 space-y-5 animate-in fade-in duration-500">
       <ToastContainer toasts={toasts} onRemove={remove} />
-      <div className="flex items-start justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="page-header">Pending Applications</h1>
-          <p className="page-subheading">Review and manage Green Champion onboarding requests</p>
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div className="min-w-0">
+          <h1 className={`text-lg font-bold tracking-tight text-left ${dk('text-slate-200', 'text-slate-800')}`}>Pending Applications</h1>
+          <p className={`text-sm font-medium text-left mt-0.5 ${dk('text-slate-400', 'text-slate-500')}`}>Review and manage Green Champion onboarding requests</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row gap-4 ${dk('bg-white/5 border-gray-800', 'bg-white border-gray-100 shadow-sm')}`}>
-        <div className={`flex items-center gap-2.5 px-4 rounded-xl border transition-all duration-200 focus-within:ring-2 focus-within:ring-green-500/20 group flex-1 ${
+      <div className={`p-4 rounded-lg border flex flex-col sm:flex-row gap-4 ${dk('bg-white/5 border-gray-800', 'bg-white border-gray-100 shadow-sm')}`}>
+        <div className={`flex items-center gap-2.5 px-4 rounded-lg border transition-all duration-200 focus-within:ring-2 focus-within:ring-green-500/20 group flex-1 ${
           dark ? 'bg-black/40 border-gray-700 focus-within:border-green-500 shadow-inner' : 'bg-slate-50 border-slate-200 focus-within:border-green-500 shadow-sm'
         }`}>
           <HiSearch className={`h-5 w-5 shrink-0 transition-colors ${dark ? 'text-slate-600 group-focus-within:text-green-500' : 'text-slate-400 group-focus-within:text-green-500'}`} />
@@ -131,7 +131,7 @@ const GreenChampionRequests = () => {
         </div>
         <Dropdown 
           value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          className={`px-4 py-2.5 rounded-xl text-sm outline-none border transition ${dk('bg-black/40 border-gray-700 text-slate-200 focus:border-green-500', 'bg-slate-50 border-slate-200 focus:border-green-500')}`}
+          className={`px-4 py-2.5 rounded-lg text-sm outline-none border transition ${dk('bg-black/40 border-gray-700 text-slate-200 focus:border-green-500', 'bg-slate-50 border-slate-200 focus:border-green-500')}`}
         >
           <option value="">All Statuses</option>
           <option value="PENDING">Pending</option>
@@ -142,8 +142,12 @@ const GreenChampionRequests = () => {
       </div>
 
       {/* List */}
-      <div className={`overflow-hidden rounded-2xl border ${dk('bg-white/5 border-gray-800', 'bg-white border-gray-100 shadow-sm')}`}>
-        <div className="overflow-x-auto">
+      <div className={`overflow-hidden rounded-lg border ${dk('bg-white/5 border-gray-800', 'bg-white border-gray-100 shadow-sm')}`}>
+        <div className={`px-4 sm:px-6 py-4 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 ${dk('border-gray-800', 'border-slate-100')}`}>
+          <h2 className={`text-sm font-semibold ${dk('text-slate-200', 'text-slate-800')}`}>Applications</h2>
+          <span className={`text-xs font-medium ${dk('text-slate-500', 'text-slate-500')}`}>{filteredRequests.length} requests</span>
+        </div>
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className={`text-[11px] uppercase tracking-wider font-bold ${dk('text-slate-500 bg-black/40', 'text-slate-400 bg-slate-50/50')}`}>
               <tr>
@@ -159,13 +163,13 @@ const GreenChampionRequests = () => {
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
                     <td colSpan={5} className="px-6 py-8">
-                       <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-full"></div>
+                       <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded-lg w-full"></div>
                     </td>
                   </tr>
                 ))
               ) : filteredRequests.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-sm text-slate-500 italic">No Green Champion requests found matching filters.</td>
+                  <td colSpan={5} className="px-6 py-12 text-center text-sm text-slate-500 font-medium">No Green Champion requests found matching filters.</td>
                 </tr>
               ) : filteredRequests.map(req => (
                 <tr key={req._id} className={`hover:bg-slate-50/50 dark:hover:bg-white/5 transition`}>
@@ -195,7 +199,7 @@ const GreenChampionRequests = () => {
                   <td className="px-6 py-4 text-right">
                     <button 
                       onClick={() => openDetails(req)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${dk('bg-white/10 text-slate-300 hover:bg-green-500/30 hover:text-green-500', 'bg-slate-100 text-slate-600 hover:bg-green-500 hover:text-green-500')}`}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${dk('border-gray-700 bg-transparent text-slate-300 hover:border-green-500/50 hover:text-green-400', 'border-slate-200 bg-transparent text-slate-600 hover:border-green-500 hover:text-green-600')}`}
                     >
                       Review <HiChevronRight className="h-3.5 w-3.5" />
                     </button>
@@ -205,34 +209,73 @@ const GreenChampionRequests = () => {
             </tbody>
           </table>
         </div>
+        <div className="lg:hidden divide-y divide-slate-100 dark:divide-gray-800">
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-24 animate-pulse bg-gray-100 dark:bg-gray-800/40" />)
+          ) : filteredRequests.length === 0 ? (
+            <div className="px-6 py-12 text-center text-sm text-slate-500 font-medium">No Green Champion requests found matching filters.</div>
+          ) : filteredRequests.map(req => (
+            <div key={req._id} className="p-4 space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-10 w-10 rounded-full border border-gray-200 dark:border-gray-800 overflow-hidden shrink-0">
+                    <img src={req.profilePhoto} alt="" className="h-full w-full object-cover" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-sm font-bold truncate ${dk('text-slate-200', 'text-slate-800')}`}>{req.fullName}</p>
+                    <p className="text-[10px] font-mono text-green-500">{req.requestId}</p>
+                  </div>
+                </div>
+                <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${STATUS_COLORS[req.status]}`}>{req.status}</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className={`text-[11px] uppercase font-semibold ${dk('text-slate-500', 'text-slate-400')}`}>Contact</p>
+                  <p className={dk('text-slate-300', 'text-slate-700')}>{req.email}</p>
+                  <p className={`text-xs ${dk('text-slate-500', 'text-slate-500')}`}>{req.mobile}</p>
+                </div>
+                <div>
+                  <p className={`text-[11px] uppercase font-semibold ${dk('text-slate-500', 'text-slate-400')}`}>Village</p>
+                  <p className={dk('text-slate-300', 'text-slate-700')}>{req.village}</p>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <button onClick={() => openDetails(req)}
+                  className={`inline-flex items-center gap-1.5 px-4 py-2.5 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold border transition ${dk('border-gray-700 bg-transparent text-slate-300 hover:border-green-500/50 hover:text-green-400', 'border-slate-200 bg-transparent text-slate-600 hover:border-green-500 hover:text-green-600')}`}>
+                  Review <HiChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Details Modal */}
       {selectedReq && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedReq(null)} />
-          <div className={`relative z-10 w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-3xl border flex flex-col ${dk('bg-black border-gray-800', 'bg-white border-gray-100 shadow-2xl')}`}>
+          <div className={`relative z-10 w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-4xl max-h-[90vh] overflow-hidden rounded-lg border flex flex-col ${dk('bg-black border-gray-800', 'bg-white border-gray-100 shadow-2xl')}`}>
              
              {/* Header */}
-             <div className="px-6 py-4 border-b dark:border-gray-800 flex items-center justify-between">
+              <div className="px-4 sm:px-6 py-4 border-b dark:border-gray-800 flex items-center justify-between">
                 <div>
                    <h2 className={`text-lg font-bold ${dk('text-white', 'text-slate-900')}`}>Review Application</h2>
                    <p className="text-xs text-green-500 font-mono">{selectedReq.requestId}</p>
                 </div>
-                <button onClick={() => setSelectedReq(null)} className={`p-2 rounded-xl transition ${dk('text-slate-500 hover:bg-white/10 text-white', 'text-slate-400 hover:bg-slate-100')}`}>
+                <button onClick={() => setSelectedReq(null)} className={`p-2 rounded-lg transition ${dk('text-slate-500 hover:bg-white/10', 'text-slate-400 hover:bg-slate-100')}`}>
                    <HiX className="h-6 w-6" />
                 </button>
              </div>
 
              {/* Content */}
-             <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-hide">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 md:space-y-8 scrollbar-hide">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
                    {/* Profile & Info */}
                    <div className="space-y-6">
-                      <div className="flex items-center gap-5 p-4 rounded-2xl bg-slate-50/50 dark:bg-white/5 border dark:border-gray-800">
-                         <div className="h-24 w-24 rounded-2xl border dark:border-gray-700 overflow-hidden shrink-0 shadow-xl">
-                            <img src={selectedReq.profilePhoto} alt="" className="h-full w-full object-cover" />
-                         </div>
+                       <div className="flex items-center gap-5 p-4 rounded-lg bg-slate-50/50 dark:bg-white/5 border dark:border-gray-800">
+                           <div className="h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 rounded-full border-2 border-green-500/30 dark:border-green-500/20 overflow-hidden shrink-0 shadow-xl">
+                             <img src={selectedReq.profilePhoto} alt="" className="h-full w-full object-cover" />
+                          </div>
                          <div className="space-y-1">
                             <h3 className={`text-xl font-bold ${dk('text-white', 'text-slate-800')}`}>{selectedReq.fullName}</h3>
                             <p className="text-sm text-green-500 font-medium">Applicant for {selectedReq.village}</p>
@@ -261,11 +304,11 @@ const GreenChampionRequests = () => {
                       <div className="pt-4 space-y-3">
                          <p className={`text-xs font-bold uppercase tracking-widest ${dk('text-slate-500', 'text-slate-400')}`}>Documents</p>
                          <div className="grid grid-cols-2 gap-4">
-                            <a href={selectedReq.idProof} target="_blank" rel="noopener noreferrer" className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition ${dk('bg-white/5 border-gray-700 hover:bg-green-500/10', 'bg-slate-50 border-slate-200 hover:bg-green-500')}`}>
+                            <a href={selectedReq.idProof} target="_blank" rel="noopener noreferrer" className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition ${dk('bg-white/5 border-gray-700 hover:bg-green-500/10', 'bg-slate-50 border-slate-200 hover:bg-green-100')}`}>
                                <HiIdentification className="h-8 w-8 text-green-500" />
                                <span className="text-[10px] font-bold uppercase">View ID Proof</span>
                             </a>
-                            <div className="flex flex-col items-center gap-2 p-3 rounded-xl border dark:border-gray-800 bg-white/5">
+                            <div className="flex flex-col items-center gap-2 p-3 rounded-lg border dark:border-gray-800 bg-white/5">
                                <HiCheckCircle className="h-8 w-8 text-blue-500" />
                                <span className="text-[10px] font-bold uppercase opacity-50">Profile Verify</span>
                             </div>
@@ -274,7 +317,7 @@ const GreenChampionRequests = () => {
                    </div>
 
                    {/* Verification Checklist */}
-                   <div className={`p-6 rounded-3xl border-2 border-dashed ${dk('bg-white/5 border-gray-800', 'bg-slate-50 border-slate-200')}`}>
+                    <div className={`p-4 sm:p-6 rounded-lg border-2 border-dashed ${dk('bg-white/5 border-gray-800', 'bg-slate-50 border-slate-200')}`}>
                       <h4 className={`text-sm font-bold uppercase tracking-widest mb-4 flex items-center gap-2 ${dk('text-green-500', 'text-green-500')}`}>
                          <HiCheckCircle className="h-5 w-5" /> Verification Checklist
                       </h4>
@@ -289,10 +332,10 @@ const GreenChampionRequests = () => {
                            { key: 'identityMatching', label: 'Photo and ID proof match' },
                            { key: 'noDuplicate', label: 'No duplicate request exists' },
                          ].map(item => (
-                           <label key={item.key} className={`flex items-center gap-3 p-2.5 rounded-xl transition cursor-pointer hover:bg-white/5 ${checklist[item.key] ? 'opacity-100' : 'opacity-60'}`}>
+                           <label key={item.key} className={`flex items-center gap-3 p-2.5 rounded-lg transition cursor-pointer hover:bg-white/5 ${checklist[item.key] ? 'opacity-100' : 'opacity-60'}`}>
                               <input 
                                 type="checkbox" checked={checklist[item.key] || false} onChange={() => toggleCheck(item.key)}
-                                className="h-4 w-4 rounded border-gray-600 bg-white/10 text-green-500 focus:ring-green-500"
+                                className="h-4 w-4 rounded-lg border-gray-600 bg-white/10 text-green-500 focus:ring-green-500"
                               />
                               <span className={`text-sm font-medium ${dk('text-slate-300', 'text-slate-700')}`}>{item.label}</span>
                            </label>
@@ -307,28 +350,28 @@ const GreenChampionRequests = () => {
              </div>
 
              {/* Footer Actions */}
-             <div className="px-6 py-4 border-t dark:border-gray-800 flex items-center justify-between bg-slate-50/30 dark:bg-black/50">
+              <div className="px-4 sm:px-6 py-4 border-t dark:border-gray-800 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between bg-slate-50/30 dark:bg-black/50">
                 {selectedReq.status === 'PENDING' ? (
                   <>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 w-full sm:w-auto">
                        <button 
                          onClick={() => { setReviewAction('REJECT'); setReason(''); }}
-                         className="px-4 py-2 text-xs font-bold uppercase rounded-xl border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white transition"
+                         className="flex-1 sm:flex-none px-4 py-2.5 sm:py-2 text-xs font-bold uppercase rounded-lg border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white transition"
                        >Reject</button>
                        <button 
                          onClick={() => { setReviewAction('SUSPEND'); setReason(''); }}
-                         className="px-4 py-2 text-xs font-bold uppercase rounded-xl border border-gray-500/30 text-gray-500 hover:bg-gray-500 hover:text-white transition"
+                         className="flex-1 sm:flex-none px-4 py-2.5 sm:py-2 text-xs font-bold uppercase rounded-lg border border-gray-500/30 text-gray-500 hover:bg-gray-500 hover:text-white transition"
                        >Suspend</button>
                     </div>
-                    <button 
-                       disabled={!Object.values(checklist).every(v => v === true)}
-                       onClick={() => { setReviewAction('APPROVE'); }}
-                       className="px-6 py-2.5 text-sm font-bold uppercase rounded-xl bg-green-500 text-white shadow-xl shadow-green-500/20 hover:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed transition active:scale-95"
-                    >Approve Applicant</button>
+                     <button 
+                        disabled={!Object.values(checklist).every(v => v === true)}
+                        onClick={() => { setReviewAction('APPROVE'); }}
+                        className="w-full sm:w-auto px-6 py-3 sm:py-2.5 text-sm font-bold uppercase rounded-lg border-2 border-green-500 bg-green-50 text-green-700 hover:bg-green-500 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition active:scale-95 shadow-sm"
+                     >Approve Applicant</button>
                   </>
                 ) : (
                   <div className="w-full flex items-center justify-center p-2">
-                    <span className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold uppercase ${STATUS_COLORS[selectedReq.status]}`}>
+                    <span className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold uppercase ${STATUS_COLORS[selectedReq.status]}`}>
                       {selectedReq.status === 'APPROVED' && <HiCheckCircle className="h-5 w-5" />}
                       {selectedReq.status === 'REJECTED' && <HiX className="h-5 w-5" />}
                       Current Status: {selectedReq.status}
@@ -342,7 +385,7 @@ const GreenChampionRequests = () => {
           {reviewAction && (
              <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
                 <div className="absolute inset-0 bg-black/60" onClick={() => setReviewAction(null)} />
-                <div className={`relative z-10 w-full max-w-sm p-6 rounded-2xl border ${dk('bg-black border-gray-800', 'bg-white border-gray-100 shadow-2xl')}`}>
+                 <div className={`relative z-10 w-full max-w-[95vw] sm:max-w-sm p-4 sm:p-6 rounded-lg border ${dk('bg-black border-gray-800', 'bg-white border-gray-100 shadow-2xl')}`}>
                    <p className={`text-lg font-bold mb-2 ${dk('text-white', 'text-slate-800')}`}>{reviewAction === 'APPROVE' ? 'Confirm Approval' : reviewAction === 'REJECT' ? 'Confirm Rejection' : 'Confirm Suspension'}</p>
                    <p className="text-sm text-slate-500 mb-4">Are you sure you want to {reviewAction.toLowerCase()} this applicant?</p>
                    
@@ -351,7 +394,7 @@ const GreenChampionRequests = () => {
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">
                           Reason for {reviewAction === 'REJECT' ? 'Rejection' : 'Suspension'} <span className="text-red-500">*</span>
                         </label>
-                        <Dropdown value={reason} onChange={e => setReason(e.target.value)} className={`w-full p-3 rounded-xl border-none text-sm outline-none shadow-inner ${dk('bg-white/5 text-white', 'bg-slate-50 text-slate-800')}`}>
+                        <Dropdown value={reason} onChange={e => setReason(e.target.value)} className={`w-full p-3 rounded-lg border-none text-sm outline-none shadow-inner ${dk('bg-white/5 text-white', 'bg-slate-50 text-slate-800')}`}>
                            <option value="">Select Reason</option>
                            {reviewAction === 'REJECT' ? (
                              <>
@@ -376,12 +419,12 @@ const GreenChampionRequests = () => {
                    )}
 
                    <div className="flex gap-2">
-                      <button onClick={() => setReviewAction(null)} className="flex-1 py-3 text-xs font-bold uppercase rounded-xl border border-gray-800 text-slate-500 hover:bg-white/5 transition">Cancel</button>
+                      <button onClick={() => setReviewAction(null)} className="flex-1 py-3 text-xs font-bold uppercase rounded-lg border border-gray-800 text-slate-500 hover:bg-white/5 transition">Cancel</button>
                       <button 
                         disabled={submitting || ((reviewAction !== 'APPROVE') && !reason)}
                         onClick={handleReview} 
-                        className={`flex-1 py-3 text-xs font-bold uppercase rounded-xl transition ${
-                          reviewAction === 'APPROVE' ? 'bg-green-500 text-white' : reviewAction === 'REJECT' ? 'bg-red-600 text-white' : 'bg-gray-700 text-white'
+                        className={`flex-1 py-3 text-xs font-bold uppercase rounded-lg transition ${
+                          reviewAction === 'APPROVE' ? 'bg-green-100 text-green-700 border-2 border-green-500' : reviewAction === 'REJECT' ? 'bg-red-100 text-red-700 border-2 border-red-500' : 'border border-gray-500/30 text-slate-300'
                         } disabled:opacity-50`}
                       >
                          {submitting ? 'Processing...' : 'Confirm'}

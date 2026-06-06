@@ -70,7 +70,7 @@ const CampaignManager = () => {
                 </div>
                 <button 
                   onClick={() => setCreating(true)}
-                  className="px-5 py-2.5 rounded-xl bg-green-500 text-white text-sm font-bold shadow-sm hover:bg-green-500 transition active:scale-95 flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-lg bg-green-500 text-white text-sm font-bold shadow-sm hover:bg-green-500 transition active:scale-95 flex items-center gap-2"
                 >
                     <HiPlus className="h-4 w-4" /> New Campaign
                 </button>
@@ -78,29 +78,29 @@ const CampaignManager = () => {
 
             {creating && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className={`w-full max-w-xl rounded-2xl border p-6 space-y-5 animate-in zoom-in duration-200 ${dk('bg-slate-900 border-gray-800 text-slate-100', 'bg-white border-slate-200 text-slate-900')}`}>
+                    <div className={`w-full max-w-xl rounded-lg border p-6 space-y-5 animate-in zoom-in duration-200 ${dk('bg-slate-900 border-gray-800 text-slate-100', 'bg-white border-slate-200 text-slate-900')}`}>
                         <h3 className="text-lg font-bold">Create Cleanup Campaign</h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="sm:col-span-2">
                                     <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Campaign Title</label>
-                                    <input value={form.title} onChange={e=>setForm({...form, title: e.target.value})} className={`w-full rounded-xl border p-3 text-sm focus:ring-2 focus:ring-green-500 outline-none ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`} placeholder="e.g. Sunday Beach Cleanup" required />
+                                    <input value={form.title} onChange={e=>setForm({...form, title: e.target.value})} className={`w-full rounded-lg border p-3 text-sm focus:ring-2 focus:ring-green-500 outline-none ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`} placeholder="e.g. Sunday Beach Cleanup" required />
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Date</label>
-                                    <input type="date" value={form.date} onChange={e=>setForm({...form, date: e.target.value})} className={`w-full rounded-xl border p-3 text-sm focus:ring-2 focus:ring-green-500 outline-none ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`} required />
+                                    <input type="date" value={form.date} onChange={e=>setForm({...form, date: e.target.value})} className={`w-full rounded-lg border p-3 text-sm focus:ring-2 focus:ring-green-500 outline-none ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`} required />
                                 </div>
                                 <div>
                                     <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Time</label>
-                                    <input type="time" value={form.time} onChange={e=>setForm({...form, time: e.target.value})} className={`w-full rounded-xl border p-3 text-sm focus:ring-2 focus:ring-green-500 outline-none ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`} required />
+                                    <input type="time" value={form.time} onChange={e=>setForm({...form, time: e.target.value})} className={`w-full rounded-lg border p-3 text-sm focus:ring-2 focus:ring-green-500 outline-none ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`} required />
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Specific Area/Point</label>
-                                    <input value={form.area} onChange={e=>setForm({...form, area: e.target.value})} className={`w-full rounded-xl border p-3 text-sm focus:ring-2 focus:ring-green-500 outline-none ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`} placeholder="e.g. Near Main Market Bridge" required />
+                                    <input value={form.area} onChange={e=>setForm({...form, area: e.target.value})} className={`w-full rounded-lg border p-3 text-sm focus:ring-2 focus:ring-green-500 outline-none ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`} placeholder="e.g. Near Main Market Bridge" required />
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Description</label>
-                                    <textarea value={form.description} onChange={e=>setForm({...form, description: e.target.value})} className={`w-full rounded-xl border p-3 text-sm focus:ring-2 focus:ring-green-500 outline-none ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`} rows={3} placeholder="What will we do? What should people bring?" required />
+                                    <textarea value={form.description} onChange={e=>setForm({...form, description: e.target.value})} className={`w-full rounded-lg border p-3 text-sm focus:ring-2 focus:ring-green-500 outline-none ${dk('bg-white/5 border-gray-700', 'bg-slate-50 border-slate-200')}`} rows={3} placeholder="What will we do? What should people bring?" required />
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Banner Image</label>
@@ -109,7 +109,7 @@ const CampaignManager = () => {
                             </div>
                             <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-gray-800">
                                 <button type="button" onClick={() => setCreating(false)} className="flex-1 py-3 text-sm font-bold text-slate-500 hover:text-slate-700">Cancel</button>
-                                <button type="submit" disabled={submitting} className="flex-1 py-3 rounded-xl bg-green-500 text-white text-sm font-bold shadow-sm hover:bg-green-500 transition active:scale-95 disabled:opacity-50">
+                                <button type="submit" disabled={submitting} className="flex-1 py-3 rounded-lg bg-green-500 text-white text-sm font-bold shadow-sm hover:bg-green-500 transition active:scale-95 disabled:opacity-50">
                                     {submitting ? 'Creating...' : 'Launch Campaign'}
                                 </button>
                             </div>
@@ -121,14 +121,14 @@ const CampaignManager = () => {
             {loading ? (
                 <div className="py-20 text-center"><div className="h-8 w-8 rounded-full border-4 border-green-500 border-t-transparent animate-spin mx-auto" /></div>
             ) : campaigns.length === 0 ? (
-                <div className={`py-20 text-center rounded-2xl border-2 border-dashed ${dk('border-gray-800 text-slate-600', 'border-slate-200 text-slate-400')}`}>
+                <div className={`py-20 text-center rounded-lg border-2 border-dashed ${dk('border-gray-800 text-slate-600', 'border-slate-200 text-slate-400')}`}>
                     <HiUserGroup className="h-12 w-12 mx-auto mb-3 opacity-20" />
                     <p>No campaigns scheduled. Be the first to start one!</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {campaigns.map(c => (
-                        <div key={c._id} className={`rounded-2xl border overflow-hidden transition hover:shadow-lg flex flex-col ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-100 shadow-sm')}`}>
+                        <div key={c._id} className={`rounded-lg border overflow-hidden transition hover:shadow-lg flex flex-col ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-100 shadow-sm')}`}>
                             <div className="aspect-video bg-slate-100 relative">
                                 {c.image ? (
                                     <img src={c.image} alt={c.title} className="w-full h-full object-cover" />

@@ -36,7 +36,7 @@ const VillageDropdown = ({ value, onChange, error, touched, dark, villages = [],
           placeholder={placeholder}
           autoComplete="off"
           className={[
-            'w-full rounded-sm border py-3 pl-9 pr-9 text-sm shadow-sm transition focus:outline-none focus:ring-2',
+            'w-full rounded-lg border py-3 pl-9 pr-9 text-sm shadow-sm transition focus:outline-none focus:ring-2',
             dark ? 'bg-white/5 text-slate-100 placeholder-slate-500' : 'bg-white text-slate-900 placeholder-slate-400',
             hasError ? 'border-red-400 focus:ring-red-400' : isOk ? 'border-green-400 focus:ring-green-400' : dark ? 'border-slate-700 focus:ring-green-500' : 'border-slate-200 focus:ring-green-500',
           ].join(' ')}
@@ -45,7 +45,7 @@ const VillageDropdown = ({ value, onChange, error, touched, dark, villages = [],
       </div>
 
       {open && (
-        <ul className={`absolute top-full z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-sm border shadow-lg text-sm ${dark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
+        <ul className={`absolute top-full z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border shadow-lg text-sm ${dark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
           {filtered.length === 0
             ? <li className={`px-4 py-2.5 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>No villages found</li>
             : filtered.map((v) => (

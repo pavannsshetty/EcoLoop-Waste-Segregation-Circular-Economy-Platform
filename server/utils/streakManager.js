@@ -25,9 +25,7 @@ const updateStreak = async (userId) => {
       const diffDays = Math.floor((today - last) / (1000 * 60 * 60 * 24));
 
       if (diffDays === 0) {
-        // Already logged in today, just update lastActiveDate timestamp
-        user.lastActiveDate = now;
-        await user.save();
+        // Already active today, return immediately without redundant database write
         return { updated: false, streakCount: user.streakCount };
       }
 

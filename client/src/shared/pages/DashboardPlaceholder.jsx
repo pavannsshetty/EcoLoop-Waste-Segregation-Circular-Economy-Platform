@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EcoLoopLogo from '../components/EcoLoopLogo';
 import { HiLogout } from 'react-icons/hi';
+import { parseStoredUser } from '../context/UserContext';
 
 const ROLE_LABELS = {
   Citizen:       'Citizen Dashboard',
@@ -11,7 +12,7 @@ const ROLE_LABELS = {
 
 const DashboardPlaceholder = () => {
   const navigate = useNavigate();
-  const user  = JSON.parse(localStorage.getItem('user') || '{}');
+  const user  = parseStoredUser();
   const label = ROLE_LABELS[user.role] || 'Dashboard';
 
   useEffect(() => {

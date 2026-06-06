@@ -5,14 +5,19 @@ import { API } from '../../shared/constants';
 import { MdWaterDrop, MdRecycling, MdDevices, MdWarning } from 'react-icons/md';
 import CleanupTimeBadge from '../../shared/components/CleanupTimeBadge';
 import { useTheme } from '../../shared/context/ThemeContext';
-import { useUser } from '../../shared/context/UserContext';
+import { useUser, parseStoredUser } from '../../shared/context/UserContext';
+import socket from '../../socket';
 
 const STATUS_STYLES = {
   Submitted:     'bg-yellow-100 text-yellow-700',
+  Verified:      'bg-green-100 text-green-700',
   'In Progress': 'bg-blue-100 text-blue-700',
   Resolved:      'bg-green-100 text-green-700',
   Reopened:      'bg-orange-100 text-orange-700',
   Delayed:       'bg-red-100 text-red-700',
+  'Clarification Requested': 'bg-purple-100 text-purple-700',
+  Resubmitted:   'bg-indigo-100 text-indigo-700',
+  'Clarification Expired': 'bg-gray-100 text-gray-600',
 };
 
 const SEVERITY_STYLES = {
@@ -43,7 +48,7 @@ const WASTE_COLORS = {
 const MyReports = () => {
   const navigate = useNavigate();
   const { user: ctxUser } = useUser();
-  const user = ctxUser || JSON.parse(localStorage.getItem('user') || '{}');
+  const user = ctxUser || parseStoredUser();
   const { dark } = useTheme();
   const dk = (d, l) => dark ? d : l;
   const [reports, setReports] = useState([]);
@@ -62,6 +67,14 @@ const MyReports = () => {
   };
 
   useEffect(() => { fetchReports(); }, []);
+
+  useEffect(() => {
+    const handler = (updated) => {
+      setReports((rs) => rs.map((r) => (r._id === updated._id ? updated : r)));
+    };
+    socket.on('report_updated', handler);
+    return () => socket.off('report_updated', handler);
+  }, []);
 
   const handleUpvote = async (id) => {
     try {
@@ -114,14 +127,14 @@ const MyReports = () => {
             <div className="h-8 w-8 rounded-full border-4 border-green-500 border-t-transparent animate-spin" />
           </div>
         )}
-        {error && <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">{error}</div>}
+        {error && <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">{error}</div>}
 
         {!loading && !error && reports.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
             <MdWarning className="h-12 w-12 text-slate-300" />
             <p className="text-slate-500">No reports yet.</p>
             <button onClick={() => navigate('/citizen/dashboard')}
-              className="mt-2 rounded-sm bg-green-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-green-500 transition">
+              className="mt-2 rounded-lg bg-green-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-green-500 transition">
               Go to Dashboard
             </button>
           </div>
@@ -132,16 +145,16 @@ const MyReports = () => {
           const iconCls = WASTE_COLORS[r.wasteType] || 'bg-slate-100 text-slate-500';
           const upvoted = r.upvotes?.some(u => u === user._id || u?._id === user._id);
           return (
-            <div key={r._id} className={`rounded-sm border p-4 sm:p-5 space-y-3 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
+            <div key={r._id} className={`rounded-lg border p-4 sm:p-5 space-y-3 transition-colors duration-200 ${dk('bg-white/5 border-gray-700','bg-white border-slate-200')}`}>
               <div className="flex flex-col sm:flex-row gap-3">
-                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-sm ${iconCls}`}>
+                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${iconCls}`}>
                   <Icon className="h-6 w-6" />
                 </div>
                 <div className="flex-1 min-w-0 space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] font-mono tracking-tighter bg-green-50 text-green-600 px-1.5 py-0.5 rounded-sm border border-green-100 font-bold">{r.reportId || 'ECO-PENDING'}</span>
+                    <span className="text-[10px] font-mono tracking-tighter bg-green-50 text-green-600 px-1.5 py-0.5 rounded-lg border border-green-100 font-bold">{r.reportId || 'ECO-PENDING'}</span>
                     <span className={`text-sm font-bold ${dk('text-slate-200','text-slate-900')}`}>{r.wasteType}</span>
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-sm uppercase tracking-wider ${r.reportType === 'Home Pickup' ? 'bg-green-600 text-white' : 'bg-orange-500 text-white'}`}>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider ${r.reportType === 'Home Pickup' ? 'bg-green-600 text-white' : 'bg-orange-500 text-white'}`}>
                       {r.reportType || 'Public'}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLES[r.status] || 'bg-slate-100 text-slate-600'}`}>{r.status}</span>
@@ -153,7 +166,7 @@ const MyReports = () => {
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
                     <span className="flex items-center gap-1">
                       <HiLocationMarker className="h-3.5 w-3.5 text-green-500 shrink-0" />
-                      <span className="truncate max-w-[200px] sm:max-w-xs">{r.location?.displayAddress || r.location?.address || 'N/A'}</span>
+                      <span className="truncate max-w-[120px] sm:max-w-xs">{r.location?.displayAddress || r.location?.address || 'N/A'}</span>
                     </span>
                     <span className="flex items-center gap-1">
                       <HiClock className="h-3.5 w-3.5 text-blue-400 shrink-0" />
@@ -174,7 +187,7 @@ const MyReports = () => {
                   <p className="text-xs text-slate-400">Reported</p>
                   <p className="text-xs text-slate-600">{fmt(r.createdAt)}</p>
                   <button onClick={() => handleUpvote(r._id)}
-                    className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-sm border transition ${
+                    className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border transition ${
                       upvoted ? 'bg-green-600 text-white border-green-600' : 'border-slate-200 dark:border-slate-600 text-slate-500 hover:border-green-400 hover:text-green-600'
                     }`}>
                     <HiThumbUp className="h-3.5 w-3.5" />
@@ -182,24 +195,35 @@ const MyReports = () => {
                   </button>
                   {!r.escalated && ['Submitted','Assigned','In Progress','Delayed'].includes(r.status) && (
                     <button onClick={() => handleEscalate(r._id)}
-                      className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-sm border border-orange-300 text-orange-600 hover:bg-orange-50 transition">
+                      className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border border-orange-300 text-orange-600 hover:bg-orange-50 transition">
                       <HiExclamation className="h-3.5 w-3.5" /> Escalate
                     </button>
                   )}
                   {r.escalated && (
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 font-semibold">Escalated</span>
                   )}
+                  {r.status === 'Clarification Requested' && (
+                    <button onClick={() => navigate(`/citizen/public-reports?clarify=${r._id}`)}
+                      className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border border-purple-300 text-purple-700 hover:bg-purple-50 transition">
+                      Edit Report
+                    </button>
+                  )}
+                  {r.supportedBy?.length > 0 && (
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold bg-green-100 text-green-700`}>
+                      {r.supportedBy.length} supporter{r.supportedBy.length > 1 ? 's' : ''}
+                    </span>
+                  )}
                   {r.status === 'Resolved' && r.citizenVerified === 'pending' && (
                     <div className="flex flex-col gap-1 mt-1">
                       <p className="text-[10px] text-slate-500">Was this resolved?</p>
                       <div className="flex gap-1">
                         <button onClick={() => handleVerify(r._id, 'yes')}
-                          className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm bg-green-600 text-white hover:bg-green-500 transition">
-                          <HiCheckCircle className="h-3 w-3" /> Yes
+                          className="flex items-center gap-1 text-xs px-3 py-1.5 min-h-[36px] rounded-lg bg-green-600 text-white hover:bg-green-500 transition">
+                          <HiCheckCircle className="h-3.5 w-3.5" /> Yes
                         </button>
                         <button onClick={() => handleVerify(r._id, 'no')}
-                          className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm bg-red-500 text-white hover:bg-red-400 transition">
-                          <HiX className="h-3 w-3" /> No
+                          className="flex items-center gap-1 text-xs px-3 py-1.5 min-h-[36px] rounded-lg bg-red-500 text-white hover:bg-red-400 transition">
+                          <HiX className="h-3.5 w-3.5" /> No
                         </button>
                       </div>
                     </div>

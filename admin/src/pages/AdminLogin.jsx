@@ -101,14 +101,14 @@ const AdminLogin = () => {
       {/* Theme toggle */}
       <div className="flex justify-end p-4">
         <button type="button" onClick={toggleDark} aria-label="Toggle theme"
-          className={`flex items-center justify-center h-9 w-9 rounded-xl transition ${dark ? 'text-yellow-400 hover:bg-white/10' : 'text-slate-600 hover:bg-white'}`}>
+          className={`flex items-center justify-center h-9 w-9 rounded-lg transition ${dark ? 'text-yellow-400 hover:bg-white/10' : 'text-slate-600 hover:bg-white'}`}>
           {dark ? <HiSun className="h-5 w-5" /> : <HiMoon className="h-5 w-5" />}
         </button>
       </div>
 
       {/* Centered dialog */}
       <div className="flex-1 flex items-center justify-center p-4 -mt-14">
-        <div className={`w-full max-w-md rounded-2xl shadow-2xl ${dlg}`}>
+        <div className={`w-full max-w-md rounded-lg shadow-2xl ${dlg}`}>
 
           {/* Header */}
           <div className={`flex items-center gap-2 border-b px-6 py-4 ${hdr}`}>
@@ -119,7 +119,7 @@ const AdminLogin = () => {
           {/* Body */}
           <div className="px-6 py-6 space-y-5">
             {/* Role badge */}
-            <div className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 ${dark ? 'bg-white/5 border-gray-700' : 'bg-slate-50 border-slate-200'}`}>
+            <div className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 ${dark ? 'bg-white/5 border-gray-700' : 'bg-slate-50 border-slate-200'}`}>
               <HiShieldCheck className="h-4 w-4 text-green-500" />
               <span className={`text-sm font-medium ${dark ? 'text-slate-200' : 'text-slate-700'}`}>Administrator</span>
               <span className={`ml-auto text-xs ${muted}`}>Login</span>

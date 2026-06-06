@@ -8,7 +8,8 @@ const {
     checkRequestStatus,
     forgotRequestId,
     getAllRequests,
-    reviewRequest
+    reviewRequest,
+    checkDuplicateField
 } = require('../controllers/greenChampionController');
 
 const {
@@ -23,7 +24,8 @@ const {
     updatePickupStatus,
     getTasks,
     updateTaskStatus,
-    getLeaderboard
+    getLeaderboard,
+    createBroadcast
 } = require('../controllers/greenChampionActionController');
 
 const { greenChampionAuth } = require('../middleware/greenChampionAuth');
@@ -41,6 +43,7 @@ router.post('/apply', upload.fields([
 
 router.get('/status/:requestId', checkRequestStatus);
 router.post('/forgot-id', forgotRequestId);
+router.post('/check-duplicate', checkDuplicateField);
 
 // ADMIN
 router.get('/admin/requests', adminProtect, getAllRequests);
@@ -64,5 +67,6 @@ router.get('/tasks', protect, greenChampionAuth, getTasks);
 router.put('/task/:taskId', protect, greenChampionAuth, updateTaskStatus);
 
 router.get('/leaderboard', protect, greenChampionAuth, getLeaderboard);
+router.post('/broadcast', protect, greenChampionAuth, upload.single('image'), createBroadcast);
 
 module.exports = router;

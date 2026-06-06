@@ -36,7 +36,7 @@ export const HowItWorks = () => (
       <SectionHeader tag="Simple Process" title="How EcoLoop Works" sub="Four easy steps to responsible waste management." />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {STEPS.map(({ Icon, step, title, desc }) => (
-          <div key={step} className="relative flex flex-col items-center text-center p-6 rounded-2xl border border-slate-100 bg-[#F7FDF8] hover:shadow-md transition">
+          <div key={step} className="relative flex flex-col items-center text-center p-6 rounded-lg border border-slate-100 bg-[#F7FDF8] hover:shadow-md transition">
             <span className="absolute -top-3 left-4 text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">{step}</span>
             <Icon className="h-10 w-10 text-green-600 mb-4" />
             <h3 className="text-base font-bold text-slate-900 mb-2">{title}</h3>
@@ -61,7 +61,7 @@ export const WasteCategories = () => (
       <SectionHeader tag="Know Your Waste" title="Waste Categories" sub="Understanding waste types is the first step to responsible disposal." />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {CATEGORIES.map(({ Icon, color, badge, title, desc }) => (
-          <div key={title} className={`rounded-2xl border p-5 flex flex-col gap-3 hover:shadow-md transition ${color}`}>
+          <div key={title} className={`rounded-lg border p-5 flex flex-col gap-3 hover:shadow-md transition ${color}`}>
             <Icon className="h-8 w-8" />
             <span className={`text-xs font-semibold px-2.5 py-1 rounded-full w-fit ${badge}`}>{title}</span>
             <p className="text-sm text-slate-600 leading-relaxed">{desc}</p>
@@ -82,14 +82,14 @@ export const SchedulePickup = ({ onGetStarted }) => (
           { Icon: HiClock,          t: 'Pick a Time Slot', d: 'Choose morning, afternoon, or evening pickup.' },
           { Icon: HiCheckCircle,    t: 'Confirm & Done',   d: 'A collector is assigned and notified instantly.' },
         ].map(({ Icon, t, d }) => (
-          <div key={t} className="flex gap-3 p-4 rounded-xl bg-[#F7FDF8] border border-slate-100">
+          <div key={t} className="flex gap-3 p-4 rounded-lg bg-[#F7FDF8] border border-slate-100">
             <Icon className="h-6 w-6 text-green-600 shrink-0" />
             <div><p className="text-sm font-semibold text-slate-900">{t}</p><p className="text-xs text-slate-500 mt-0.5">{d}</p></div>
           </div>
         ))}
       </div>
       <button onClick={onGetStarted}
-        className="inline-flex items-center gap-2 bg-green-600 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-green-700 transition shadow-md text-sm">
+        className="inline-flex items-center gap-2 bg-green-600 text-white font-semibold px-8 py-3.5 rounded-lg hover:bg-green-700 transition shadow-md text-sm">
         <HiCalendar className="h-5 w-5" /> Schedule Pickup Now
       </button>
     </div>
@@ -113,7 +113,7 @@ export const EcoPoints = ({ onGetStarted }) => (
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {REWARDS.map(({ Icon, pts, action }) => (
-          <div key={action} className="bg-white/10 border border-white/20 rounded-2xl p-5 text-center hover:bg-white/20 transition">
+          <div key={action} className="bg-white/10 border border-white/20 rounded-lg p-5 text-center hover:bg-white/20 transition">
             <Icon className="h-8 w-8 mx-auto text-yellow-300 mb-2" />
             <span className="text-lg font-extrabold text-yellow-300">{pts}</span>
             <p className="text-xs text-green-100 mt-1 leading-snug">{action}</p>
@@ -122,7 +122,7 @@ export const EcoPoints = ({ onGetStarted }) => (
       </div>
       <div className="text-center">
         <button onClick={onGetStarted}
-          className="inline-flex items-center gap-2 bg-white text-green-700 font-semibold px-8 py-3.5 rounded-xl hover:bg-green-50 transition shadow-md text-sm">
+          className="inline-flex items-center gap-2 bg-white text-green-700 font-semibold px-8 py-3.5 rounded-lg hover:bg-green-50 transition shadow-md text-sm">
           <HiStar className="h-5 w-5" /> Start Earning Points
         </button>
       </div>
@@ -143,7 +143,7 @@ export const ImpactStats = () => (
       <SectionHeader tag="Our Impact" title="Making a Real Difference" sub="EcoLoop is transforming waste management across India, one city at a time." />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         {STATS.map(({ value, label, Icon }) => (
-          <div key={label} className="bg-white rounded-2xl border border-slate-100 p-6 text-center shadow-sm hover:shadow-md transition">
+          <div key={label} className="bg-white rounded-lg border border-slate-100 p-6 text-center shadow-sm hover:shadow-md transition">
             <Icon className="h-8 w-8 mx-auto text-green-600 mb-2" />
             <p className="text-2xl sm:text-3xl font-extrabold text-green-600">{value}</p>
             <p className="text-sm text-slate-500 mt-1">{label}</p>
@@ -171,11 +171,11 @@ export const NearbyBins = ({ onGetStarted }) => (
             ))}
           </div>
           <button onClick={onGetStarted}
-            className="inline-flex items-center gap-2 bg-green-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-green-700 transition text-sm">
+            className="inline-flex items-center gap-2 bg-green-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-green-700 transition text-sm">
             <HiLocationMarker className="h-5 w-5" /> Find Bins Near Me
           </button>
         </div>
-        <div className="rounded-2xl bg-[#F7FDF8] border border-slate-200 h-64 flex items-center justify-center text-slate-400">
+        <div className="rounded-lg bg-[#F7FDF8] border border-slate-200 h-64 flex items-center justify-center text-slate-400">
           <div className="text-center space-y-2">
             <HiMap className="h-10 w-10 mx-auto text-slate-300" />
             <p className="text-sm font-medium">Interactive map coming soon</p>
@@ -197,14 +197,14 @@ export const ReportGarbage = ({ onGetStarted }) => (
           { Icon: HiLocationMarker, t: 'Tag Location',       d: 'Pin the exact location on the map.' },
           { Icon: HiMail,       t: 'Submit to Council',  d: 'Report is sent directly to the municipality.' },
         ].map(({ Icon, t, d }) => (
-          <div key={t} className="flex gap-3 p-4 rounded-xl bg-white border border-slate-100 shadow-sm">
+          <div key={t} className="flex gap-3 p-4 rounded-lg bg-white border border-slate-100 shadow-sm">
             <Icon className="h-6 w-6 text-orange-500 shrink-0" />
             <div><p className="text-sm font-semibold text-slate-900">{t}</p><p className="text-xs text-slate-500 mt-0.5">{d}</p></div>
           </div>
         ))}
       </div>
       <button onClick={onGetStarted}
-        className="inline-flex items-center gap-2 bg-orange-500 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-orange-600 transition shadow-md text-sm">
+        className="inline-flex items-center gap-2 bg-orange-500 text-white font-semibold px-8 py-3.5 rounded-lg hover:bg-orange-600 transition shadow-md text-sm">
         <HiExclamation className="h-5 w-5" /> Report a Garbage Issue
       </button>
     </div>
@@ -224,7 +224,7 @@ export const Testimonials = () => (
       <SectionHeader tag="What People Say" title="Trusted by Citizens Across India" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {TESTIMONIALS.map(({ name, role, avatar, text }) => (
-          <div key={name} className="bg-[#F7FDF8] border border-slate-100 rounded-2xl p-5 flex flex-col gap-4 hover:shadow-md transition">
+          <div key={name} className="bg-[#F7FDF8] border border-slate-100 rounded-lg p-5 flex flex-col gap-4 hover:shadow-md transition">
             <p className="text-sm text-slate-600 leading-relaxed flex-1">"{text}"</p>
             <div className="flex items-center gap-3 pt-3 border-t border-slate-100">
               <div className="h-9 w-9 rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center text-white text-xs font-bold shrink-0">

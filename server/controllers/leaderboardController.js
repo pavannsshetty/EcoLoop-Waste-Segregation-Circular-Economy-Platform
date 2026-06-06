@@ -12,10 +12,20 @@ const getLeaderboard = async (req, res) => {
       matchQuery.village = { $regex: new RegExp(village, 'i') };
     }
 
-    let sortField = 'rewards.totalEarned';
-    if (filter === 'reports') sortField = 'reportCount';
-    if (filter === 'scrap') sortField = 'scrapCount';
-    if (period === 'monthly') sortField = 'rewards.monthlyPoints';
+    let primarySortField = 'totalPoints';
+    if (period === 'monthly') {
+      primarySortField = 'monthlyPoints';
+    } else if (filter === 'reports') {
+      primarySortField = 'reportCount';
+    } else if (filter === 'scrap') {
+      primarySortField = 'scrapCount';
+    }
+
+    // Secondary tie-breaker sort
+    let secondarySortField = 'reportCount';
+    if (primarySortField === 'reportCount' || primarySortField === 'scrapCount') {
+      secondarySortField = period === 'monthly' ? 'monthlyPoints' : 'totalPoints';
+    }
 
     // Aggregation pipeline for proper ranking and stats
     const pipeline = [
@@ -40,15 +50,8 @@ const getLeaderboard = async (req, res) => {
       },
       {
         $addFields: {
-          reportCount: { 
-            $size: { 
-              $filter: { 
-                input: '$reports', 
-                as: 'r', 
-                cond: { $eq: ['$$r.status', 'Resolved'] } 
-              } 
-            } 
-          },
+          // Count ALL reports submitted by the citizen
+          reportCount: { $size: '$reports' },
           scrapCount: { 
             $size: { 
               $filter: { 
@@ -62,7 +65,12 @@ const getLeaderboard = async (req, res) => {
           monthlyPoints: { $ifNull: ['$rewards.monthlyPoints', 0] }
         }
       },
-      { $sort: { [period === 'monthly' ? 'monthlyPoints' : (filter === 'points' ? 'totalPoints' : sortField)]: -1 } },
+      {
+        $sort: {
+          [primarySortField]: -1,
+          [secondarySortField]: -1
+        }
+      },
     ];
 
     // Get total count for pagination
@@ -78,22 +86,29 @@ const getLeaderboard = async (req, res) => {
       avatar: u.profilePhoto || '',
       village: u.village || 'Global',
       points: period === 'monthly' ? u.monthlyPoints : u.totalPoints,
+      ecoPoints: period === 'monthly' ? u.monthlyPoints : u.totalPoints,
       reportCount: u.reportCount,
+      reportsCount: u.reportCount,
       scrapCount: u.scrapCount,
       level: u.rewards?.level || 'Green Beginner',
       rank: skip + i + 1
     }));
 
     // Current user rank
-    let myRankInfo = { rank: 'N/A', points: 0, level: 'Green Beginner' };
+    let myRankInfo = null;
     const myIndex = allUsers.findIndex(u => u._id.toString() === req.user.id);
     if (myIndex !== -1) {
       const me = allUsers[myIndex];
       myRankInfo = {
+        _id: me._id,
+        name: me.name,
+        village: me.village || 'Global',
         rank: myIndex + 1,
         points: period === 'monthly' ? me.monthlyPoints : me.totalPoints,
+        ecoPoints: period === 'monthly' ? me.monthlyPoints : me.totalPoints,
         level: me.rewards?.level || 'Green Beginner',
         reportCount: me.reportCount,
+        reportsCount: me.reportCount,
         scrapCount: me.scrapCount
       };
     }

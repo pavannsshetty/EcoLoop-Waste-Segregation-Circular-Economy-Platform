@@ -5,10 +5,14 @@ import Dashboard     from './pages/Dashboard';
 import AddCollector  from './pages/AddCollector';
 import ViewCollectors from './pages/ViewCollectors';
 import Reports from './pages/Reports';
+import PublicWasteReports from './pages/PublicWasteReports';
+import HomePickupRequests from './pages/HomePickupRequests';
 import ViewGreenChampions from './pages/ViewGreenChampions';
 import GreenChampionRequests from './pages/GreenChampionRequests';
 import EcoShopping from './pages/EcoShopping';
+import EcoProductBuyers from './pages/EcoProductBuyers';
 import AdminNotifications from './pages/AdminNotifications';
+import BroadcastHistory from './pages/BroadcastHistory';
 import Settings from './pages/Settings';
 import ApprovalRequests from './pages/ApprovalRequests';
 
@@ -28,11 +32,15 @@ function App() {
           <Route path="add-collector"  element={<AddCollector />} />
           <Route path="collectors"     element={<ViewCollectors />} />
           <Route path="reports"        element={<Reports />} />
+          <Route path="reports/public" element={<PublicWasteReports />} />
+          <Route path="reports/home-pickup" element={<HomePickupRequests />} />
           <Route path="champions"      element={<ViewGreenChampions />} />
           <Route path="champion-requests" element={<GreenChampionRequests />} />
           <Route path="approval-requests" element={<ApprovalRequests />} />
           <Route path="eco-shopping"   element={<EcoShopping />} />
-          <Route path="notifications"  element={<AdminNotifications />} />
+          <Route path="eco-shopping/buyers" element={<EcoProductBuyers />} />
+          <Route path="sendbrodcastnotifications"  element={<AdminNotifications />} />
+          <Route path="broadcasthistory" element={<BroadcastHistory />} />
           <Route path="settings"       element={<Settings />} />
         </Route>
         <Route path="*" element={<Navigate to="/admin/login" replace />} />
