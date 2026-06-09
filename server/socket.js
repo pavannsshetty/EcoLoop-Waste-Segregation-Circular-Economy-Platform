@@ -10,10 +10,10 @@ const init = (server) => {
         const allowed = [
           "http://localhost:5173",
           "http://localhost:5174",
-          "https://ecoloop-waste-segregation-circular-economy-platform.pages.dev",
+          "https://eco-loop-waste-segregation-circular.vercel.app",
           process.env.CLIENT_URL,
         ].filter(Boolean);
-        if (!origin || allowed.includes(origin) || origin.endsWith(".pages.dev")) {
+        if (!origin || allowed.includes(origin)) {
           cb(null, true);
         } else {
           cb(new Error("Not allowed by CORS"));
