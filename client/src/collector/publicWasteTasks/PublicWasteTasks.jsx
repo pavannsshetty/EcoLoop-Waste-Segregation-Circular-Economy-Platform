@@ -73,21 +73,21 @@ const haversine = (lat1, lng1, lat2, lng2) => {
 };
 
 const DetailModal = ({ report, onClose, dk }) => {
+  const [dmMapLayer, setDmMapLayer] = useState('osm');
   const panel = dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200');
   const label = dk('text-slate-400', 'text-slate-500');
   const value = dk('text-slate-100', 'text-slate-800');
-  const sec = dk('text-slate-500', 'text-slate-400');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className={`rounded-lg border w-full max-w-lg p-5 space-y-4 shadow-xl overflow-y-auto max-h-[90vh] ${panel}`}>
-        <div className="flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
+      <div className={`w-full sm:max-w-lg max-h-[90vh] flex flex-col sm:rounded-lg border shadow-xl ${panel}`}>
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b shrink-0">
           <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Report Details</p>
-          <button type="button" onClick={onClose} className={dk('text-slate-400 hover:text-white', 'text-slate-500 hover:text-slate-800')}>
+          <button type="button" onClick={onClose} className={`p-1 rounded-lg transition ${dk('text-slate-400 hover:text-white hover:bg-slate-800', 'text-slate-500 hover:text-slate-800 hover:bg-slate-100')}`}>
             <HiX className="h-5 w-5" />
           </button>
         </div>
-        <div className="space-y-3 text-sm">
+        <div className="overflow-y-auto p-4 sm:p-5 space-y-3 text-sm">
           <div className="flex items-center gap-2 flex-wrap">
             {report.reportId && (
               <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-lg bg-green-50 text-green-600 border border-green-100">
@@ -136,10 +136,10 @@ const DetailModal = ({ report, onClose, dk }) => {
                     className="w-full h-full z-10"
                   >
                     {(() => {
-                      const currentLayer = getMapLayer(mapLayer);
+                      const currentLayer = getMapLayer(dmMapLayer);
                       return (
                         <TileLayer
-                          key={`tile-${mapLayer}`}
+                          key={`tile-${dmMapLayer}`}
                           attribution={currentLayer.attribution}
                           url={currentLayer.url}
                           maxZoom={currentLayer.maxZoom}
@@ -147,16 +147,13 @@ const DetailModal = ({ report, onClose, dk }) => {
                         />
                       );
                     })()}
-                    <MapLayerSwitcher currentLayer={mapLayer} onLayerChange={setMapLayer} position="top-right" />
+                    <MapLayerSwitcher currentLayer={dmMapLayer} onLayerChange={setDmMapLayer} position="top-right" />
                     <Marker position={[report.location.lat, report.location.lng]} />
                   </MapContainer>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg ${dk('bg-green-900/30 text-green-400', 'bg-green-50 text-green-700')}`}>
                     <HiCheckCircle className="h-3 w-3" /> GPS Verified
-                  </span>
-                  <span className={`inline-flex items-center gap-1 text-[10px] ${dk('text-slate-500', 'text-slate-400')}`}>
-                    <HiMap className="h-3 w-3" /> GPS Verified
                   </span>
                 </div>
               </div>
@@ -171,7 +168,7 @@ const DetailModal = ({ report, onClose, dk }) => {
           {report.image && (
             <div>
               <p className={`text-xs ${label}`}>Report Image</p>
-              <img src={report.image} alt="Waste" className="h-32 rounded-lg object-cover mt-1" />
+              <img src={report.image} alt="Waste" className="w-full max-w-full h-auto max-h-40 rounded-lg object-cover mt-1" />
             </div>
           )}
           <div>
@@ -203,7 +200,7 @@ const DetailModal = ({ report, onClose, dk }) => {
             <div>
               <p className={`text-xs ${label}`}>Duplicate Report</p>
               <p className="text-sm text-red-500 font-medium">This report may be a duplicate</p>
-              <img src={report.duplicateImage} alt="Duplicate" className="h-24 rounded-lg object-cover mt-1" />
+              <img src={report.duplicateImage} alt="Duplicate" className="w-full max-w-full h-auto max-h-28 rounded-lg object-cover mt-1" />
             </div>
           )}
           <div>
@@ -296,55 +293,47 @@ const CompleteModal = ({ report, onClose, onDone, dk }) => {
   const btnGhost = dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-700 hover:bg-slate-50');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className={`rounded-lg border w-full max-w-md p-5 space-y-4 shadow-xl ${panel}`}>
-        <div className="flex items-center justify-between">
-          <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Mark as Resolved</p>
-          <button type="button" onClick={onClose} className={dk('text-slate-400 hover:text-white', 'text-slate-500 hover:text-slate-800')}>
-            <HiX className="h-5 w-5" />
-          </button>
-        </div>
-        <div>
-          <label className={`text-xs mb-1 block ${label}`}>
-            Completion Photo <span className="text-red-500">*</span>
-          </label>
-          <label
-            className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed cursor-pointer py-5 transition ${dash}`}
-          >
-            {preview ? (
-              <img src={preview} alt="" className="h-28 rounded-lg object-cover" />
-            ) : (
-              <>
-                <HiPhotograph className={`h-8 w-8 ${dk('text-slate-500', 'text-slate-400')}`} />
-                <span className={`text-xs ${label}`}>Upload completion photo</span>
-              </>
-            )}
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
-          </label>
-        </div>
-        <div>
-          <label className={`text-xs mb-1 block ${label}`}>Completion Notes</label>
-          <textarea
-            rows={3}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Describe what was done..."
-            className={`w-full rounded-lg border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none ${input}`}
-          />
-        </div>
-        {error && <p className="text-xs text-red-500">{error}</p>}
-        <div className="flex gap-3">
-          <button type="button" onClick={onClose} className={`flex-1 rounded-lg border py-2.5 text-sm font-semibold transition ${btnGhost}`}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={submit}
-            disabled={loading}
-            className="flex-1 rounded-lg bg-green-600 text-white py-2.5 text-sm font-semibold hover:bg-green-500 transition disabled:opacity-60"
-          >
-            {loading ? 'Saving...' : 'Mark Resolved'}
-          </button>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
+      <div className={`w-full sm:max-w-md max-h-[90vh] flex flex-col sm:rounded-lg border shadow-xl overflow-y-auto ${panel}`}>
+        <div className="p-4 sm:p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Mark as Resolved</p>
+            <button type="button" onClick={onClose} className={`p-1 rounded-lg transition ${dk('text-slate-400 hover:text-white hover:bg-slate-800', 'text-slate-500 hover:text-slate-800 hover:bg-slate-100')}`}>
+              <HiX className="h-5 w-5" />
+            </button>
+          </div>
+          <div>
+            <label className={`text-xs mb-1 block ${label}`}>
+              Completion Photo <span className="text-red-500">*</span>
+            </label>
+            <label className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed cursor-pointer py-5 transition ${dash}`}>
+              {preview ? (
+                <img src={preview} alt="" className="h-28 w-full max-w-full rounded-lg object-cover" />
+              ) : (
+                <>
+                  <HiPhotograph className={`h-8 w-8 ${dk('text-slate-500', 'text-slate-400')}`} />
+                  <span className={`text-xs ${label}`}>Upload completion photo</span>
+                </>
+              )}
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+            </label>
+          </div>
+          <div>
+            <label className={`text-xs mb-1 block ${label}`}>Completion Notes</label>
+            <textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)}
+              placeholder="Describe what was done..."
+              className={`w-full rounded-lg border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none ${input}`} />
+          </div>
+          {error && <p className="text-xs text-red-500">{error}</p>}
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <button type="button" onClick={onClose} className={`flex-1 rounded-lg border py-2.5 text-sm font-semibold transition ${btnGhost}`}>
+              Cancel
+            </button>
+            <button type="button" onClick={submit} disabled={loading}
+              className="flex-1 rounded-lg bg-green-600 text-white py-2.5 text-sm font-semibold hover:bg-green-500 transition disabled:opacity-60">
+              {loading ? 'Saving...' : 'Mark Resolved'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -354,15 +343,15 @@ const CompleteModal = ({ report, onClose, onDone, dk }) => {
 const RevokeConfirmModal = ({ report, onClose, onRevoke, dk, loading }) => {
   const panel = dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200');
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className={`rounded-lg border w-full max-w-sm p-5 space-y-4 shadow-xl ${panel}`}>
-        <div className="flex items-center justify-between">
-          <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Revoke Completion</p>
-          <button type="button" onClick={onClose} className={dk('text-slate-400 hover:text-white', 'text-slate-500 hover:text-slate-800')}>
-            <HiX className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="space-y-2">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
+      <div className={`w-full sm:max-w-sm max-h-[90vh] flex flex-col sm:rounded-lg border shadow-xl overflow-y-auto ${panel}`}>
+        <div className="p-4 sm:p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Revoke Completion</p>
+            <button type="button" onClick={onClose} className={`p-1 rounded-lg transition ${dk('text-slate-400 hover:text-white hover:bg-slate-800', 'text-slate-500 hover:text-slate-800 hover:bg-slate-100')}`}>
+              <HiX className="h-5 w-5" />
+            </button>
+          </div>
           <div className={`p-3 rounded-lg border ${dk('bg-red-900/10 border-red-800/30', 'bg-red-50 border-red-200')}`}>
             <p className={`text-sm font-medium ${dk('text-red-300', 'text-red-700')}`}>
               Are you sure you want to revoke this completed report?
@@ -384,18 +373,16 @@ const RevokeConfirmModal = ({ report, onClose, onRevoke, dk, loading }) => {
               </p>
             )}
           </div>
-        </div>
-        <div className="flex gap-3">
-          <button type="button" onClick={onClose}
-            className={`flex-1 rounded-lg border py-2.5 text-sm font-semibold transition ${
-              dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-700 hover:bg-slate-50')
-            }`}>
-            Cancel
-          </button>
-          <button type="button" onClick={onRevoke} disabled={loading}
-            className="flex-1 rounded-lg bg-red-600 text-white py-2.5 text-sm font-semibold hover:bg-red-500 transition disabled:opacity-60">
-            {loading ? 'Revoking...' : 'Yes, Revoke'}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <button type="button" onClick={onClose}
+              className={`flex-1 rounded-lg border py-2.5 text-sm font-semibold transition ${dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-700 hover:bg-slate-50')}`}>
+              Cancel
+            </button>
+            <button type="button" onClick={onRevoke} disabled={loading}
+              className="flex-1 rounded-lg bg-red-600 text-white py-2.5 text-sm font-semibold hover:bg-red-500 transition disabled:opacity-60">
+              {loading ? 'Revoking...' : 'Yes, Revoke'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -403,6 +390,7 @@ const RevokeConfirmModal = ({ report, onClose, onRevoke, dk, loading }) => {
 };
 
 const VerificationModal = ({ report, onClose, onVerify, onClarify, dk }) => {
+  const [vmMapLayer, setVmMapLayer] = useState('osm');
   const [checklist, setChecklist] = useState({
     wasteVisible: false,
     typeCorrect: false,
@@ -471,67 +459,21 @@ const VerificationModal = ({ report, onClose, onVerify, onClarify, dk }) => {
     } catch {} finally { setLoading(false); }
   };
 
+  const modalBox = (content) => (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
+      <div className={`w-full sm:max-w-md max-h-[90vh] flex flex-col sm:rounded-lg border shadow-xl overflow-y-auto ${panel}`}>
+        <div className="p-4 sm:p-5 space-y-4">{content}</div>
+      </div>
+    </div>
+  );
+
   if (showClarify) {
     const reasons = ['Waste Type Incorrect', 'Image Not Clear', 'Description Incomplete', 'Location Incorrect', 'Duplicate Report Suspected', 'Other'];
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-        <div className={`rounded-lg border w-full max-w-md p-5 space-y-4 shadow-xl ${panel}`}>
-          <div className="flex items-center justify-between">
-            <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Request Clarification</p>
-            <button type="button" onClick={onClose} className={dk('text-slate-400 hover:text-white', 'text-slate-500 hover:text-slate-800')}>
-              <HiX className="h-5 w-5" />
-            </button>
-          </div>
-          <div className="space-y-1 text-xs">
-            <p className={label}>Report: <span className="font-medium">{report.reportId || report._id?.slice(-6)}</span></p>
-            <p className={label}>Waste: <span className="font-medium">{report.wasteType}</span></p>
-            <p className={label}>Citizen: <span className="font-medium">{report.userId?.name}</span></p>
-          </div>
-          <div>
-            <label className={`text-xs mb-1 block ${label}`}>Reason <span className="text-red-500">*</span></label>
-            <select value={clarifyReason} onChange={(e) => setClarifyReason(e.target.value)} className={`w-full rounded-lg border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${input}`}>
-              <option value="">Select a reason...</option>
-              {reasons.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </div>
-          {clarifyReason === 'Other' && (
-            <div>
-              <label className={`text-xs mb-1 block ${label}`}>Custom Message</label>
-              <textarea rows={3} value={clarifyNotes} onChange={(e) => setClarifyNotes(e.target.value)}
-                placeholder="Describe what needs clarification..."
-                className={`w-full rounded-lg border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none ${input}`} />
-            </div>
-          )}
-          {clarifyReason && clarifyReason !== 'Other' && (
-            <div>
-              <label className={`text-xs mb-1 block ${label}`}>Additional Notes <span className="text-slate-500">(optional)</span></label>
-              <textarea rows={2} value={clarifyNotes} onChange={(e) => setClarifyNotes(e.target.value)}
-                placeholder="Add any additional notes..."
-                className={`w-full rounded-lg border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none ${input}`} />
-            </div>
-          )}
-          {(report.clarificationCount || 0) >= CLARIFICATION_MAX && (
-            <p className="text-xs text-red-500">Maximum clarification requests reached. You must verify or reject.</p>
-          )}
-          <div className="flex gap-3">
-            <button type="button" onClick={() => setShowClarify(false)}
-              className={`flex-1 rounded-lg border py-2.5 text-sm font-semibold transition ${dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-700 hover:bg-slate-50')}`}>Back</button>
-            <button type="button" onClick={submitClarify} disabled={loading || !clarifyReason || (report.clarificationCount || 0) >= CLARIFICATION_MAX}
-              className="flex-1 rounded-lg bg-yellow-600 text-white py-2.5 text-sm font-semibold hover:bg-yellow-500 transition disabled:opacity-60">
-              {loading ? 'Sending...' : 'Request Clarification'}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className={`rounded-lg border w-full max-w-md p-5 space-y-4 shadow-xl overflow-y-auto max-h-[90vh] ${panel}`}>
+    return modalBox(
+      <>
         <div className="flex items-center justify-between">
-          <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Verify Report</p>
-          <button type="button" onClick={onClose} className={dk('text-slate-400 hover:text-white', 'text-slate-500 hover:text-slate-800')}>
+          <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Request Clarification</p>
+          <button type="button" onClick={onClose} className={`p-1 rounded-lg transition ${dk('text-slate-400 hover:text-white hover:bg-slate-800', 'text-slate-500 hover:text-slate-800 hover:bg-slate-100')}`}>
             <HiX className="h-5 w-5" />
           </button>
         </div>
@@ -540,80 +482,130 @@ const VerificationModal = ({ report, onClose, onVerify, onClarify, dk }) => {
           <p className={label}>Waste: <span className="font-medium">{report.wasteType}</span></p>
           <p className={label}>Citizen: <span className="font-medium">{report.userId?.name}</span></p>
         </div>
-        {report.image && (
+        <div>
+          <label className={`text-xs mb-1 block ${label}`}>Reason <span className="text-red-500">*</span></label>
+          <select value={clarifyReason} onChange={(e) => setClarifyReason(e.target.value)} className={`w-full rounded-lg border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 ${input}`}>
+            <option value="">Select a reason...</option>
+            {reasons.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </div>
+        {clarifyReason === 'Other' && (
           <div>
-            <p className={`text-xs mb-1 block ${label}`}>Waste Image</p>
-            <img src={report.image} alt="Waste" className="h-32 rounded-lg object-cover w-full" />
+            <label className={`text-xs mb-1 block ${label}`}>Custom Message</label>
+            <textarea rows={3} value={clarifyNotes} onChange={(e) => setClarifyNotes(e.target.value)}
+              placeholder="Describe what needs clarification..."
+              className={`w-full rounded-lg border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none ${input}`} />
           </div>
         )}
-        {report.description && (
+        {clarifyReason && clarifyReason !== 'Other' && (
           <div>
-            <p className={`text-xs mb-1 block ${label}`}>Description</p>
-            <p className={`text-sm ${value}`}>{report.description}</p>
+            <label className={`text-xs mb-1 block ${label}`}>Additional Notes <span className="text-slate-500">(optional)</span></label>
+            <textarea rows={2} value={clarifyNotes} onChange={(e) => setClarifyNotes(e.target.value)}
+              placeholder="Add any additional notes..."
+              className={`w-full rounded-lg border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none ${input}`} />
           </div>
         )}
-        <div>
-          <p className={`text-xs mb-1 block ${label}`}>Location</p>
-          <p className={`text-xs ${value}`}>{report.location?.address}</p>
-          {report.location?.lat && report.location?.lng && (
-            <div className="mt-1 relative w-full h-24 rounded-lg overflow-hidden border">
-              <MapContainer key={`verify-${report._id}`} center={[report.location.lat, report.location.lng]} zoom={14} scrollWheelZoom={false} dragging={false} zoomControl={false} className="w-full h-full z-10">
-                {(() => {
-                  const currentLayer = getMapLayer(mapLayer);
-                  return (
-                    <TileLayer
-                      key={`tile-${mapLayer}`}
-                      attribution={currentLayer.attribution}
-                      url={currentLayer.url}
-                      maxZoom={currentLayer.maxZoom}
-                      minZoom={currentLayer.minZoom}
-                    />
-                  );
-                })()}
-                <MapLayerSwitcher currentLayer={mapLayer} onLayerChange={setMapLayer} position="top-right" />
-                <Marker position={[report.location.lat, report.location.lng]} />
-              </MapContainer>
-            </div>
-          )}
-        </div>
-        <div className="space-y-2">
-          <p className={`text-xs font-semibold ${value}`}>Verification Checklist</p>
-          {[
-            { key: 'wasteVisible', label: 'Waste clearly visible in image' },
-            { key: 'typeCorrect', label: 'Waste type appears correct' },
-            { key: 'descriptionMatches', label: 'Description matches image' },
-            { key: 'locationReasonable', label: 'Location appears reasonable' },
-          ].map((c) => (
-            <label key={c.key} className={`flex items-center gap-2 p-2 rounded-lg border text-sm cursor-pointer transition ${dk('border-slate-700 hover:bg-slate-800', 'border-slate-200 hover:bg-slate-50')}`}>
-              <input type="checkbox" checked={checklist[c.key]} onChange={() => setChecklist((p) => ({ ...p, [c.key]: !p[c.key] }))} className="h-4 w-4 text-green-600 focus:ring-green-500 rounded" />
-              <span className={`text-xs ${dk('text-slate-200', 'text-slate-700')}`}>{c.label}</span>
-            </label>
-          ))}
-        </div>
-        <div>
-          <label className={`text-xs mb-1 block ${label}`}>Verification Notes <span className="text-slate-500">(optional)</span></label>
-          <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add any notes about your verification..."
-            className={`w-full rounded-lg border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none ${input}`} />
-        </div>
-        <div className="flex flex-wrap gap-2 justify-end">
-          <button type="button" onClick={onClose}
-            className={`w-full sm:w-auto rounded-lg border px-4 py-2.5 text-sm font-semibold transition ${dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-700 hover:bg-slate-50')}`}>Cancel</button>
-          <button type="button" onClick={submitReject} disabled={loading}
-            className={`w-full sm:w-auto rounded-lg border px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50 ${dk('border-red-700 text-red-400 hover:bg-red-900/30', 'border-red-300 text-red-700 hover:bg-red-50')}`}>
-            Reject Report
-          </button>
-          <button type="button" onClick={() => setShowClarify(true)} disabled={(report.clarificationCount || 0) >= CLARIFICATION_MAX}
-            className={`w-full sm:w-auto rounded-lg border px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50 ${dk('border-yellow-700 text-yellow-400 hover:bg-yellow-900/30', 'border-yellow-300 text-yellow-700 hover:bg-yellow-50')}`}>
-            Request Clarification
-          </button>
-          <button type="button" onClick={submitVerify} disabled={loading || !allChecked}
-            className="w-full sm:w-auto rounded-lg bg-green-600 text-white px-4 py-2.5 text-sm font-semibold hover:bg-green-500 transition disabled:opacity-60">
-            {loading ? 'Verifying...' : 'Verify Report'}
+        {(report.clarificationCount || 0) >= CLARIFICATION_MAX && (
+          <p className="text-xs text-red-500">Maximum clarification requests reached. You must verify or reject.</p>
+        )}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <button type="button" onClick={() => setShowClarify(false)}
+            className={`flex-1 rounded-lg border py-2.5 text-sm font-semibold transition ${dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-700 hover:bg-slate-50')}`}>Back</button>
+          <button type="button" onClick={submitClarify} disabled={loading || !clarifyReason || (report.clarificationCount || 0) >= CLARIFICATION_MAX}
+            className="flex-1 rounded-lg bg-yellow-600 text-white py-2.5 text-sm font-semibold hover:bg-yellow-500 transition disabled:opacity-60">
+            {loading ? 'Sending...' : 'Request Clarification'}
           </button>
         </div>
+      </>
+    );
+  }
+
+  return modalBox(
+    <>
+      <div className="flex items-center justify-between">
+        <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Verify Report</p>
+        <button type="button" onClick={onClose} className={`p-1 rounded-lg transition ${dk('text-slate-400 hover:text-white hover:bg-slate-800', 'text-slate-500 hover:text-slate-800 hover:bg-slate-100')}`}>
+          <HiX className="h-5 w-5" />
+        </button>
       </div>
-    </div>
+      <div className="space-y-1 text-xs">
+        <p className={label}>Report: <span className="font-medium">{report.reportId || report._id?.slice(-6)}</span></p>
+        <p className={label}>Waste: <span className="font-medium">{report.wasteType}</span></p>
+        <p className={label}>Citizen: <span className="font-medium">{report.userId?.name}</span></p>
+      </div>
+      {report.image && (
+        <div>
+          <p className={`text-xs mb-1 block ${label}`}>Waste Image</p>
+          <img src={report.image} alt="Waste" className="w-full max-w-full h-auto max-h-40 rounded-lg object-cover" />
+        </div>
+      )}
+      {report.description && (
+        <div>
+          <p className={`text-xs mb-1 block ${label}`}>Description</p>
+          <p className={`text-sm ${value}`}>{report.description}</p>
+        </div>
+      )}
+      <div>
+        <p className={`text-xs mb-1 block ${label}`}>Location</p>
+        <p className={`text-xs ${value}`}>{report.location?.address}</p>
+        {report.location?.lat && report.location?.lng && (
+          <div className="mt-1 relative w-full h-24 rounded-lg overflow-hidden border">
+            <MapContainer key={`verify-${report._id}`} center={[report.location.lat, report.location.lng]} zoom={14} scrollWheelZoom={false} dragging={false} zoomControl={false} className="w-full h-full z-10">
+              {(() => {
+                const currentLayer = getMapLayer(vmMapLayer);
+                return (
+                  <TileLayer
+                    key={`tile-${vmMapLayer}`}
+                    attribution={currentLayer.attribution}
+                    url={currentLayer.url}
+                    maxZoom={currentLayer.maxZoom}
+                    minZoom={currentLayer.minZoom}
+                  />
+                );
+              })()}
+              <MapLayerSwitcher currentLayer={vmMapLayer} onLayerChange={setVmMapLayer} position="top-right" />
+              <Marker position={[report.location.lat, report.location.lng]} />
+            </MapContainer>
+          </div>
+        )}
+      </div>
+      <div className="space-y-2">
+        <p className={`text-xs font-semibold ${value}`}>Verification Checklist</p>
+        {[
+          { key: 'wasteVisible', label: 'Waste clearly visible in image' },
+          { key: 'typeCorrect', label: 'Waste type appears correct' },
+          { key: 'descriptionMatches', label: 'Description matches image' },
+          { key: 'locationReasonable', label: 'Location appears reasonable' },
+        ].map((c) => (
+          <label key={c.key} className={`flex items-center gap-2 p-2 rounded-lg border text-sm cursor-pointer transition ${dk('border-slate-700 hover:bg-slate-800', 'border-slate-200 hover:bg-slate-50')}`}>
+            <input type="checkbox" checked={checklist[c.key]} onChange={() => setChecklist((p) => ({ ...p, [c.key]: !p[c.key] }))} className="h-4 w-4 text-green-600 focus:ring-green-500 rounded" />
+            <span className={`text-xs ${dk('text-slate-200', 'text-slate-700')}`}>{c.label}</span>
+          </label>
+        ))}
+      </div>
+      <div>
+        <label className={`text-xs mb-1 block ${label}`}>Verification Notes <span className="text-slate-500">(optional)</span></label>
+        <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)}
+          placeholder="Add any notes about your verification..."
+          className={`w-full rounded-lg border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none ${input}`} />
+      </div>
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <button type="button" onClick={onClose}
+          className={`flex-1 rounded-lg border py-2.5 text-sm font-semibold transition ${dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-700 hover:bg-slate-50')}`}>Cancel</button>
+        <button type="button" onClick={submitReject} disabled={loading}
+          className={`flex-1 rounded-lg border py-2.5 text-sm font-semibold transition disabled:opacity-50 ${dk('border-red-700 text-red-400 hover:bg-red-900/30', 'border-red-300 text-red-700 hover:bg-red-50')}`}>
+          Reject Report
+        </button>
+        <button type="button" onClick={() => setShowClarify(true)} disabled={(report.clarificationCount || 0) >= CLARIFICATION_MAX}
+          className={`flex-1 rounded-lg border py-2.5 text-sm font-semibold transition disabled:opacity-50 ${dk('border-yellow-700 text-yellow-400 hover:bg-yellow-900/30', 'border-yellow-300 text-yellow-700 hover:bg-yellow-50')}`}>
+          Request Clarification
+        </button>
+        <button type="button" onClick={submitVerify} disabled={loading || !allChecked}
+          className="flex-1 rounded-lg bg-green-600 text-white py-2.5 text-sm font-semibold hover:bg-green-500 transition disabled:opacity-60">
+          {loading ? 'Verifying...' : 'Verify Report'}
+        </button>
+      </div>
+    </>
   );
 };
 
@@ -900,7 +892,7 @@ const PublicWasteTasks = () => {
             </div>
 
             {r.image && (
-              <img src={r.image} alt="Waste" className="h-24 w-full sm:w-48 rounded-lg object-cover" />
+              <img src={r.image} alt="Waste" className="w-full max-w-full h-auto max-h-28 sm:max-h-32 rounded-lg object-cover" />
             )}
 
             <div className="flex flex-wrap gap-2">

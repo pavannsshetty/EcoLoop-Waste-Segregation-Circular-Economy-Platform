@@ -140,18 +140,18 @@ const CleanupVerification = () => {
                             </div>
                         </div>
 
-                        <div className="flex gap-3 pt-2">
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
                             <button 
                                 onClick={() => handleVerify(verifying._id, 'Verified')}
                                 disabled={submitting}
-                                className="flex-1 py-3 rounded-lg bg-green-500 text-white text-sm font-bold shadow-sm hover:bg-green-500 transition active:scale-95 disabled:opacity-50"
+                                className="w-full sm:flex-1 py-3 rounded-lg bg-green-500 text-white text-sm font-bold shadow-sm hover:bg-green-500 transition active:scale-95 disabled:opacity-50"
                             >
                                 {submitting ? 'Confirming...' : 'Approve & Close'}
                             </button>
                             <button 
                                 onClick={() => handleVerify(verifying._id, 'Rejected')}
                                 disabled={submitting}
-                                className="flex-1 py-3 rounded-lg bg-red-600 text-white text-sm font-bold shadow-sm hover:bg-red-500 transition active:scale-95 disabled:opacity-50"
+                                className="w-full sm:flex-1 py-3 rounded-lg bg-red-600 text-white text-sm font-bold shadow-sm hover:bg-red-500 transition active:scale-95 disabled:opacity-50"
                             >
                                 Reject & Reopen
                             </button>

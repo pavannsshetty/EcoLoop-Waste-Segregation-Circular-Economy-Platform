@@ -9,8 +9,9 @@ const init = (server) => {
       origin: [
         "http://localhost:5173",
         "http://localhost:5174",
-        "https://ecoloop-waste-segregation-circular-economy-platform.pages.dev"
-      ],
+        "https://ecoloop-waste-segregation-circular-economy-platform.pages.dev",
+        process.env.CLIENT_URL,
+      ].filter(Boolean),
       methods: ["GET", "POST"]
     }
   });

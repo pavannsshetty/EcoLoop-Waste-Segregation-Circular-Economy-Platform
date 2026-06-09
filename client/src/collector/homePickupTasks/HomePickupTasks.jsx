@@ -53,20 +53,21 @@ const haversine = (lat1, lng1, lat2, lng2) => {
 };
 
 const DetailModal = ({ report, onClose, dk }) => {
+  const [dmMapLayer, setDmMapLayer] = useState('osm');
   const panel = dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200');
   const label = dk('text-slate-400', 'text-slate-500');
   const value = dk('text-slate-100', 'text-slate-800');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className={`rounded-lg border w-full max-w-lg p-5 space-y-4 shadow-xl overflow-y-auto max-h-[90vh] ${panel}`}>
-        <div className="flex items-center justify-between">
-          <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Citizen Details</p>
-          <button type="button" onClick={onClose} className={dk('text-slate-400 hover:text-white', 'text-slate-500 hover:text-slate-800')}>
-            <HiX className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="space-y-3 text-sm">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
+      <div className={`w-full sm:max-w-lg max-h-[90vh] flex flex-col sm:rounded-lg border shadow-xl overflow-y-auto ${panel}`}>
+        <div className="p-4 sm:p-5 space-y-3 text-sm">
+          <div className="flex items-center justify-between">
+            <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Citizen Details</p>
+            <button type="button" onClick={onClose} className={`p-1 rounded-lg transition ${dk('text-slate-400 hover:text-white hover:bg-slate-800', 'text-slate-500 hover:text-slate-800 hover:bg-slate-100')}`}>
+              <HiX className="h-5 w-5" />
+            </button>
+          </div>
           {report.reportId && (
             <span className="inline-block text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-lg bg-green-50 text-green-600 border border-green-100">
               {report.reportId}
@@ -82,18 +83,16 @@ const DetailModal = ({ report, onClose, dk }) => {
           {report.userId?.phone && (
             <div>
               <p className={`text-xs ${label}`}>Phone</p>
-              <a
-                href={`tel:${report.userId.phone}`}
-                className="flex items-center gap-1.5 text-sm font-medium text-blue-500 hover:underline"
-              >
-                <HiPhone className="h-4 w-4" /> {report.userId.phone}
+              <a href={`tel:${report.userId.phone}`}
+                className="flex items-center gap-1.5 text-sm font-medium text-blue-500 hover:underline break-all">
+                <HiPhone className="h-4 w-4 shrink-0" /> {report.userId.phone}
               </a>
             </div>
           )}
           {report.userId?.email && (
             <div>
               <p className={`text-xs ${label}`}>Email</p>
-              <p className={`text-sm ${value}`}>{report.userId.email}</p>
+              <p className={`text-sm ${value} break-all`}>{report.userId.email}</p>
             </div>
           )}
           <div>
@@ -103,8 +102,8 @@ const DetailModal = ({ report, onClose, dk }) => {
             </p>
           </div>
           {report.location?.lat && report.location?.lng && (
-            <div className={`flex items-center gap-2 ${dk('text-green-400', 'text-green-700')}`}>
-              <HiCheckCircle className="h-4 w-4" />
+            <div className={`flex items-center gap-2 flex-wrap ${dk('text-green-400', 'text-green-700')}`}>
+              <HiCheckCircle className="h-4 w-4 shrink-0" />
               <span className={`text-xs font-semibold ${dk('text-green-400', 'text-green-700')}`}>GPS Verified Location</span>
               <div className={`text-[10px] font-mono ${dk('text-slate-500', 'text-slate-400')}`}>
                 ({report.location.lat.toFixed(5)}, {report.location.lng.toFixed(5)})
@@ -123,10 +122,10 @@ const DetailModal = ({ report, onClose, dk }) => {
                 className="w-full h-full z-10"
               >
                 {(() => {
-                  const currentLayer = getMapLayer(mapLayer);
+                  const currentLayer = getMapLayer(dmMapLayer);
                   return (
                     <TileLayer
-                      key={`tile-${mapLayer}`}
+                      key={`tile-${dmMapLayer}`}
                       attribution={currentLayer.attribution}
                       url={currentLayer.url}
                       maxZoom={currentLayer.maxZoom}
@@ -134,7 +133,7 @@ const DetailModal = ({ report, onClose, dk }) => {
                     />
                   );
                 })()}
-                <MapLayerSwitcher currentLayer={mapLayer} onLayerChange={setMapLayer} position="top-right" />
+                <MapLayerSwitcher currentLayer={dmMapLayer} onLayerChange={setDmMapLayer} position="top-right" />
                 <Marker position={[report.location.lat, report.location.lng]} />
               </MapContainer>
             </div>
@@ -179,15 +178,15 @@ const DetailModal = ({ report, onClose, dk }) => {
 const RevokeConfirmModal = ({ report, onClose, onRevoke, dk, loading }) => {
   const panel = dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200');
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className={`rounded-lg border w-full max-w-sm p-5 space-y-4 shadow-xl ${panel}`}>
-        <div className="flex items-center justify-between">
-          <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Revoke Completion</p>
-          <button type="button" onClick={onClose} className={dk('text-slate-400 hover:text-white', 'text-slate-500 hover:text-slate-800')}>
-            <HiX className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="space-y-2">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
+      <div className={`w-full sm:max-w-sm max-h-[90vh] flex flex-col sm:rounded-lg border shadow-xl overflow-y-auto ${panel}`}>
+        <div className="p-4 sm:p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Revoke Completion</p>
+            <button type="button" onClick={onClose} className={`p-1 rounded-lg transition ${dk('text-slate-400 hover:text-white hover:bg-slate-800', 'text-slate-500 hover:text-slate-800 hover:bg-slate-100')}`}>
+              <HiX className="h-5 w-5" />
+            </button>
+          </div>
           <div className={`p-3 rounded-lg border ${dk('bg-red-900/10 border-red-800/30', 'bg-red-50 border-red-200')}`}>
             <p className={`text-sm font-medium ${dk('text-red-300', 'text-red-700')}`}>
               Are you sure you want to revoke this completed report?
@@ -204,18 +203,16 @@ const RevokeConfirmModal = ({ report, onClose, onRevoke, dk, loading }) => {
               Waste: <span className="font-medium">{report.wasteType}</span>
             </p>
           </div>
-        </div>
-        <div className="flex gap-3">
-          <button type="button" onClick={onClose}
-            className={`flex-1 rounded-lg border py-2.5 text-sm font-semibold transition ${
-              dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-700 hover:bg-slate-50')
-            }`}>
-            Cancel
-          </button>
-          <button type="button" onClick={onRevoke} disabled={loading}
-            className="flex-1 rounded-lg bg-red-600 text-white py-2.5 text-sm font-semibold hover:bg-red-500 transition disabled:opacity-60">
-            {loading ? 'Revoking...' : 'Yes, Revoke'}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <button type="button" onClick={onClose}
+              className={`flex-1 rounded-lg border py-2.5 text-sm font-semibold transition ${dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-700 hover:bg-slate-50')}`}>
+              Cancel
+            </button>
+            <button type="button" onClick={onRevoke} disabled={loading}
+              className="flex-1 rounded-lg bg-red-600 text-white py-2.5 text-sm font-semibold hover:bg-red-500 transition disabled:opacity-60">
+              {loading ? 'Revoking...' : 'Yes, Revoke'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

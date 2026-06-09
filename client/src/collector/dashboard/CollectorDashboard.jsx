@@ -213,7 +213,7 @@ const CollectorDashboard = () => {
         </section>
 
         {/* Stats Grid */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
           {loading ? [1,2,3,4,5].map(i => (
             <StatCardSkeleton key={i} />
           )) : statCards.map(card => (

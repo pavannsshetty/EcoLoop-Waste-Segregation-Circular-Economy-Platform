@@ -45,6 +45,17 @@ app.use('/api/green-champion', require('./routes/greenChampionRoutes'));
 
 app.use('/api/villages',       require('./routes/villageRoutes'));
 app.get('/', (req, res) => res.send('EcoLoop API is running...'));
+app.get('/api/health', (req, res) => {
+  const mongoose = require('mongoose');
+  res.json({
+    status: 'ok',
+    dbState: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
+// Also accept HEAD /api/health for Render health checks
+app.head('/api/health', (req, res) => res.status(200).end());
 
 // Global error handler (catches multer, validation, and unexpected errors)
 app.use((err, req, res, next) => {

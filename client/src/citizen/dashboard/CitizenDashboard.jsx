@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API } from '../../shared/constants';
-import { HiChevronRight, HiPencil, HiTrash, HiEye, HiExclamation, HiClipboardList, HiStar, HiCheckCircle, HiRefresh, HiLocationMarker } from 'react-icons/hi';
+import { HiChevronRight, HiPencil, HiTrash, HiEye, HiExclamation, HiClipboardList, HiStar, HiCheckCircle, HiRefresh, HiLocationMarker, HiX } from 'react-icons/hi';
 import { MdRecycling } from 'react-icons/md';
 import EditReportModal from '../../shared/components/EditReportModal';
 import CleanupTimeBadge from '../../shared/components/CleanupTimeBadge';
@@ -217,7 +217,7 @@ const CitizenDashboard = () => {
         )}
 
         {/* Real Stats Grid */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
           {[
             {
               label: 'Reports',
@@ -359,26 +359,26 @@ const CitizenDashboard = () => {
       <ToastContainer toasts={toasts} onRemove={remove} />
 
       {viewReport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setViewReport(null)}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4" onClick={() => setViewReport(null)}>
           <div onClick={e => e.stopPropagation()}
-            className={`relative w-full max-w-[95vw] sm:max-w-lg rounded-lg shadow-2xl overflow-hidden ${dk('bg-[#111] border border-gray-800', 'bg-white')}`}>
-            <div className={`flex items-center justify-between px-5 py-4 border-b ${dk('border-gray-800', 'border-slate-100')}`}>
-              <div className="flex items-center gap-2">
-                <HiClipboardList className="h-5 w-5 text-[#0AAF29]" />
-                <span className={`font-semibold text-sm uppercase tracking-widest ${dk('text-white', 'text-slate-900')}`}>Official Report Details</span>
+            className={`relative w-full sm:max-w-lg max-h-[90vh] sm:max-h-[85vh] flex flex-col sm:rounded-lg shadow-2xl overflow-hidden ${dk('bg-[#111] border border-gray-800', 'bg-white')}`}>
+            <div className={`flex items-center justify-between px-4 sm:px-5 py-3.5 border-b shrink-0 ${dk('border-gray-800', 'border-slate-100')}`}>
+              <div className="flex items-center gap-2 min-w-0">
+                <HiClipboardList className="h-5 w-5 text-[#0AAF29] shrink-0" />
+                <span className={`font-semibold text-sm uppercase tracking-widest truncate ${dk('text-white', 'text-slate-900')}`}>Report Details</span>
               </div>
-              <button onClick={() => setViewReport(null)} className={`p-1.5 rounded-lg transition ${dk('text-slate-400 hover:bg-slate-800', 'text-slate-400 hover:bg-slate-100')}`}>
-                ✕
+              <button onClick={() => setViewReport(null)} className={`p-1.5 rounded-lg transition shrink-0 ${dk('text-slate-400 hover:bg-slate-800', 'text-slate-400 hover:bg-slate-100')}`}>
+                <HiX className="h-5 w-5" />
               </button>
             </div>
-            <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
-              <div className="flex items-center gap-3 flex-wrap">
+            <div className="px-4 sm:px-5 py-4 space-y-4 overflow-y-auto">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className={`text-[10px] font-medium uppercase tracking-widest px-2.5 py-1 rounded-lg border ${
-                  viewReport.status === 'Resolved'    ? 'bg-green-100 text-green-700 border-green-200 dark:bg-[#0AAF29]/20' :
-                  viewReport.status === 'In Progress' ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20' :
-                  'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20'
+                  viewReport.status === 'Resolved'    ? 'bg-green-100 text-green-700 border-green-200' :
+                  viewReport.status === 'In Progress' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                  'bg-amber-100 text-amber-700 border-amber-200'
                 }`}>{viewReport.status}</span>
-                <span className={`text-base font-semibold ${dk('text-slate-100', 'text-slate-900')}`}>{viewReport.wasteType}</span>
+                <span className={`text-sm font-semibold ${dk('text-slate-100', 'text-slate-900')}`}>{viewReport.wasteType}</span>
                 {viewReport.severity && (
                   <span className={`text-[10px] font-medium uppercase px-2 py-0.5 rounded-lg border ${dk('bg-white/5 border-white/10 text-slate-400', 'bg-slate-100 border-slate-200 text-slate-500')}`}>{viewReport.severity}</span>
                 )}
@@ -414,10 +414,10 @@ const CitizenDashboard = () => {
               )}
             </div>
 
-            <div className={`px-5 py-3 border-t flex justify-end ${dk('border-gray-800', 'border-slate-100')}`}>
+            <div className={`px-4 sm:px-5 py-3 border-t shrink-0 flex justify-end ${dk('border-gray-800', 'border-slate-100')}`}>
               <button onClick={() => setViewReport(null)}
-                className={`text-[10px] font-medium uppercase tracking-widest px-6 py-2.5 rounded-lg transition ${dk('bg-white/10 text-slate-200 hover:bg-white/20', 'bg-slate-900 text-white hover:bg-slate-800')}`}>
-                Close Record
+                className="text-[10px] font-medium uppercase tracking-widest px-6 py-2.5 rounded-lg bg-[#0AAF29] text-white hover:bg-[#0AAF29]/90 transition">
+                Close
               </button>
             </div>
           </div>

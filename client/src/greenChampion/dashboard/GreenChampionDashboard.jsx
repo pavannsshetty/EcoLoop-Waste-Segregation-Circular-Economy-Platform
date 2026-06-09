@@ -201,7 +201,7 @@ const GreenChampionDashboard = () => {
     return (
       <div className="p-4 sm:p-6 space-y-6">
         <Skeleton className="h-48 w-full" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
           {[1,2,3,4,5,6].map(i => <StatCardSkeleton key={i} />)}
         </div>
         <Skeleton className="h-64 w-full" />
@@ -267,7 +267,7 @@ const GreenChampionDashboard = () => {
       </section>
 
       {/* STATS CARDS */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
         {statCards.map(({ label, value, Icon, gradient, subtitle }) => (
           <StatCard
             key={label}

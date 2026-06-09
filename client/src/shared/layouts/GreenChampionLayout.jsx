@@ -173,11 +173,11 @@ const GreenChampionLayout = () => {
         </div>
       </aside>
       <div className={`relative z-10 transition-all duration-300 ease-in-out ${mainML} flex flex-col min-h-screen`}>
-        <header className={`h-16 backdrop-blur-sm border-b sticky top-0 z-30 flex items-center px-4 sm:px-6 gap-4 shadow-sm ${headerBg}`}>
+        <header className={`h-16 backdrop-blur-sm border-b sticky top-0 z-30 flex items-center px-3 sm:px-6 gap-2 sm:gap-4 shadow-sm ${headerBg}`}>
           <button
             type="button"
             onClick={() => setMobileOpen((o) => !o)}
-            className={`flex items-center justify-center h-9 w-9 rounded-lg transition lg:hidden ${
+            className={`flex items-center justify-center h-9 w-9 rounded-lg transition lg:hidden shrink-0 ${
               dark ? 'text-slate-400 hover:bg-white/10 hover:text-green-400' : 'text-slate-500 hover:bg-slate-100 hover:text-green-600'
             }`}
             aria-label="Menu"
@@ -185,10 +185,10 @@ const GreenChampionLayout = () => {
             {mobileOpen ? <HiX className="h-5 w-5" /> : <HiMenu className="h-5 w-5" />}
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className={`text-base font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
+            <h1 className={`text-sm sm:text-base font-bold tracking-tight truncate ${dark ? 'text-white' : 'text-slate-900'}`}>
               {user.name || 'Green Champion'}
             </h1>
-            <p className={`text-[10px] uppercase tracking-widest leading-none mt-0.5 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+            <p className={`text-[9px] sm:text-[10px] uppercase tracking-widest leading-none mt-0.5 truncate ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
               Green Champion Dashboard
             </p>
           </div>
@@ -196,7 +196,7 @@ const GreenChampionLayout = () => {
             type="button"
             onClick={toggleDark}
             aria-label="Toggle dark mode"
-            className={`flex items-center justify-center h-9 w-9 rounded-lg transition ${
+            className={`flex items-center justify-center h-9 w-9 rounded-lg transition shrink-0 ${
               dark ? 'text-yellow-400 hover:bg-white/10' : 'text-slate-500 hover:bg-slate-100'
             }`}
           >

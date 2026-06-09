@@ -41,7 +41,7 @@ const NavItem = ({ item, collapsed, dark, onClick }) => {
   return (
     <button onClick={() => onClick(item.path)}
       title={collapsed ? item.label : undefined}
-      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-none text-sm transition-all duration-200 group ${
+      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group ${
         active
           ? dark ? 'bg-green-900/40 text-green-400' : 'bg-green-50 text-green-700'
           : dark ? 'text-slate-400 hover:bg-white/5 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
@@ -111,13 +111,13 @@ const CitizenLayout = () => {
 
       {mobileOpen && <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} />}
 
-      <aside className={`fixed top-0 left-0 h-full z-50 flex flex-col border-r shadow-lg transition-all duration-300 ease-in-out ${sidebarBg} ${mobileOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64'} lg:translate-x-0 ${sideW} rounded-sm`}>
+      <aside className={`fixed top-0 left-0 h-full z-50 flex flex-col border-r shadow-lg transition-all duration-300 ease-in-out ${sidebarBg} ${mobileOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64'} lg:translate-x-0 ${sideW} rounded-lg`}>
         <div className={`h-16 flex items-center border-b shrink-0 px-4 ${dark ? 'border-white/10' : 'border-slate-200'} ${collapsed ? 'justify-center' : 'justify-between'}`}>
           <div className={`flex items-center gap-2 overflow-hidden transition-all duration-300 ${collapsed ? 'w-0 opacity-0 lg:w-auto lg:opacity-100' : ''}`}>
             <EcoLoopLogo height={38} dark={dark} />
           </div>
           <button onClick={() => setCollapsed(c => !c)}
-            className={`hidden lg:flex items-center justify-center h-8 w-8 rounded-sm transition shrink-0 ${dark ? 'text-slate-500 hover:bg-white/10 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}>
+            className={`hidden lg:flex items-center justify-center h-8 w-8 rounded-lg transition shrink-0 ${dark ? 'text-slate-500 hover:bg-white/10 hover:text-slate-300' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}>
             <HiMenu className="h-5 w-5" />
           </button>
         </div>
@@ -152,24 +152,24 @@ const CitizenLayout = () => {
       </aside>
 
       <div className={`relative z-10 transition-all duration-300 ease-in-out ${mainML} flex flex-col min-h-screen`}>
-        <header className={`h-16 backdrop-blur-sm border-b sticky top-0 z-30 flex items-center px-4 sm:px-6 gap-4 shadow-sm ${headerBg}`}>
+        <header className={`h-16 backdrop-blur-sm border-b sticky top-0 z-30 flex items-center px-3 sm:px-6 gap-2 sm:gap-4 shadow-sm ${headerBg}`}>
           <button onClick={() => setMobileOpen(o => !o)}
-            className={`flex items-center justify-center h-9 w-9 rounded-sm transition lg:hidden ${dark ? 'text-slate-400 hover:bg-white/10 hover:text-green-400' : 'text-slate-500 hover:bg-slate-100 hover:text-green-600'}`}>
+            className={`flex items-center justify-center h-9 w-9 rounded-lg transition lg:hidden shrink-0 ${dark ? 'text-slate-400 hover:bg-white/10 hover:text-green-400' : 'text-slate-500 hover:bg-slate-100 hover:text-green-600'}`}>
             {mobileOpen ? <HiX className="h-5 w-5" /> : <HiMenu className="h-5 w-5" />}
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className={`text-base font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
+            <h1 className={`text-sm sm:text-base font-bold tracking-tight truncate ${dark ? 'text-white' : 'text-slate-900'}`}>
               {user.name || 'Citizen'}
             </h1>
-            <p className={`text-[10px] uppercase tracking-widest leading-none mt-0.5 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+            <p className={`text-[9px] sm:text-[10px] uppercase tracking-widest leading-none mt-0.5 truncate ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
               Dashboard
             </p>
           </div>
           <button onClick={toggleDark} aria-label="Toggle dark mode"
-            className={`flex items-center justify-center h-9 w-9 rounded-sm transition ${dark ? 'text-yellow-400 hover:bg-white/10' : 'text-slate-500 hover:bg-slate-100'}`}>
+            className={`flex items-center justify-center h-9 w-9 rounded-lg transition shrink-0 ${dark ? 'text-yellow-400 hover:bg-white/10' : 'text-slate-500 hover:bg-slate-100'}`}>
             {dark ? <HiSun className="h-5 w-5" /> : <HiMoon className="h-5 w-5" />}
           </button>
-          <div className="h-9 w-9 rounded-sm overflow-hidden bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
+          <div className="h-9 w-9 rounded-lg overflow-hidden bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
             {user.profilePhoto
               ? <img src={user.profilePhoto} alt="avatar" className="h-full w-full object-cover" />
               : (user.name || 'C')[0].toUpperCase()
