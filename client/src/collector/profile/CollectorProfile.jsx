@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '../../shared/context/ThemeContext';
 import { useUser } from '../../shared/context/UserContext';
+import { apiUrl } from '../../shared/utils/api';
 import { HiCalendar, HiCheckCircle, HiShieldCheck, HiLocationMarker, HiTruck, HiClock } from 'react-icons/hi';
 
 const CollectorProfile = () => {
@@ -14,7 +15,7 @@ const CollectorProfile = () => {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch('/api/collector/profile', { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch(apiUrl('/api/collector/profile'), { headers: { Authorization: `Bearer ${token}` } });
         if (res.ok) setCollector(await res.json());
       } catch {} finally { setLoading(false); }
     };

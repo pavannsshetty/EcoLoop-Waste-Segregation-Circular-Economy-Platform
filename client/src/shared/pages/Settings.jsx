@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { apiUrl } from '../utils/api';
 import { HiMoon, HiSun, HiExclamation, HiCheckCircle, HiXCircle, HiClock } from 'react-icons/hi';
 
 const Toggle = ({ checked, onChange }) => (
@@ -27,7 +28,7 @@ const Settings = () => {
   const fetchDeletionRequest = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/user/account-deletion-status', {
+      const res = await fetch(apiUrl('/api/user/account-deletion-status'), {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -48,7 +49,7 @@ const Settings = () => {
     if (!password) { setMessage('Enter your password to confirm.'); setMessageType('error'); return; }
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/user/account-deletion-request', {
+      const res = await fetch(apiUrl('/api/user/account-deletion-request'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ currentPassword: password }),

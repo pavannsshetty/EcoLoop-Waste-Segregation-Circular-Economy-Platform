@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTheme } from '../../shared/context/ThemeContext';
+import { apiUrl } from '../../shared/utils/api';
 import { HiPhone, HiTruck, HiClock, HiLocationMarker, HiUser, HiCheckCircle, HiCalendar, HiExclamationCircle } from 'react-icons/hi';
 
 const STATUS_MAP = {
