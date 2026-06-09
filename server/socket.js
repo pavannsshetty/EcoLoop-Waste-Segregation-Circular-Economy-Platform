@@ -6,12 +6,19 @@ const activeUsers = new Map();
 const init = (server) => {
   io = new Server(server, {
     cors: {
-      origin: [
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "https://ecoloop-waste-segregation-circular-economy-platform.pages.dev",
-        process.env.CLIENT_URL,
-      ].filter(Boolean),
+      origin: (origin, cb) => {
+        const allowed = [
+          "http://localhost:5173",
+          "http://localhost:5174",
+          "https://ecoloop-waste-segregation-circular-economy-platform.pages.dev",
+          process.env.CLIENT_URL,
+        ].filter(Boolean);
+        if (!origin || allowed.includes(origin) || origin.endsWith(".pages.dev")) {
+          cb(null, true);
+        } else {
+          cb(new Error("Not allowed by CORS"));
+        }
+      },
       methods: ["GET", "POST"]
     }
   });
