@@ -13,6 +13,11 @@ const syncUserPoints = async (userId) => {
         streakCount: user.streakCount || 0,
         highestStreak: user.highestStreak || 0
       });
+      emitToAll('eco_points_updated', {
+        userId: userId.toString(),
+        ecoPoints: user.ecoPoints,
+        rewardsPoints: user.rewards.points
+      });
     }
   } catch (err) {
     console.error('[syncUserPoints Error]:', err);

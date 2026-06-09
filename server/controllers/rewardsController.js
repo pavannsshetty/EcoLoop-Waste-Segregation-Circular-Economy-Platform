@@ -115,6 +115,7 @@ const deductPoints = async (userId, points, reason, relatedId = null) => {
     if (!user || user.rewards.points < points) throw new Error('Insufficient points');
 
     user.rewards.points -= points;
+    user.ecoPoints -= points; // Keep legacy field in sync
     await user.save();
 
     await EcoPointHistory.create({

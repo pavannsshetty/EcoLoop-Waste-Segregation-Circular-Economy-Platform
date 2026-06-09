@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { HiLocationMarker, HiRefresh, HiUser, HiCheckCircle, HiPhone, HiTag } from 'react-icons/hi';
+import { HiLocationMarker, HiRefresh, HiUser, HiCheckCircle, HiPhone, HiTag, HiMap } from 'react-icons/hi';
 import { API } from '../../shared/constants';
 import { useTheme } from '../../shared/context/ThemeContext';
 import { getMapLayer } from '../../shared/utils/mapLayers';
 import MapLayerSwitcher from '../../shared/components/MapLayerSwitcher';
+import RouteMapModal from '../../shared/components/RouteMapModal';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -34,6 +35,7 @@ const EcoDeliveryTasks = () => {
   const [filter, setFilter] = useState('all');
   const token = localStorage.getItem('token');
   const [mapLayer, setMapLayer] = useState('osm');
+  const [routeMapTarget, setRouteMapTarget] = useState(null);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -62,9 +64,8 @@ const EcoDeliveryTasks = () => {
     } catch {}
   };
 
-  const goToDestination = (lat, lng) => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
+  const goToDestination = (o) => {
+    setRouteMapTarget(o);
   };
 
   const selectCls = dk(
@@ -74,6 +75,13 @@ const EcoDeliveryTasks = () => {
 
   return (
     <div className="p-4 sm:p-6 space-y-5 animate-in fade-in duration-500 overflow-hidden">
+      {routeMapTarget && (
+        <RouteMapModal
+          report={routeMapTarget}
+          onClose={() => setRouteMapTarget(null)}
+          dk={dk}
+        />
+      )}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className={`text-lg font-bold tracking-tight text-left ${dk('text-slate-200', 'text-slate-800')}`}>Eco Shopping Deliveries</h1>
@@ -161,9 +169,9 @@ const EcoDeliveryTasks = () => {
 
               <div className="flex flex-wrap gap-2">
                 {hasCoords && o.deliveryStatus !== 'Delivered' && (
-                  <button type="button" onClick={() => goToDestination(o.deliveryLatitude, o.deliveryLongitude)}
+                  <button type="button" onClick={() => goToDestination(o)}
                     className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center gap-1.5 ${dk('border-purple-800/50 text-purple-400 hover:bg-purple-900/30', 'border-purple-200 text-purple-600 hover:bg-purple-50')}`}>
-                    <HiLocationMarker className="h-3.5 w-3.5" /> Go to Destination
+                    <HiMap className="h-3.5 w-3.5" /> Navigate
                   </button>
                 )}
                 {o.deliveryStatus === 'Assigned' && (

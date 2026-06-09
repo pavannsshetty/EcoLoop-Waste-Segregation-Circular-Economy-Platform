@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { HiLocationMarker, HiClock, HiRefresh, HiX, HiUser, HiCheckCircle, HiPhone } from 'react-icons/hi';
+import { HiLocationMarker, HiClock, HiRefresh, HiX, HiUser, HiCheckCircle, HiPhone, HiMap } from 'react-icons/hi';
 import { API } from '../../shared/constants';
 import { useTheme } from '../../shared/context/ThemeContext';
 import socket from '../../socket';
 import { getMapLayer } from '../../shared/utils/mapLayers';
 import MapLayerSwitcher from '../../shared/components/MapLayerSwitcher';
+import RouteMapModal from '../../shared/components/RouteMapModal';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -36,6 +37,7 @@ const ScrapTasks = () => {
   const [filter, setFilter] = useState('all');
   const token = localStorage.getItem('token');
   const [mapLayer, setMapLayer] = useState('osm');
+  const [routeMapTarget, setRouteMapTarget] = useState(null);
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -79,9 +81,8 @@ const ScrapTasks = () => {
     } catch {}
   };
 
-  const goToDestination = (lat, lng) => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
+  const goToDestination = (t) => {
+    setRouteMapTarget(t);
   };
 
   const selectCls = dk(
@@ -91,6 +92,13 @@ const ScrapTasks = () => {
 
   return (
     <div className="p-4 sm:p-6 space-y-5 animate-in fade-in duration-500 overflow-hidden">
+      {routeMapTarget && (
+        <RouteMapModal
+          report={routeMapTarget}
+          onClose={() => setRouteMapTarget(null)}
+          dk={dk}
+        />
+      )}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className={`text-lg font-bold tracking-tight text-left ${dk('text-slate-200', 'text-slate-800')}`}>Scrap Requests</h1>
@@ -177,9 +185,9 @@ const ScrapTasks = () => {
 
               <div className="flex flex-wrap gap-2">
                 {hasCoords && t.status !== 'Collected' && (
-                  <button type="button" onClick={() => goToDestination(lat, lng)}
+                  <button type="button" onClick={() => goToDestination(t)}
                     className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center gap-1.5 ${dk('border-green-800/50 text-green-400 hover:bg-green-900/30', 'border-green-200 text-green-600 hover:bg-green-50')}`}>
-                    <HiLocationMarker className="h-3.5 w-3.5" /> Go to Destination
+                    <HiMap className="h-3.5 w-3.5" /> Navigate
                   </button>
                 )}
                 {t.status === 'Requested' && (

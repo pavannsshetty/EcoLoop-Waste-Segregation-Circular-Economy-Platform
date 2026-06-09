@@ -36,7 +36,7 @@ const CAT_ICONS = {
 };
 
 /* ── Item Detail Modal (Mobile-first) ── */
-const ItemDetailModal = ({ item, dark, onClose, onBuy, buying, ctxUser }) => {
+const ItemDetailModal = ({ item, dark, onClose, onBuy, buying, ecoPoints }) => {
   const [pointsToUse, setPointsToUse] = useState(0);
   const [descExpanded, setDescExpanded] = useState(false);
   if (!item) return null;
@@ -117,7 +117,7 @@ const ItemDetailModal = ({ item, dark, onClose, onBuy, buying, ctxUser }) => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[11px] uppercase tracking-wider text-slate-500">Eco Points</p>
-                  <p className="text-lg font-bold text-emerald-700">{ctxUser?.rewards?.points || 0} pts</p>
+                  <p className="text-lg font-bold text-emerald-700">{ecoPoints} pts</p>
                 </div>
                 <div className="text-right">
                   <p className="text-[11px] text-slate-500">2 pts = ₹1</p>
@@ -129,9 +129,9 @@ const ItemDetailModal = ({ item, dark, onClose, onBuy, buying, ctxUser }) => {
                   type="number"
                   placeholder="Points to use"
                   min="0"
-                  max={Math.min(ctxUser?.rewards?.points || 0, item.price * 2)}
+                  max={Math.min(ecoPoints, item.price * 2)}
                   value={pointsToUse || ''}
-                  onChange={(e) => setPointsToUse(Math.min(parseInt(e.target.value) || 0, ctxUser?.rewards?.points || 0, item.price * 2))}
+                  onChange={(e) => setPointsToUse(Math.min(parseInt(e.target.value) || 0, ecoPoints, item.price * 2))}
                   className={`w-full h-10 rounded-xl border px-3 text-sm font-medium outline-none ${dark ? 'bg-[#0d111a] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
                 />
               </div>
@@ -231,7 +231,7 @@ const ItemCard = ({ item, dark, onClick }) => {
 const EcoShoppingPage = () => {
   const navigate = useNavigate();
   const { dark, toast } = useOutletContext() || {};
-  const { user: ctxUser } = useUser();
+  const { user: ctxUser, updateUser } = useUser();
   const dk = (d, l) => (dark ? d : l);
 
   const [items,      setItems]      = useState([]);
@@ -240,6 +240,7 @@ const EcoShoppingPage = () => {
   const [catFilter,  setCatFilter]  = useState('all');
   const [categories, setCategories] = useState(CATEGORIES);
   const [selected,   setSelected]   = useState(null);
+  const [ecoPoints,  setEcoPoints]  = useState(ctxUser?.ecoPoints ?? 0);
 
   const fetchCategories = async () => {
     try {
@@ -275,10 +276,27 @@ const EcoShoppingPage = () => {
 
   useEffect(() => {
     fetchCategories();
+    fetchEcoPoints();
   }, []);
 
   const [buying,    setBuying]    = useState(false);
   const [sortBy,    setSortBy]    = useState('newest');
+
+  const fetchEcoPoints = async (silent = true) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/api/citizen/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const pts = data.ecoPoints ?? data.rewards?.points ?? 0;
+        setEcoPoints(pts);
+        if (updateUser) updateUser({ ecoPoints: pts, rewards: data.rewards || { points: pts } });
+      }
+    } catch { /* silent */ }
+  };
 
   const fetchItems = async (cat = catFilter, q = search, sort = sortBy) => {
     setLoading(true);
@@ -295,6 +313,22 @@ const EcoShoppingPage = () => {
 
   useEffect(() => {
     fetchItems();
+
+    socket.on('eco_points_updated', (data) => {
+      const userId = localStorage.getItem('userId') || '';
+      if (data.userId === userId || data.userId === ctxUser?._id) {
+        const pts = data.ecoPoints ?? data.rewardsPoints ?? 0;
+        setEcoPoints(pts);
+        if (updateUser) updateUser({ ecoPoints: pts });
+      }
+    });
+    socket.on('points_updated', (data) => {
+      if (data.points !== undefined) {
+        setEcoPoints(data.points);
+        if (updateUser) updateUser({ ecoPoints: data.points });
+      }
+    });
+
     socket.on('RECYCLE_ITEM_UPDATED', (data) => {
       if (data.action === 'DELETE') {
         setItems(prev => prev.filter(i => i._id !== data.itemId));
@@ -320,9 +354,11 @@ const EcoShoppingPage = () => {
     });
 
     return () => {
+      socket.off('eco_points_updated');
+      socket.off('points_updated');
       socket.off('RECYCLE_ITEM_UPDATED');
     };
-  }, [selected]);
+  }, [selected, ctxUser?._id]);
 
   useEffect(() => { fetchItems(); }, [catFilter, search, sortBy]);
 
@@ -342,7 +378,12 @@ const EcoShoppingPage = () => {
       const data = await res.json();
       if (!res.ok) { toast?.error(data.message || 'Purchase failed.'); return; }
       toast?.success(data.message || 'Item purchased successfully!');
+      if (data.ecoPoints !== undefined) {
+        setEcoPoints(data.ecoPoints);
+        if (updateUser) updateUser({ ecoPoints: data.ecoPoints });
+      }
       setSelected(null);
+      fetchItems();
       } catch { toast?.error('Network error. Please try again.'); } finally { setBuying(false); }
     };
 
@@ -355,7 +396,7 @@ const EcoShoppingPage = () => {
             onClose={() => setSelected(null)}
             onBuy={handleBuy}
             buying={buying}
-            ctxUser={ctxUser}
+            ecoPoints={ecoPoints}
           />
         )}
 

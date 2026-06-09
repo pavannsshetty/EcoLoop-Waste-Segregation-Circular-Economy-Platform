@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { HiLocationMarker, HiClock, HiRefresh, HiX, HiPhotograph, HiPhone, HiUser, HiCheckCircle } from 'react-icons/hi';
+import { HiLocationMarker, HiClock, HiRefresh, HiX, HiPhotograph, HiPhone, HiUser, HiCheckCircle, HiMap } from 'react-icons/hi';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -8,6 +8,7 @@ import { useTheme } from '../../shared/context/ThemeContext';
 import socket from '../../socket';
 import { getMapLayer } from '../../shared/utils/mapLayers';
 import MapLayerSwitcher from '../../shared/components/MapLayerSwitcher';
+import RouteMapModal from '../../shared/components/RouteMapModal';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -233,7 +234,8 @@ const HomePickupTasks = () => {
   const [distances, setDistances] = useState({});
   const [revokeTarget, setRevokeTarget] = useState(null);
   const [revokeLoading, setRevokeLoading] = useState(false);
-    const [mapLayer, setMapLayer] = useState('osm');
+  const [routeMapTarget, setRouteMapTarget] = useState(null);
+  const [mapLayer, setMapLayer] = useState('osm');
   const token = localStorage.getItem('token');
 
   useEffect(() => {
@@ -329,22 +331,8 @@ const HomePickupTasks = () => {
 
   const onDone = (updated) => setReports((rs) => rs.map((r) => (r._id === updated._id ? updated : r)));
 
-  const goToDestination = (lat, lng) => {
-    const openNav = (origin) => {
-      const url = origin
-        ? `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${lat},${lng}`
-        : `https://www.google.com/maps?q=${lat},${lng}`;
-      window.open(url, '_blank', 'noopener,noreferrer');
-    };
-    if (collectorPos) { openNav(collectorPos); return; }
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => openNav({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => openNav(null)
-      );
-    } else {
-      openNav(null);
-    }
+  const goToDestination = (r) => {
+    setRouteMapTarget(r);
   };
 
   const selectCls = dk(
@@ -362,6 +350,14 @@ const HomePickupTasks = () => {
           onRevoke={revokeCompletion}
           dk={dk}
           loading={revokeLoading}
+        />
+      )}
+      {routeMapTarget && (
+        <RouteMapModal
+          report={routeMapTarget}
+          onClose={() => setRouteMapTarget(null)}
+          dk={dk}
+          onArrived={(updated) => setReports((rs) => rs.map((r) => (r._id === updated._id ? updated : r)))}
         />
       )}
 
@@ -484,12 +480,12 @@ const HomePickupTasks = () => {
               {r.location?.lat != null && r.location?.lng != null && r.status !== 'Resolved' && (
                 <button
                   type="button"
-                  onClick={() => goToDestination(r.location.lat, r.location.lng)}
+                  onClick={() => goToDestination(r)}
                   className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center gap-1.5 ${
                     dk('border-green-800/50 text-green-400 hover:bg-green-900/30', 'border-green-200 text-green-600 hover:bg-green-50')
                   }`}
                 >
-                  <HiLocationMarker className="h-3.5 w-3.5" /> Go to Destination
+                  <HiMap className="h-3.5 w-3.5" /> Navigate
                 </button>
               )}
               {r.status === 'Submitted' && (

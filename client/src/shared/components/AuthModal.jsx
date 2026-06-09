@@ -460,17 +460,11 @@ const AuthModal = ({ isOpen, onClose, toast, dark = false, onRestricted, onGreen
                   <InputField id="collectorPassword" label="Password" type="password" placeholder="Enter your password" icon={HiLockClosed} {...fp('password')} />
                 </>)}
 
-                {screen === 'login' && (
-                  <div className="flex items-center justify-between">
-                    <label className={`flex cursor-pointer items-center gap-2 text-sm ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
-                      <input type="checkbox" className="h-4 w-4 rounded border-slate-500 text-green-600 focus:ring-green-500 bg-transparent" />
-                      Remember me
-                    </label>
-                    {userRole !== 'Collector' && (
-                      <button type="button" onClick={() => reset('forgot')} className="text-sm font-medium text-green-500 hover:underline">
-                        Forgot password?
-                      </button>
-                    )}
+                {screen === 'login' && userRole !== 'Collector' && (
+                  <div className="flex items-center justify-end">
+                    <button type="button" onClick={() => reset('forgot')} className="text-sm font-medium text-green-500 hover:underline">
+                      Forgot password?
+                    </button>
                   </div>
                 )}
 

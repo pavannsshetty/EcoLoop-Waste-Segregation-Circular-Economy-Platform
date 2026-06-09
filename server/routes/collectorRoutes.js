@@ -310,6 +310,81 @@ router.put('/report/:id/revoke', protect, collectorAuth, async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+/* ─── Collector Location ─── */
+router.post('/location', protect, collectorAuth, async (req, res) => {
+  try {
+    const { lat, lng } = req.body;
+    if (lat == null || lng == null) {
+      return res.status(400).json({ message: 'lat and lng required.' });
+    }
+    await Collector.findByIdAndUpdate(req.user.id, {
+      'lastLocation.lat': lat,
+      'lastLocation.lng': lng,
+      'lastLocation.updatedAt': new Date(),
+    });
+    try {
+      const { emitToAll } = require('../socket');
+      emitToAll('collector_location_updated', {
+        collectorId: req.user.id,
+        lat,
+        lng,
+        updatedAt: new Date(),
+      });
+    } catch (e) { /* socket non-critical */ }
+    res.json({ message: 'Location updated.' });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+/* ─── Mark Arrived ─── */
+router.put('/report/:id/arrived', protect, collectorAuth, async (req, res) => {
+  try {
+    const cid = req.user.id;
+    const report = await WasteReport.findById(req.params.id);
+    if (!report) return res.status(404).json({ message: 'Report not found.' });
+    if (report.assignedCollector?.toString() !== cid.toString()) {
+      return res.status(403).json({ message: 'Not assigned to this task.' });
+    }
+    if (report.status !== 'Assigned') {
+      return res.status(400).json({ message: 'Can only mark arrived for Assigned tasks.' });
+    }
+
+    report.status = 'In Progress';
+    await report.save();
+
+    if (report.userId) {
+      createNotification(report.userId, 'Collector Arrived',
+        `Collector has arrived at your location for the ${report.wasteType} waste report.`, 'status', report._id);
+    }
+
+    const populated = await WasteReport.findById(report._id)
+      .populate('userId', 'name phone email')
+      .populate('assignedCollector', 'name collectorType teamLeader teamSize')
+      .lean();
+
+    try {
+      const { emitToUser, emitToAll } = require('../socket');
+      if (populated.userId?._id) emitToUser(populated.userId._id.toString(), 'report_updated', populated);
+      emitToAll('report_updated', populated);
+    } catch (e) { /* socket non-critical */ }
+
+    res.json({ message: 'Marked as arrived.', report: populated });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+/* ─── Get Collector Location (for citizen tracking) ─── */
+router.get('/:collectorId/location', protect, async (req, res) => {
+  try {
+    const collector = await Collector.findById(req.params.collectorId).select('lastLocation name');
+    if (!collector) return res.status(404).json({ message: 'Collector not found.' });
+    res.json({
+      name: collector.name,
+      lat: collector.lastLocation?.lat ?? null,
+      lng: collector.lastLocation?.lng ?? null,
+      updatedAt: collector.lastLocation?.updatedAt ?? null,
+    });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
 router.put('/availability', protect, collectorAuth, async (req, res) => {
   try {
     const { availability } = req.body;

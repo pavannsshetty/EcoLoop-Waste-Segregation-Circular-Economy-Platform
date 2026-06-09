@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HiRefresh, HiHome, HiChevronDown, HiChevronUp, HiCheckCircle, HiX, HiPencil, HiClock } from 'react-icons/hi';
+import { HiRefresh, HiHome, HiChevronDown, HiChevronUp, HiCheckCircle, HiX, HiPencil, HiClock, HiTruck } from 'react-icons/hi';
 import { API } from '../../shared/constants';
 import { useTheme } from '../../shared/context/ThemeContext';
 import socket from '../../socket';
 import EditReportModal from '../../shared/components/EditReportModal';
+import CollectionTracking from '../../shared/components/CollectionTracking';
 
 const STATUS = {
   Submitted:     { border: 'border-l-yellow-500' },
@@ -238,6 +239,12 @@ const HomeWasteReports = () => {
                   <EditTimer createdAt={r.createdAt} />
                 )}
               </div>
+
+              {r.assignedCollector && (r.status === 'Assigned' || r.status === 'In Progress') && (
+                <div className="px-4 sm:px-5 pb-3">
+                  <CollectionTracking report={r} dk={dk} />
+                </div>
+              )}
 
               {open && (
                 <>

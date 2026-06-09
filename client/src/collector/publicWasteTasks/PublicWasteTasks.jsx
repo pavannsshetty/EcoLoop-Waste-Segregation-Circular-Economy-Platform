@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { HiLocationMarker, HiClock, HiRefresh, HiX, HiPhotograph, HiExclamation, HiCheckCircle, HiUser, HiPhone } from 'react-icons/hi';
+import { HiLocationMarker, HiClock, HiRefresh, HiX, HiPhotograph, HiExclamation, HiCheckCircle, HiUser, HiPhone, HiMap } from 'react-icons/hi';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -8,6 +8,7 @@ import { useTheme } from '../../shared/context/ThemeContext';
 import socket from '../../socket';
 import { getMapLayer } from '../../shared/utils/mapLayers';
 import MapLayerSwitcher from '../../shared/components/MapLayerSwitcher';
+import RouteMapModal from '../../shared/components/RouteMapModal';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -154,14 +155,9 @@ const DetailModal = ({ report, onClose, dk }) => {
                   <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg ${dk('bg-green-900/30 text-green-400', 'bg-green-50 text-green-700')}`}>
                     <HiCheckCircle className="h-3 w-3" /> GPS Verified
                   </span>
-                  <a
-                    href={`https://www.google.com/maps?q=${report.location.lat},${report.location.lng}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-blue-500 hover:underline inline-flex items-center gap-1"
-                  >
-                    <HiLocationMarker className="h-3 w-3" /> View on Google Maps
-                  </a>
+                  <span className={`inline-flex items-center gap-1 text-[10px] ${dk('text-slate-500', 'text-slate-400')}`}>
+                    <HiMap className="h-3 w-3" /> GPS Verified
+                  </span>
                 </div>
               </div>
             )}
@@ -635,6 +631,7 @@ const PublicWasteTasks = () => {
   const [revokeTarget, setRevokeTarget] = useState(null);
   const [revokeLoading, setRevokeLoading] = useState(false);
   const [verifyTarget, setVerifyTarget] = useState(null);
+  const [routeMapTarget, setRouteMapTarget] = useState(null);
   const token = localStorage.getItem('token');
   const [mapLayer, setMapLayer] = useState('osm');
 
@@ -721,22 +718,8 @@ const PublicWasteTasks = () => {
     } catch {} finally { setRevokeLoading(false); }
   };
 
-  const goToDestination = (lat, lng) => {
-    const openNav = (origin) => {
-      const url = origin
-        ? `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${lat},${lng}`
-        : `https://www.google.com/maps?q=${lat},${lng}`;
-      window.open(url, '_blank', 'noopener,noreferrer');
-    };
-    if (collectorPos) { openNav(collectorPos); return; }
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => openNav({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => openNav(null)
-      );
-    } else {
-      openNav(null);
-    }
+  const goToDestination = (r) => {
+    setRouteMapTarget(r);
   };
 
   const selectCls = dk(
@@ -764,6 +747,14 @@ const PublicWasteTasks = () => {
           onVerify={(updated) => setReports((rs) => rs.map((r) => (r._id === updated._id ? updated : r)))}
           onClarify={(updated) => setReports((rs) => rs.map((r) => (r._id === updated._id ? updated : r)))}
           dk={dk}
+        />
+      )}
+      {routeMapTarget && (
+        <RouteMapModal
+          report={routeMapTarget}
+          onClose={() => setRouteMapTarget(null)}
+          dk={dk}
+          onArrived={(updated) => setReports((rs) => rs.map((r) => (r._id === updated._id ? updated : r)))}
         />
       )}
 
@@ -916,12 +907,12 @@ const PublicWasteTasks = () => {
               {r.location?.lat != null && r.location?.lng != null && r.status !== 'Resolved' && (
                 <button
                   type="button"
-                  onClick={() => goToDestination(r.location.lat, r.location.lng)}
+                  onClick={() => goToDestination(r)}
                   className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center gap-1.5 ${
                     dk('border-orange-800/50 text-orange-400 hover:bg-orange-900/30', 'border-orange-200 text-orange-600 hover:bg-orange-50')
                   }`}
                 >
-                  <HiLocationMarker className="h-3.5 w-3.5" /> Go to Destination
+                  <HiMap className="h-3.5 w-3.5" /> Navigate
                 </button>
               )}
               {(r.status === 'Submitted' || r.status === 'Resubmitted' || r.status === 'Clarification Expired') && (

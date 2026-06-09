@@ -28,6 +28,11 @@ const collectorSchema = new mongoose.Schema({
   availability:     { type: String, enum: ['Available', 'Busy', 'Offline'], default: 'Available' },
   completedTasks:   { type: Number, default: 0 },
   performanceScore: { type: Number, default: 0 },
+  lastLocation: {
+    lat: { type: Number, default: null },
+    lng: { type: Number, default: null },
+    updatedAt: { type: Date, default: null },
+  },
 }, { timestamps: true });
 
 collectorSchema.pre('save', async function () {

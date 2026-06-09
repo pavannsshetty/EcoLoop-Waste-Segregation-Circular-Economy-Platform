@@ -106,7 +106,7 @@ const CitizenProfile = () => {
 
   const totalReports    = ctxUser?.reportsCount  ?? reports.length;
   const resolvedReports = ctxUser?.resolvedCount ?? reports.filter(r => r.status === 'Resolved').length;
-  const ecoPoints       = ctxUser?.ecoPoints     ?? (totalReports * 10 + resolvedReports * 15);
+  const ecoPoints       = ctxUser?.ecoPoints     ?? 0;
   const streakDays      = 1;
 
   const BADGES = [

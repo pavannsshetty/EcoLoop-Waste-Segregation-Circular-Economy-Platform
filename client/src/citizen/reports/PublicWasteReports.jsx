@@ -1,11 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HiRefresh, HiGlobe, HiChevronDown, HiChevronUp, HiCheckCircle, HiX, HiPencil, HiClock } from 'react-icons/hi';
+import { HiRefresh, HiGlobe, HiChevronDown, HiChevronUp, HiCheckCircle, HiX, HiPencil, HiClock, HiTruck } from 'react-icons/hi';
 import { API } from '../../shared/constants';
 import { useTheme } from '../../shared/context/ThemeContext';
 import socket from '../../socket';
 import EditReportModal from '../../shared/components/EditReportModal';
 import ClarificationResubmitModal from '../../shared/components/ClarificationResubmitModal';
+import CollectionTracking from '../../shared/components/CollectionTracking';
 
 const STATUS = {
   Submitted:     { border: 'border-l-yellow-500' },
@@ -248,6 +249,12 @@ const PublicWasteReports = () => {
                   </button>
                 )}
               </div>
+
+              {r.assignedCollector && (r.status === 'Assigned' || r.status === 'In Progress') && (
+                <div className="px-4 sm:px-5 pb-3">
+                  <CollectionTracking report={r} dk={dk} />
+                </div>
+              )}
 
               {open && (
                 <>

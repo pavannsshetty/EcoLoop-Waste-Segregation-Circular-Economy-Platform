@@ -300,21 +300,27 @@ const buyItem = async (req, res) => {
       await deductPoints(user._id, pointsToUse, `Purchased ${item.itemName} using points`, item._id);
     }
 
+    // Re-fetch user to get updated points
+    const updatedUser = await User.findById(user._id).select('ecoPoints rewards.points');
+
     emitToAll('RECYCLE_ITEM_UPDATED', { action: 'BUY', item });
     emitToAll('ECO_SHOPPING_ORDER_UPDATED', { orderId: order._id, userId: user._id });
     emitToAll('STORE_ANALYTICS_UPDATED', { action: 'PURCHASE', itemId: item._id, requests: item.requests });
+    emitToAll('eco_points_updated', { userId: user._id, ecoPoints: updatedUser.ecoPoints, rewardsPoints: updatedUser.rewards?.points });
     checkAndAlertStock(item);
 
     await createNotification(user._id, 'Order Placed', `Your eco shopping order for ${item.itemName} has been placed successfully.`, 'order', order._id);
 
     res.json({ 
       message: finalCashPrice === 0 
-        ? 'Item purchased completely using Eco Points! 🎁' 
+        ? 'Item purchased completely using Eco Points!' 
         : `Item purchased! ₹${finalCashPrice} remaining payable via cash on delivery.`, 
       item,
       order,
       pointsUsed: pointsToUse,
-      cashPayable: finalCashPrice
+      cashPayable: finalCashPrice,
+      ecoPoints: updatedUser.ecoPoints,
+      rewardsPoints: updatedUser.rewards?.points
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
