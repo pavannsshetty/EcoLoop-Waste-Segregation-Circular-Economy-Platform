@@ -157,13 +157,13 @@ const NotificationBell = () => {
         <div className={`fixed sm:absolute right-4 sm:right-0 left-4 sm:left-auto top-16 sm:top-12 sm:w-[400px] rounded-2xl shadow-2xl z-50 overflow-hidden ring-1 ring-black/5 animate-in fade-in slide-in-from-top-2 duration-300 ${
           dark ? 'bg-[#0A0A0A] border border-gray-800' : 'bg-white border border-slate-100'
         }`}>
-          <div className={`flex items-center justify-between px-5 py-4 border-b ${dark ? 'border-gray-800' : 'border-slate-100'}`}>
+          <div className={`flex items-center justify-between px-5 max-md:px-3 py-4 max-md:py-3 border-b ${dark ? 'border-gray-800' : 'border-slate-100'}`}>
             <div className="flex items-center gap-3">
-              <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${dark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-600'}`}>
+              <div className={`h-8 w-8 max-md:h-7 max-md:w-7 rounded-lg flex items-center justify-center ${dark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-600'}`}>
                 <HiBell className="h-4 w-4" />
               </div>
               <div>
-                <span className={`text-sm font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>Notifications</span>
+                <span className={`text-sm max-md:text-xs font-bold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>Notifications</span>
                 {unread > 0 && <p className="text-[10px] text-green-500 uppercase tracking-widest font-semibold">{unread} new</p>}
               </div>
             </div>
@@ -177,18 +177,18 @@ const NotificationBell = () => {
             </div>
           </div>
 
-          <div className="max-h-[420px] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="max-h-[420px] max-md:max-h-[320px] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {loading ? (
-              <div className="flex items-center justify-center py-12">
+              <div className="flex items-center justify-center py-12 max-md:py-8">
                 <div className="h-6 w-6 rounded-full border-2 border-green-500 border-t-transparent animate-spin" />
               </div>
             ) : notifications.length === 0 ? (
-              <div className="text-center py-14 flex flex-col items-center gap-3">
-                <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${dark ? 'bg-white/5' : 'bg-slate-50'}`}>
-                  <HiBell className="h-7 w-7 text-slate-300" />
+              <div className="text-center py-14 max-md:py-8 flex flex-col items-center gap-3">
+                <div className={`h-14 w-14 max-md:h-10 max-md:w-10 rounded-2xl flex items-center justify-center ${dark ? 'bg-white/5' : 'bg-slate-50'}`}>
+                  <HiBell className="h-7 w-7 max-md:h-5 max-md:w-5 text-slate-300" />
                 </div>
                 <div>
-                  <p className={`text-sm font-bold ${dark ? 'text-slate-300' : 'text-slate-600'}`}>All caught up!</p>
+                  <p className={`text-sm max-md:text-xs font-bold ${dark ? 'text-slate-300' : 'text-slate-600'}`}>All caught up!</p>
                   <p className="text-xs text-slate-400 mt-0.5">No notifications yet.</p>
                 </div>
               </div>
@@ -198,20 +198,20 @@ const NotificationBell = () => {
                   const meta = TYPE_META[n.type] || TYPE_META.System;
                   return (
                     <button key={n._id} onClick={() => handleClick(n)}
-                      className={`w-full flex items-start gap-3 px-5 py-4 text-left transition relative group ${
+                      className={`w-full flex items-start gap-3 px-5 max-md:px-3 py-4 max-md:py-3 text-left transition relative group ${
                         !n.isRead 
                           ? dark ? 'bg-green-500/[0.04] hover:bg-green-500/[0.08]' : 'bg-green-50/40 hover:bg-green-50' 
                           : dark ? 'hover:bg-white/[0.03]' : 'hover:bg-slate-50'
                       }`}>
-                      <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 ${!n.isRead ? meta.bg : (dark ? 'bg-white/5 text-slate-500' : 'bg-slate-100 text-slate-400')}`}>
-                        <meta.Icon className={`h-4 w-4 ${!n.isRead ? meta.color : ''}`} />
+                      <div className={`h-9 w-9 max-md:h-8 max-md:w-8 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110 ${!n.isRead ? meta.bg : (dark ? 'bg-white/5 text-slate-500' : 'bg-slate-100 text-slate-400')}`}>
+                        <meta.Icon className={`h-4 w-4 max-md:h-3.5 max-md:w-3.5 ${!n.isRead ? meta.color : ''}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <p className={`text-xs font-bold truncate ${!n.isRead ? (dark ? 'text-white' : 'text-slate-900') : (dark ? 'text-slate-400' : 'text-slate-500')}`}>{n.title}</p>
+                          <p className={`text-xs max-md:text-[11px] font-bold truncate ${!n.isRead ? (dark ? 'text-white' : 'text-slate-900') : (dark ? 'text-slate-400' : 'text-slate-500')}`}>{n.title}</p>
                           {!n.isRead && <span className="h-2 w-2 rounded-full bg-green-500 shrink-0 shadow-[0_0_6px_rgba(34,197,94,0.5)]" />}
                         </div>
-                        <p className={`text-xs mt-0.5 leading-relaxed line-clamp-2 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>{n.message || n.description}</p>
+                        <p className={`text-xs max-md:text-[11px] mt-0.5 leading-relaxed line-clamp-2 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>{n.message || n.description}</p>
                         <p className="text-[9px] uppercase tracking-wider text-slate-400 mt-1.5 font-medium">{timeAgo(n.createdAt)}</p>
                       </div>
                     </button>

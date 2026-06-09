@@ -199,19 +199,209 @@ const GreenChampionDashboard = () => {
 
   if (initialLoading) {
     return (
-      <div className="p-4 sm:p-6 space-y-6">
-        <Skeleton className="h-48 w-full" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
-          {[1,2,3,4,5,6].map(i => <StatCardSkeleton key={i} />)}
+      <>
+        <div className="md:hidden">
+          <div className="pb-24 bg-white dark:bg-[#0A0A0A] p-5 space-y-4">
+            <Skeleton className="h-[175px] w-full rounded-[22px]" />
+            <Skeleton className="h-[76px] w-full rounded-2xl" />
+            <div className="grid grid-cols-2 gap-3">
+              {[1,2,3,4,5,6].map(i => <StatCardSkeleton key={i} />)}
+            </div>
+          </div>
         </div>
-        <Skeleton className="h-64 w-full" />
-      </div>
+        <div className="hidden md:block p-4 sm:p-6 space-y-6">
+          <Skeleton className="h-48 w-full" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+            {[1,2,3,4,5,6].map(i => <StatCardSkeleton key={i} />)}
+          </div>
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 animate-in fade-in duration-500 overflow-hidden">
-      {/* WELCOME HERO SECTION */}
+    <>
+      {/* Mobile-Only Design */}
+      <div className="md:hidden">
+        <div className="pb-24 bg-white dark:bg-[#0A0A0A] max-md:space-y-3">
+
+          {/* ===== MOBILE HERO ===== */}
+          <section className="relative overflow-hidden rounded-[22px] mx-5 mt-3 p-4"
+            style={{ height: 175, background: 'linear-gradient(135deg, #16C55B 0%, #0E9D3E 100%)' }}>
+            <div className="flex items-center justify-between h-full gap-5">
+              <div className="flex-1 flex flex-col justify-center min-w-0">
+                <p className="text-base font-bold text-white">{greeting}, {user.name?.split(' ')[0] || 'Champion'} 👋</p>
+                <p className="text-xs text-white/80 mt-0.5">Village Eco Score: {villageEcoScore}%</p>
+                <div className="mt-3">
+                  <button onClick={() => navigate('/green-champion/reports')}
+                    className="h-10 rounded-xl bg-white text-[#0F9C41] text-sm font-semibold flex items-center justify-center gap-2 shadow-lg hover:bg-white/95 transition-all active:scale-95 px-4">
+                    Manage Reports
+                  </button>
+                </div>
+              </div>
+              <div className="flex-shrink-0 flex items-center justify-center" style={{ width: 100 }}>
+                <svg viewBox="0 0 96 96" width="88" height="88" fill="none" style={{ opacity: 0.88 }}>
+                  <circle cx="15" cy="15" r="2.5" fill="white" opacity="0.18"/>
+                  <circle cx="75" cy="12" r="2" fill="white" opacity="0.14"/>
+                  <circle cx="50" cy="8" r="1.8" fill="white" opacity="0.1"/>
+                  <circle cx="85" cy="35" r="1.5" fill="white" opacity="0.12"/>
+                  <path d="M48 16L24 28v18c0 16 10 30 24 36 14-6 24-20 24-36V28L48 16z" fill="white" opacity="0.2"/>
+                  <path d="M48 38c-6 6-10 18-6 24s14 6 18 0c0-10 0-22-12-24z" fill="white" opacity="0.25"/>
+                  <path d="M48 38c6 6 10 18 6 24s-14 6-18 0c0-10 0-22 12-24z" fill="white" opacity="0.18"/>
+                  <line x1="48" y1="62" x2="48" y2="50" stroke="white" strokeOpacity="0.3" strokeWidth="2" strokeLinecap="round"/>
+                  <circle cx="40" cy="50" r="2" fill="white" opacity="0.25"/>
+                  <circle cx="56" cy="50" r="2" fill="white" opacity="0.25"/>
+                  <path d="M32 22 C28 18, 24 18, 23 20 C22 22, 26 26, 32 22Z" fill="white" opacity="0.12"/>
+                  <path d="M68 24 C72 20, 76 20, 77 22 C78 24, 74 28, 68 24Z" fill="white" opacity="0.12"/>
+                </svg>
+              </div>
+            </div>
+          </section>
+
+          {/* ===== STATUS CARD ===== */}
+          <section className="mx-5">
+            <div className="rounded-2xl px-4 flex items-center justify-between bg-white dark:bg-[#1A1A1A] shadow-sm border border-gray-100 dark:border-gray-800" style={{ height: '76px' }}>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center text-white flex-shrink-0">
+                  <MdRecycling className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Village Eco Score</p>
+                  <p className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{villageEcoScore}%</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-lg font-bold text-slate-900 dark:text-white">{stats.resolvedReports ?? 0}</p>
+                <p className="text-[10px] text-slate-400">Reports resolved</p>
+              </div>
+            </div>
+          </section>
+
+          {/* ===== STATS GRID ===== */}
+          <section className="mx-5">
+            <div className="grid grid-cols-2 gap-3">
+              {statCards.map(({ label, value, Icon, gradient }) => (
+                <StatCard key={label} label={label} value={`${value}`} icon={Icon} gradient={gradient} />
+              ))}
+            </div>
+          </section>
+
+          {/* ===== RECENT REPORTS ===== */}
+          <section className="mx-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-slate-900 dark:text-white">Recent Reports</h2>
+              <button onClick={() => navigate('/green-champion/reports')}
+                className="text-xs font-semibold text-green-600 flex items-center gap-0.5">
+                View All <HiChevronRight className="h-3 w-3" />
+              </button>
+            </div>
+            {reports.length === 0 ? (
+              <div className={`text-center py-6 rounded-2xl border-2 border-dashed ${dk('border-gray-800 bg-white/5', 'border-gray-300 bg-gray-50')}`}>
+                <p className="text-xs text-slate-400">No reports yet</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {reports.slice(0, 2).map(r => (
+                  <div key={r._id}
+                    className={`flex items-center gap-3 p-3 rounded-2xl border ${dk('bg-[#151515] border-gray-800', 'bg-white border-gray-200')}`}>
+                    <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
+                      r.reportType === 'Home Pickup' ? 'bg-teal-100 text-teal-600' : 'bg-orange-100 text-orange-600'
+                    }`}>
+                      {r.reportType === 'Home Pickup' ? <HiHome className="h-4 w-4" /> : <HiExclamation className="h-4 w-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg border ${STATUS_BADGE[r.status] || STATUS_BADGE['Submitted']}`}>{r.status}</span>
+                        <span className={`text-[11px] font-semibold ${dk('text-slate-200', 'text-slate-800')}`}>{r.wasteType}</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 truncate">
+                        {r.citizenName || 'Unknown'} • {timeAgo(r.createdAt)}
+                      </p>
+                    </div>
+                    <button onClick={() => setSelectedReport(r)}
+                      className="shrink-0 p-2 rounded-lg text-slate-400 hover:text-green-500">
+                      <HiEye className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* ===== COLLECTOR STATUS ===== */}
+          <section className="mx-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-slate-900 dark:text-white">Collectors</h2>
+              <button onClick={() => navigate('/green-champion/tasks')}
+                className="text-xs font-semibold text-green-600 flex items-center gap-0.5">
+                Manage <HiChevronRight className="h-3 w-3" />
+              </button>
+            </div>
+            {collectors.length === 0 ? (
+              <div className={`text-center py-6 rounded-2xl border-2 border-dashed ${dk('border-gray-800 bg-white/5', 'border-gray-300 bg-gray-50')}`}>
+                <p className="text-xs text-slate-400">No collectors assigned</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {collectors.slice(0, 2).map(c => (
+                  <div key={c._id}
+                    className={`flex items-center gap-3 p-3 rounded-2xl border ${dk('bg-[#151515] border-gray-800', 'bg-white border-gray-200')}`}>
+                    <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold ${
+                      c.photo ? '' : dk('bg-slate-800 text-slate-300', 'bg-slate-200 text-slate-600')
+                    }`}>
+                      {c.photo ? <img src={c.photo} alt={c.name} className="h-9 w-9 rounded-xl object-cover" /> : (c.name || 'C')[0].toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className={`text-sm font-semibold truncate ${dk('text-white', 'text-slate-900')}`}>{c.name}</p>
+                        <span className={`h-2 w-2 rounded-full shrink-0 ${AVAIL_DOT[c.availability] || 'bg-slate-500'}`} />
+                      </div>
+                      <p className={`text-[10px] ${dk('text-slate-400', 'text-slate-500')}`}>
+                        {c.availability || 'Offline'} • {c.completedTasks || 0} tasks
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* ===== QUICK ACTIONS ===== */}
+          <section className="mx-5">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-slate-900 dark:text-white mb-3">Quick Actions</h2>
+            <div className="space-y-2">
+              {quickActions.map(({ title, sub, path, Icon, color }) => {
+                const c = ACTION_COLORS[color];
+                return (
+                  <button type="button" key={title} onClick={() => {
+                    if (path.startsWith('#')) {
+                      document.getElementById('broadcast-section')?.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                      navigate(path);
+                    }
+                  }}
+                    className={`w-full flex items-center gap-3 rounded-xl border bg-gradient-to-br ${c.bg} ${c.border} p-3 text-left shadow-sm transition-all active:scale-[0.98]`}>
+                    <div className={`shrink-0 h-10 w-10 rounded-lg flex items-center justify-center ${c.iconBg}`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{sub}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <div className="h-4" />
+        </div>
+      </div>
+
+      {/* Desktop-Only Design */}
+      <div className="hidden md:block p-4 sm:p-6 space-y-6 animate-in fade-in duration-500 overflow-hidden">
+        {/* WELCOME HERO SECTION */}
       <section className="relative overflow-hidden rounded-lg shadow-2xl"
         style={{ background: dark ? 'linear-gradient(135deg, #076b2d 0%, #0e8f5a 100%)' : 'linear-gradient(135deg, #0A8F3C 0%, #16C47F 100%)' }}>
         <div className="absolute inset-0 opacity-10"
@@ -600,6 +790,7 @@ const GreenChampionDashboard = () => {
           </section>
         </div>
       </div>
+      </div>
 
       {/* Report Detail Modal */}
       {selectedReport && (
@@ -667,7 +858,7 @@ const GreenChampionDashboard = () => {
       )}
 
       <ToastContainer toasts={toasts} onRemove={remove} />
-    </div>
+    </>
   );
 };
 

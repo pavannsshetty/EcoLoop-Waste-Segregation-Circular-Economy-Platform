@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API } from '../../shared/constants';
 import { HiChevronRight, HiPencil, HiTrash, HiEye, HiExclamation, HiClipboardList, HiStar, HiCheckCircle, HiRefresh, HiLocationMarker, HiX } from 'react-icons/hi';
-import { MdRecycling } from 'react-icons/md';
+import { MdRecycling, MdWhatshot } from 'react-icons/md';
+import { LuPlus, LuZap, LuFileText, LuRecycle, LuLeaf, LuAward, LuUsers, LuChevronRight } from 'react-icons/lu';
 import EditReportModal from '../../shared/components/EditReportModal';
 import CleanupTimeBadge from '../../shared/components/CleanupTimeBadge';
 import ConfirmationModal from '../../shared/components/ConfirmationModal';
@@ -118,12 +119,268 @@ const CitizenDashboard = () => {
 
 
   return (
-    <div className={`min-h-screen ${dk('bg-[#0A0A0A]', 'bg-[#F9FAFB]')}`}>
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+    <div className={`min-h-screen ${dk('bg-[#0A0A0A]', 'bg-[#F5F5F5]')}`}>
+      {/* Mobile-Only Design */}
+      <div className="md:hidden">
+        <div className="pb-24 bg-white dark:bg-[#0A0A0A]">
+
+          {/* ===== MOBILE HERO BANNER ===== */}
+          <section
+            className="relative overflow-hidden rounded-[22px] mx-5 mt-3 p-4"
+            style={{
+              height: 175,
+              background: dark
+                ? 'linear-gradient(135deg, #16C55B 0%, #0E9D3E 100%)'
+                : 'linear-gradient(135deg, #16C55B 0%, #0E9D3E 100%)',
+            }}
+          >
+            <div className="flex items-center justify-between h-full gap-5">
+              <div className="flex-1 flex flex-col justify-center min-w-0">
+                <p className="text-base font-bold text-white">Good morning, {user.name?.split(' ')[0] || 'Citizen'} 👋</p>
+                <p className="text-xs text-white/80 mt-0.5">Make a difference today!</p>
+
+                <div className="mt-3">
+                  <button
+                    onClick={() => navigate('/citizen/report-waste')}
+                    className="h-10 rounded-xl bg-white text-[#0F9C41] text-sm font-semibold flex items-center justify-center gap-2 shadow-lg hover:bg-white/95 transition-all active:scale-95 px-4"
+                  >
+                    <LuPlus className="h-4 w-4 text-[#0F9C41]" />
+                    Report New Waste
+                  </button>
+                </div>
+              </div>
+
+              {/* Eco Illustration */}
+              <div className="flex-shrink-0 flex items-center justify-center" style={{ width: 100 }}>
+                <svg viewBox="0 0 80 100" className="w-full" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.88 }}>
+                  {/* Background decorative dots */}
+                  <circle cx="15" cy="15" r="2.5" fill="white" opacity="0.18"/>
+                  <circle cx="62" cy="10" r="2" fill="white" opacity="0.14"/>
+                  <circle cx="50" cy="18" r="1.8" fill="white" opacity="0.1"/>
+                  <circle cx="10" cy="40" r="1.5" fill="white" opacity="0.12"/>
+                  <circle cx="70" cy="30" r="1.2" fill="white" opacity="0.1"/>
+
+                  {/* Leaves behind bin */}
+                  <path d="M38 26 C34 18, 28 14, 25 17 C22 20, 30 28, 38 26Z" fill="white" opacity="0.15"/>
+                  <path d="M47 24 C51 16, 57 13, 59 16 C61 19, 53 26, 47 24Z" fill="white" opacity="0.12"/>
+                  <path d="M35 22 C32 16, 28 14, 26 16 C24 18, 28 24, 35 22Z" fill="white" opacity="0.1"/>
+
+                  {/* Plant stem behind bin */}
+                  <path d="M42 30 C40 24, 38 20, 36 16" stroke="white" strokeWidth="1" fill="none" opacity="0.2"/>
+                  <path d="M36 16 C32 14, 29 15, 30 17 C31 19, 35 18, 36 16Z" fill="white" opacity="0.2"/>
+                  <path d="M40 22 C37 20, 35 21, 36 23 C37 25, 40 24, 40 22Z" fill="white" opacity="0.15"/>
+
+                  {/* Garbage Bag 1 (left) */}
+                  <path d="M8 50 C8 43, 10 40, 13 40 C14 40, 15 41, 15 42 C16 41, 18 40, 20 40 C23 40, 25 43, 25 50 L25 70 C25 73, 23 75, 20 75 L13 75 C10 75, 8 73, 8 70Z" fill="#0A7A2E"/>
+                  <path d="M13 40 L15 42 L20 40" stroke="#087028" strokeWidth="1" fill="none"/>
+                  <path d="M10 50 L23 50" stroke="#087028" strokeWidth="0.6" opacity="0.35"/>
+                  <path d="M10 58 L23 58" stroke="#087028" strokeWidth="0.6" opacity="0.25"/>
+                  <path d="M10 66 L23 66" stroke="#087028" strokeWidth="0.6" opacity="0.15"/>
+
+                  {/* Garbage Bag 2 (right) */}
+                  <path d="M55 46 C55 39, 57 36, 60 36 C61 36, 62 37, 62 38 C63 37, 65 36, 67 36 C70 36, 72 39, 72 46 L72 66 C72 69, 70 71, 67 71 L60 71 C57 71, 55 69, 55 66Z" fill="#0B8030"/>
+                  <path d="M60 36 L62 38 L67 36" stroke="#096E28" strokeWidth="1" fill="none"/>
+                  <path d="M57 46 L70 46" stroke="#096E28" strokeWidth="0.6" opacity="0.35"/>
+                  <path d="M57 54 L70 54" stroke="#096E28" strokeWidth="0.6" opacity="0.25"/>
+
+                  {/* Recycling Bin Body */}
+                  <rect x="26" y="30" width="28" height="52" rx="5" fill="#0D8A35"/>
+                  <rect x="28" y="32" width="10" height="48" rx="3" fill="white" opacity="0.06"/>
+                  <path d="M26 78 L54 78 L54 82 C54 84, 52 86, 50 86 L30 86 C28 86, 26 84, 26 82Z" fill="#0B752D"/>
+
+                  {/* Bin Lid */}
+                  <rect x="24" y="25" width="32" height="6" rx="2" fill="#0B7A2E"/>
+                  <rect x="24" y="25" width="32" height="3" rx="1" fill="white" opacity="0.08"/>
+
+                  {/* Recycling Symbol (3 arrows) */}
+                  <path d="M44 46 L48 52 L40 52Z" fill="white"/>
+                  <path d="M44 46 C44 42, 40 40, 37 42" stroke="white" strokeWidth="1.5" fill="none"/>
+                  <path d="M50 56 L48 62 L55 60Z" fill="white"/>
+                  <path d="M50 56 C52 54, 54 56, 53 58" stroke="white" strokeWidth="1.5" fill="none"/>
+                  <path d="M36 56 L30 60 L38 62Z" fill="white"/>
+                  <path d="M36 56 C34 54, 32 56, 33 58" stroke="white" strokeWidth="1.5" fill="none"/>
+
+                  {/* Small leaf accents */}
+                  <path d="M60 20 C64 18, 66 14, 64 12 C62 10, 58 16, 60 20Z" fill="white" opacity="0.18"/>
+                  <path d="M60 20 C60 18, 61 16, 64 12" stroke="white" strokeWidth="0.4" opacity="0.12"/>
+                  <path d="M30 82 C28 86, 30 90, 33 88 C36 86, 34 82, 30 82Z" fill="white" opacity="0.12"/>
+                </svg>
+              </div>
+            </div>
+          </section>
+
+          {/* ===== QUICK STATS - Horizontal Scroll ===== */}
+          <section className="px-6 py-4 space-y-3">
+            {/* Streak Card */}
+            <div className="rounded-2xl px-4 flex items-center justify-between bg-white shadow-sm border border-gray-100 dark:border-gray-800" style={{ height: '76px' }}>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white flex-shrink-0">
+                  <MdWhatshot className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Active Streak</p>
+                  <p className="text-xl font-bold text-slate-900 mt-0.5">{streakCount} <span className="text-sm font-normal text-slate-400">Days</span></p>
+                </div>
+              </div>
+              <div className="flex-shrink-0">
+                <div className="h-9 w-9 rounded-xl bg-violet-50 flex items-center justify-center text-violet-500">
+                  <LuZap className="h-4 w-4" />
+                </div>
+              </div>
+            </div>
+
+            {/* Stats Mini Cards - 2x2 Grid */}
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: 'Total Reports', value: recentReports.length, Icon: LuFileText, gradient: 'linear-gradient(135deg,#8B5CF6 0%,#A78BFA 100%)' },
+                { label: 'Waste Recycled', value: `${scrapStats.totalWeight || 0} kg`, Icon: LuRecycle, gradient: 'linear-gradient(135deg,#3B82F6 0%,#60A5FA 100%)' },
+                { label: 'CO2 Saved', value: `${scrapStats.co2Saved || 0}`, Icon: LuLeaf, gradient: 'linear-gradient(135deg,#16C55B 0%,#12B84F 100%)' },
+                { label: 'Eco Points', value: ecoPoints, Icon: LuAward, gradient: 'linear-gradient(135deg,#F59E0B 0%,#FBBF24 100%)' },
+                { label: 'Badges Earned', value: user.badges?.length || 0, Icon: LuAward, gradient: 'linear-gradient(135deg,#0EA5A4 0%,#06B6D4 100%)' },
+                { label: 'Community Posts', value: user.postsCount || 0, Icon: LuUsers, gradient: 'linear-gradient(135deg,#06B6D4 0%,#60E1D3 100%)' },
+              ].map((s, i) => (
+                <div key={i} className="rounded-2xl p-3.5 flex items-center gap-3" style={{ background: s.gradient, height: '106px' }}>
+                  <div className="h-10 w-10 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
+                    <s.Icon className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xl font-bold text-white">{s.value}</p>
+                    <p className="text-xs text-white/85 mt-0.5">{s.label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ===== ADDRESS WARNING BANNER ===== */}
+          {(!user?.houseNo || !user?.streetArea) && (
+            <section className="px-6 py-3">
+              <div className={`p-3 rounded-2xl border flex items-start gap-3 ${dk(
+                'bg-amber-900/20 border-amber-800/50',
+                'bg-amber-50 border-amber-300'
+              )}`}>
+                <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${dk(
+                  'bg-amber-800/30 text-amber-300',
+                  'bg-amber-200 text-amber-700'
+                )}`}>
+                  <HiExclamation className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs font-semibold ${dk('text-amber-200', 'text-amber-800')}`}>
+                    Complete your address
+                  </p>
+                  <p className={`text-xs mt-0.5 ${dk('text-amber-300/70', 'text-amber-700/70')}`}>
+                    Unlock home pickup services
+                  </p>
+                  <button
+                    onClick={() => navigate('/citizen/complete-profile')}
+                    className="mt-2.5 h-9 px-3 rounded-lg bg-[#16A34A] text-white text-xs font-bold transition-all active:scale-95"
+                  >
+                    Complete Profile
+                  </button>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* ===== RECENT REPORTS SECTION ===== */}
+          <section className="px-6 py-3">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-bold uppercase tracking-wide">Your Recent Reports</h2>
+              <button 
+                onClick={() => navigate('/citizen/public-reports')}
+                className="text-xs font-semibold text-[#16A34A] flex items-center gap-0.5"
+              >
+                View All <HiChevronRight className="h-3 w-3" />
+              </button>
+            </div>
+            
+            {loadingReports ? (
+              <div className={`py-6 text-center rounded-2xl border-2 border-dashed ${dk('border-gray-800 bg-white/5', 'border-gray-300 bg-gray-50')}`}>
+                <p className="text-xs text-gray-500 font-medium">Loading reports...</p>
+              </div>
+            ) : recentReports.length === 0 ? (
+              <div className={`py-8 text-center rounded-2xl border-2 border-dashed ${dk('border-gray-800 bg-white/5', 'border-gray-300 bg-gray-50')}`}>
+                <LuFileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-xs font-medium text-gray-500">No reports yet</p>
+                <button 
+                  onClick={() => navigate('/citizen/report-waste')}
+                  className="mt-3 text-xs text-[#16A34A] font-semibold"
+                >
+                  Start your first report →
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {recentReports.slice(0, 2).map((r, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setViewReport(r)}
+                    className={`w-full text-left p-3 rounded-2xl border transition-all active:scale-95 ${dk('bg-[#151515] border-gray-800 hover:border-gray-700', 'bg-white border-gray-200 hover:border-gray-300')}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        r.status === 'Resolved' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 
+                        r.status === 'In Progress' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 
+                        'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+                      }`}>
+                        <LuFileText className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-semibold truncate ${dk('text-white', 'text-gray-900')}`}>{r.wasteType}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{r.status} • {new Date(r.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</p>
+                      </div>
+                      <LuChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0 mt-1" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* ===== ANNOUNCEMENTS SECTION ===== */}
+          <section className="px-6 py-3">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-bold uppercase tracking-wide">Official Updates</h2>
+              <button onClick={() => navigate('/citizen/notifications')} className="text-xs font-semibold text-[#16A34A] flex items-center gap-1">View All <HiChevronRight className="h-3 w-3" /></button>
+            </div>
+            
+            {loadingNotifications ? (
+              <div className="py-4 text-center rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                <p className="text-xs text-gray-500 font-medium">Loading updates...</p>
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="py-4 text-center rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                <p className="text-xs text-gray-500 font-medium">No announcements</p>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#151515] divide-y divide-gray-100 dark:divide-gray-800">
+                {notifications.slice(0, 2).map((notif, i) => (
+                  <div key={i} className="px-4 py-3.5">
+                    <div className="flex items-start gap-3">
+                      <div className="h-2 w-2 rounded-full bg-[#16A34A] mt-1.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-relaxed">{notif.message}</p>
+                        <p className="text-[10px] text-gray-400 mt-1.5">{new Date(notif.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} • Admin</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <div className="h-4" />
+        </div>
+      </div>
+
+      {/* Desktop View - Hidden on Mobile */}
+      <div className="hidden md:block">
+        <div className="max-w-7xl mx-auto p-6 lg:p-8 space-y-8">
         
-        {/* Modern Hero Card */}
+        {/* ===== DESKTOP HERO (unchanged, hidden on mobile) ===== */}
         <section
-          className="relative overflow-hidden p-6 sm:p-8 rounded-lg"
+          className="hidden md:block relative overflow-hidden p-6 sm:p-8 rounded-lg"
           style={{
             background: dark
               ? 'linear-gradient(135deg, #076b2d 0%, #0e8f5a 100%)'
@@ -158,7 +415,7 @@ const CitizenDashboard = () => {
               </div>
             </div>
 
-            {/* Streak Card - Compact */}
+            {/* Streak Card - Desktop */}
             <div
               className="w-full md:w-64 p-6 rounded-lg border border-white/20"
               style={{
@@ -187,37 +444,8 @@ const CitizenDashboard = () => {
           </div>
         </section>
 
-        {/* Address Setup Warning Banner */}
-        {(!user?.houseNo || !user?.streetArea) && (
-          <section className={`p-4 sm:p-6 rounded-lg border flex items-center gap-4 ${dk(
-            'bg-amber-900/20 border-amber-800/50',
-            'bg-amber-50 border-amber-300'
-          )}`}>
-            <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${dk(
-              'bg-amber-800/30 text-amber-300',
-              'bg-amber-200 text-amber-700'
-            )}`}>
-              <HiExclamation className="h-5 w-5" />
-            </div>
-            <div className="flex-1">
-              <p className={`text-sm font-semibold ${dk('text-amber-200', 'text-amber-800')}`}>
-                Complete your address to unlock Home Pickup services
-              </p>
-              <p className={`text-xs mt-1 ${dk('text-amber-300/70', 'text-amber-700/70')}`}>
-                Your address helps us provide village-based waste collection and location-specific services.
-              </p>
-            </div>
-            <button
-              onClick={() => navigate('/citizen/complete-profile')}
-              className="h-10 px-4 rounded-lg bg-[#0AAF29] text-white text-sm font-semibold hover:bg-[#0AAF29]/90 transition-all shrink-0"
-            >
-              Complete Profile
-            </button>
-          </section>
-        )}
-
         {/* Real Stats Grid */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+        <section className="grid grid-cols-3 lg:grid-cols-5 gap-4">
           {[
             {
               label: 'Reports',
@@ -292,7 +520,7 @@ const CitizenDashboard = () => {
                   {recentReports.slice(0, 5).map((r, i) => (
                     <div key={i} className={`flex items-center justify-between p-4 rounded-lg border ${dk('bg-[#151515] border-gray-800', 'bg-gray-50 border-gray-100')} hover:border-[#0AAF29]/30 transition-all group`}>
                       <div className="flex items-center gap-4">
-                        <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                        <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
                           r.status === 'Resolved' ? 'bg-[#0AAF29]/10 text-[#0AAF29]' : 
                           r.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' : 
                           'bg-amber-500/10 text-amber-500'
@@ -345,6 +573,7 @@ const CitizenDashboard = () => {
             </div>
 
           </div>
+        </div>
         </div>
       </div>
 

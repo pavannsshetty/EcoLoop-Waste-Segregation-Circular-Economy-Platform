@@ -152,30 +152,34 @@ const CitizenLayout = () => {
       </aside>
 
       <div className={`relative z-10 transition-all duration-300 ease-in-out ${mainML} flex flex-col min-h-screen`}>
-        <header className={`h-16 backdrop-blur-sm border-b sticky top-0 z-30 flex items-center px-3 sm:px-6 gap-2 sm:gap-4 shadow-sm ${headerBg}`}>
-          <button onClick={() => setMobileOpen(o => !o)}
-            className={`flex items-center justify-center h-9 w-9 rounded-lg transition lg:hidden shrink-0 ${dark ? 'text-slate-400 hover:bg-white/10 hover:text-green-400' : 'text-slate-500 hover:bg-slate-100 hover:text-green-600'}`}>
-            {mobileOpen ? <HiX className="h-5 w-5" /> : <HiMenu className="h-5 w-5" />}
-          </button>
-          <div className="flex-1 min-w-0">
-            <h1 className={`text-sm sm:text-base font-bold tracking-tight truncate ${dark ? 'text-white' : 'text-slate-900'}`}>
-              {user.name || 'Citizen'}
-            </h1>
-            <p className={`text-[9px] sm:text-[10px] uppercase tracking-widest leading-none mt-0.5 truncate ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-              Dashboard
-            </p>
+        <header className={`h-16 backdrop-blur-sm border-b sticky top-0 z-30 flex items-center px-6 sm:px-8 gap-4 shadow-sm ${headerBg}`}>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setMobileOpen(o => !o)}
+              className={`flex items-center justify-center h-9 w-9 rounded-lg transition lg:hidden shrink-0 ${dark ? 'text-slate-400 hover:bg-white/10 hover:text-green-400' : 'text-slate-500 hover:bg-slate-100 hover:text-green-600'}`}>
+              {mobileOpen ? <HiX className="h-5 w-5" /> : <HiMenu className="h-5 w-5" />}
+            </button>
+            <div className="min-w-0">
+              <p className="text-base font-semibold text-gray-900 dark:text-white truncate leading-tight">{user.name || 'Citizen'}</p>
+              <p className="text-[10px] font-medium text-green-600 dark:text-green-400 leading-tight">Citizen Panel</p>
+            </div>
           </div>
-          <button onClick={toggleDark} aria-label="Toggle dark mode"
-            className={`flex items-center justify-center h-9 w-9 rounded-lg transition shrink-0 ${dark ? 'text-yellow-400 hover:bg-white/10' : 'text-slate-500 hover:bg-slate-100'}`}>
-            {dark ? <HiSun className="h-5 w-5" /> : <HiMoon className="h-5 w-5" />}
-          </button>
-          <div className="h-9 w-9 rounded-lg overflow-hidden bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
-            {user.profilePhoto
-              ? <img src={user.profilePhoto} alt="avatar" className="h-full w-full object-cover" />
-              : (user.name || 'C')[0].toUpperCase()
-            }
+
+          <div className="flex-1" />
+
+          <div className="flex items-center gap-3">
+            <button onClick={toggleDark} aria-label="Toggle dark mode"
+              className={`flex items-center justify-center h-9 w-9 rounded-lg transition shrink-0 ${dark ? 'text-yellow-400 hover:bg-white/10' : 'text-slate-500 hover:bg-slate-100'}`}>
+              {dark ? <HiSun className="h-5 w-5" /> : <HiMoon className="h-5 w-5" />}
+            </button>
+            <NotificationBell />
+            <button onClick={() => navigate('/citizen/profile')}
+              className="h-9 w-9 rounded-lg overflow-hidden bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm hover:opacity-90 transition-all active:scale-95">
+              {user.profilePhoto
+                ? <img src={user.profilePhoto} alt="avatar" className="h-full w-full object-cover" />
+                : (user.name || 'C')[0].toUpperCase()
+              }
+            </button>
           </div>
-          <NotificationBell />
         </header>
 
         <main className="flex-1 overflow-y-auto">

@@ -187,7 +187,104 @@ const AdminDashboard = () => {
 
   return (
     <div className={`min-h-screen ${dk('bg-[#0A0A0A]', 'bg-[#F9FAFB]')}`}>
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+      {/* Mobile-Only Design */}
+      <div className="md:hidden">
+        <div className="pb-24 bg-white dark:bg-[#0A0A0A] max-md:space-y-3">
+
+          {/* ===== MOBILE HERO ===== */}
+          <section className="relative overflow-hidden rounded-[22px] mx-5 mt-3 p-4"
+            style={{ height: 175, background: 'linear-gradient(135deg, #16C55B 0%, #0E9D3E 100%)' }}>
+            <div className="flex items-center justify-between h-full gap-5">
+              <div className="flex-1 flex flex-col justify-center min-w-0">
+                <p className="text-base font-bold text-white">{greeting}, <span className="text-white/90">{adminName}</span> 👋</p>
+                <p className="text-xs text-white/80 mt-0.5">{stats.villagesCovered} villages covered</p>
+                <div className="mt-3">
+                  <button onClick={() => navigate('/admin/approval-requests')}
+                    className="h-10 rounded-xl bg-white text-[#0F9C41] text-sm font-semibold flex items-center justify-center gap-2 shadow-lg hover:bg-white/95 transition-all active:scale-95 px-4">
+                    Review Requests
+                  </button>
+                </div>
+              </div>
+              <div className="flex-shrink-0 flex items-center justify-center" style={{ width: 100 }}>
+                <svg viewBox="0 0 96 96" width="88" height="88" fill="none" style={{ opacity: 0.88 }}>
+                  <circle cx="15" cy="15" r="2.5" fill="white" opacity="0.18"/>
+                  <circle cx="75" cy="12" r="2" fill="white" opacity="0.14"/>
+                  <circle cx="50" cy="8" r="1.8" fill="white" opacity="0.1"/>
+                  <circle cx="80" cy="50" r="1.5" fill="white" opacity="0.12"/>
+                  <path d="M48 14L22 28v20c0 18 10 34 26 40 16-6 26-22 26-40V28L48 14z" fill="white" opacity="0.2"/>
+                  <circle cx="48" cy="44" r="12" stroke="white" strokeOpacity="0.3" strokeWidth="2"/>
+                  <circle cx="48" cy="44" r="5" fill="white" opacity="0.25"/>
+                  <line x1="48" y1="28" x2="48" y2="32" stroke="white" strokeOpacity="0.3" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="48" y1="56" x2="48" y2="60" stroke="white" strokeOpacity="0.3" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="32" y1="44" x2="36" y2="44" stroke="white" strokeOpacity="0.3" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="60" y1="44" x2="64" y2="44" stroke="white" strokeOpacity="0.3" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </div>
+            </div>
+          </section>
+
+          {/* ===== CHIPS STRIP ===== */}
+          <section className="mx-5">
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-5 px-5">
+              {chips.map((chip) => (
+                <div key={chip.label}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border shrink-0 ${chip.bg} ${chip.border}`}>
+                  <chip.icon className={`h-4 w-4 ${chip.color}`} />
+                  <div>
+                    <p className="text-[10px] font-medium text-white/80">{chip.label}</p>
+                    <p className={`text-sm font-bold ${chip.color}`}>{loading ? '-' : chip.value}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ===== ERROR BANNER ===== */}
+          {error && (
+            <section className="mx-5">
+              <div className={`p-3 rounded-2xl border flex items-center gap-3 ${
+                dark ? 'bg-red-900/20 border-red-800/40' : 'bg-red-50 border-red-200'
+              }`}>
+                <HiExclamation className="h-4 w-4 text-red-500 shrink-0" />
+                <p className="text-xs font-medium text-red-700 dark:text-red-300 flex-1">{error}</p>
+                <button onClick={() => fetchDashboard(true)}
+                  className="text-[10px] font-semibold underline text-red-600 dark:text-red-300 shrink-0">Retry</button>
+              </div>
+            </section>
+          )}
+
+          {/* ===== STATS GRID ===== */}
+          <section className="mx-5">
+            <div className="grid grid-cols-2 gap-3">
+              {loading
+                ? [1,2,3,4,5,6].map(i => <StatCardSkeleton key={i} />)
+                : statCards.map(card => <StatCard key={card.label} {...card} />)
+              }
+            </div>
+          </section>
+
+          {/* ===== QUICK ACTIONS ===== */}
+          <section className="mx-5">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-slate-900 dark:text-white mb-3">Quick Actions</h2>
+            <div className="grid grid-cols-2 gap-2">
+              {quickActions.map((action) => (
+                <button key={action.label} onClick={() => navigate(action.path)}
+                  className="rounded-xl p-3 text-left border border-white/20 shadow-sm transition-all active:scale-[0.98]"
+                  style={{ background: action.gradient }}>
+                  <action.icon className="h-5 w-5 text-white mb-1.5" />
+                  <p className="text-xs font-semibold text-white">{action.label}</p>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <div className="h-4" />
+        </div>
+      </div>
+
+      {/* Desktop-Only Design */}
+      <div className="hidden md:block">
+        <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
 
         {/* Modern Hero Card */}
         <section
@@ -288,6 +385,7 @@ const AdminDashboard = () => {
             : statCards.map(card => <StatCard key={card.label} {...card} />)
           }
         </section>
+      </div>
       </div>
     </div>
   );
