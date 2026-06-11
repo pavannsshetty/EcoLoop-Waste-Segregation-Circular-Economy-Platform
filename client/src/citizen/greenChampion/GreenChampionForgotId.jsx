@@ -26,8 +26,11 @@ const GreenChampionForgotId = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: identifier.trim() })
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.message || 'Failed to process request'); return;
+      }
       const data = await res.json();
-      if (!res.ok) { setError(data.message || 'Failed to process request'); return; }
       setSent(true);
       setRequestId(data.requestId);
       toast.success('Request ID has been sent to your email or mobile number.');

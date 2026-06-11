@@ -1,10 +1,11 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Fragment } from 'react';
 import { HiLocationMarker, HiClock, HiRefresh, HiX, HiPhotograph, HiExclamation, HiCheckCircle, HiUser, HiPhone, HiMap } from 'react-icons/hi';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { API } from '../../shared/constants';
 import { useTheme } from '../../shared/context/ThemeContext';
+import { useUser } from '../../shared/context/UserContext';
 import socket from '../../socket';
 import { getMapLayer } from '../../shared/utils/mapLayers';
 import MapLayerSwitcher from '../../shared/components/MapLayerSwitcher';
@@ -54,8 +55,10 @@ const staCls = (st, dk) => {
     Verified:    dk('bg-green-900/40 text-green-400', 'bg-green-100 text-green-700'),
     'Under Re-Verification': dk('bg-yellow-900/40 text-yellow-300', 'bg-yellow-100 text-yellow-700'),
     Assigned:    dk('bg-blue-900/40 text-blue-400', 'bg-blue-100 text-blue-700'),
+    Arrived:     dk('bg-teal-900/40 text-teal-400', 'bg-teal-100 text-teal-700'),
     'In Progress': dk('bg-yellow-900/40 text-yellow-400', 'bg-amber-100 text-amber-800'),
     Resolved:    dk('bg-green-900/40 text-green-400', 'bg-green-100 text-green-700'),
+    Completed:   dk('bg-green-900/40 text-green-400', 'bg-green-100 text-green-700'),
     Delayed:     dk('bg-red-900/40 text-red-400', 'bg-red-100 text-red-700'),
     'Clarification Requested': dk('bg-purple-900/40 text-purple-400', 'bg-purple-100 text-purple-700'),
     Resubmitted: dk('bg-indigo-900/40 text-indigo-400', 'bg-indigo-100 text-indigo-700'),
@@ -79,7 +82,7 @@ const DetailModal = ({ report, onClose, dk }) => {
   const value = dk('text-slate-100', 'text-slate-800');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
       <div className={`w-full sm:max-w-lg max-h-[90vh] flex flex-col sm:rounded-lg border shadow-xl ${panel}`}>
         <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b shrink-0">
           <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Report Details</p>
@@ -264,16 +267,22 @@ const CompleteModal = ({ report, onClose, onDone, dk }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      const fd = new FormData();
+      const file = fileRef.current?.files?.[0];
+      if (file) fd.append('completionPhoto', file);
+      fd.append('status', 'Resolved');
+      fd.append('completionNotes', notes);
       const res = await fetch(`${API}/api/collector/report/${report._id}/status`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status: 'Resolved', completionPhoto: photo, completionNotes: notes }),
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
       });
-      const data = await res.json();
       if (!res.ok) {
-        setError(data.message);
+        const errData = await res.json().catch(() => ({}));
+        setError(errData.message);
         return;
       }
+      const data = await res.json();
       onDone(data.report);
       onClose();
     } catch {
@@ -293,11 +302,11 @@ const CompleteModal = ({ report, onClose, onDone, dk }) => {
   const btnGhost = dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-700 hover:bg-slate-50');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
       <div className={`w-full sm:max-w-md max-h-[90vh] flex flex-col sm:rounded-lg border shadow-xl overflow-y-auto ${panel}`}>
         <div className="p-4 sm:p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Mark as Resolved</p>
+            <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Complete Task</p>
             <button type="button" onClick={onClose} className={`p-1 rounded-lg transition ${dk('text-slate-400 hover:text-white hover:bg-slate-800', 'text-slate-500 hover:text-slate-800 hover:bg-slate-100')}`}>
               <HiX className="h-5 w-5" />
             </button>
@@ -331,7 +340,7 @@ const CompleteModal = ({ report, onClose, onDone, dk }) => {
             </button>
             <button type="button" onClick={submit} disabled={loading}
               className="flex-1 rounded-lg bg-green-600 text-white py-2.5 text-sm font-semibold hover:bg-green-500 transition disabled:opacity-60">
-              {loading ? 'Saving...' : 'Mark Resolved'}
+              {loading ? 'Completing...' : 'Complete Task'}
             </button>
           </div>
         </div>
@@ -343,7 +352,7 @@ const CompleteModal = ({ report, onClose, onDone, dk }) => {
 const RevokeConfirmModal = ({ report, onClose, onRevoke, dk, loading }) => {
   const panel = dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200');
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
       <div className={`w-full sm:max-w-sm max-h-[90vh] flex flex-col sm:rounded-lg border shadow-xl overflow-y-auto ${panel}`}>
         <div className="p-4 sm:p-5 space-y-4">
           <div className="flex items-center justify-between">
@@ -419,8 +428,8 @@ const VerificationModal = ({ report, onClose, onVerify, onClarify, dk }) => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ checklist, notes }),
       });
-      const data = await res.json();
       if (!res.ok) return;
+      const data = await res.json();
       onVerify(data.report);
       onClose();
     } catch {} finally { setLoading(false); }
@@ -435,8 +444,8 @@ const VerificationModal = ({ report, onClose, onVerify, onClarify, dk }) => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ notes, action: 'reject' }),
       });
-      const data = await res.json();
       if (!res.ok) return;
+      const data = await res.json();
       onVerify(data.report);
       onClose();
     } catch {} finally { setLoading(false); }
@@ -452,16 +461,16 @@ const VerificationModal = ({ report, onClose, onVerify, onClarify, dk }) => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ reason: clarifyReason, notes: clarifyNotes }),
       });
-      const data = await res.json();
       if (!res.ok) return;
+      const data = await res.json();
       onClarify(data.report);
       onClose();
     } catch {} finally { setLoading(false); }
   };
 
   const modalBox = (content) => (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
-      <div className={`w-full sm:max-w-md max-h-[90vh] flex flex-col sm:rounded-lg border shadow-xl overflow-y-auto ${panel}`}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
+      <div className={`w-full sm:max-w-lg max-h-[90vh] flex flex-col sm:rounded-lg border shadow-xl overflow-y-auto ${panel}`}>
         <div className="p-4 sm:p-5 space-y-4">{content}</div>
       </div>
     </div>
@@ -508,11 +517,11 @@ const VerificationModal = ({ report, onClose, onVerify, onClarify, dk }) => {
         {(report.clarificationCount || 0) >= CLARIFICATION_MAX && (
           <p className="text-xs text-red-500">Maximum clarification requests reached. You must verify or reject.</p>
         )}
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2">
           <button type="button" onClick={() => setShowClarify(false)}
-            className={`flex-1 rounded-lg border py-2.5 text-sm font-semibold transition ${dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-700 hover:bg-slate-50')}`}>Back</button>
+            className={`sm:flex-1 rounded-lg border py-1 text-sm font-semibold transition ${dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-700 hover:bg-slate-50')}`}>Back</button>
           <button type="button" onClick={submitClarify} disabled={loading || !clarifyReason || (report.clarificationCount || 0) >= CLARIFICATION_MAX}
-            className="flex-1 rounded-lg bg-yellow-600 text-white py-2.5 text-sm font-semibold hover:bg-yellow-500 transition disabled:opacity-60">
+            className="sm:flex-1 rounded-lg bg-yellow-600 text-white py-1 text-sm font-semibold hover:bg-yellow-500 transition disabled:opacity-60">
             {loading ? 'Sending...' : 'Request Clarification'}
           </button>
         </div>
@@ -589,19 +598,19 @@ const VerificationModal = ({ report, onClose, onVerify, onClarify, dk }) => {
           placeholder="Add any notes about your verification..."
           className={`w-full rounded-lg border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none ${input}`} />
       </div>
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2">
         <button type="button" onClick={onClose}
-          className={`flex-1 rounded-lg border py-2.5 text-sm font-semibold transition ${dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-700 hover:bg-slate-50')}`}>Cancel</button>
+          className={`sm:flex-1 rounded-lg border py-1 text-sm font-semibold transition ${dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-700 hover:bg-slate-50')}`}>Cancel</button>
         <button type="button" onClick={submitReject} disabled={loading}
-          className={`flex-1 rounded-lg border py-2.5 text-sm font-semibold transition disabled:opacity-50 ${dk('border-red-700 text-red-400 hover:bg-red-900/30', 'border-red-300 text-red-700 hover:bg-red-50')}`}>
+          className={`sm:flex-1 rounded-lg border py-1 text-sm font-semibold transition disabled:opacity-50 ${dk('border-red-700 text-red-400 hover:bg-red-900/30', 'border-red-300 text-red-700 hover:bg-red-50')}`}>
           Reject Report
         </button>
         <button type="button" onClick={() => setShowClarify(true)} disabled={(report.clarificationCount || 0) >= CLARIFICATION_MAX}
-          className={`flex-1 rounded-lg border py-2.5 text-sm font-semibold transition disabled:opacity-50 ${dk('border-yellow-700 text-yellow-400 hover:bg-yellow-900/30', 'border-yellow-300 text-yellow-700 hover:bg-yellow-50')}`}>
+          className={`sm:flex-1 rounded-lg border py-1 text-sm font-semibold transition disabled:opacity-50 ${dk('border-yellow-700 text-yellow-400 hover:bg-yellow-900/30', 'border-yellow-300 text-yellow-700 hover:bg-yellow-50')}`}>
           Request Clarification
         </button>
         <button type="button" onClick={submitVerify} disabled={loading || !allChecked}
-          className="flex-1 rounded-lg bg-green-600 text-white py-2.5 text-sm font-semibold hover:bg-green-500 transition disabled:opacity-60">
+          className="sm:flex-1 rounded-lg bg-green-600 text-white py-1 text-sm font-semibold hover:bg-green-500 transition disabled:opacity-60">
           {loading ? 'Verifying...' : 'Verify Report'}
         </button>
       </div>
@@ -609,8 +618,42 @@ const VerificationModal = ({ report, onClose, onVerify, onClarify, dk }) => {
   );
 };
 
+const WorkflowProgress = ({ status, dk }) => {
+  const steps = [
+    { key: 'Verified', label: 'Verify' },
+    { key: 'Assigned', label: 'Accept' },
+    { key: 'Arrived', label: 'Arrive' },
+    { key: 'In Progress', label: 'Work' },
+    { key: 'Completed', label: 'Done' },
+  ];
+  const statusOrder = ['Submitted', 'Verified', 'Assigned', 'Arrived', 'In Progress', 'Resolved', 'Completed'];
+  const currentIdx = statusOrder.indexOf(status);
+  if (currentIdx === -1) return null;
+
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      {steps.map((step, idx) => {
+        const state = idx < currentIdx ? 'completed' : idx === currentIdx ? 'current' : 'pending';
+        return (
+          <Fragment key={step.key}>
+            {idx > 0 && <span className={`text-[10px] ${dk('text-slate-600', 'text-slate-300')}`}>{'▸'}</span>}
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded transition ${
+              state === 'completed' ? dk('bg-green-900/50 text-green-400', 'bg-green-100 text-green-700') :
+              state === 'current' ? dk('bg-blue-900/50 text-blue-400 ring-1 ring-blue-500', 'bg-blue-100 text-blue-700 ring-1 ring-blue-400') :
+              dk('bg-slate-800 text-slate-500', 'bg-slate-100 text-slate-400')
+            }`}>
+              {step.label}
+            </span>
+          </Fragment>
+        );
+      })}
+    </div>
+  );
+};
+
 const PublicWasteTasks = () => {
   const { dark } = useTheme();
+  const { user: ctxUser, loading: userLoading } = useUser();
   const dk = (d, l) => (dark ? d : l);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -624,6 +667,8 @@ const PublicWasteTasks = () => {
   const [revokeLoading, setRevokeLoading] = useState(false);
   const [verifyTarget, setVerifyTarget] = useState(null);
   const [routeMapTarget, setRouteMapTarget] = useState(null);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [error, setError] = useState('');
   const token = localStorage.getItem('token');
   const [mapLayer, setMapLayer] = useState('osm');
 
@@ -657,6 +702,13 @@ const PublicWasteTasks = () => {
       if (res.ok) {
         const data = await res.json();
         setReports(Array.isArray(data) ? data : []);
+        setError('');
+      } else {
+        let data = null;
+        try { data = await res.json(); } catch (e) { /* ignore JSON parse */ }
+        const msg = data?.message || data?.error || `Failed to load reports (${res.status})`;
+        console.error('[PublicWasteTasks] fetchReports error', res.status, msg, data);
+        setError(msg);
       }
     } catch {
     } finally {
@@ -665,13 +717,21 @@ const PublicWasteTasks = () => {
   };
 
   useEffect(() => {
+    if (userLoading) return;
+    if (!ctxUser || ctxUser.role !== 'Collector') return;
     fetchReports();
-  }, [filter, sort]);
+  }, [filter, sort, userLoading, ctxUser]);
 
   // Real-time socket listener
   useEffect(() => {
     const handler = (updated) => {
-      setReports((rs) => rs.map((r) => (r._id === updated._id ? updated : r)));
+      setReports((rs) => {
+        const exists = rs.find((r) => r._id === updated._id);
+        if (exists) {
+          return rs.map((r) => (r._id === updated._id ? updated : r));
+        }
+        return [updated, ...rs];
+      });
     };
     socket.on('report_updated', handler);
     return () => socket.off('report_updated', handler);
@@ -684,15 +744,28 @@ const PublicWasteTasks = () => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
       });
+      if (!res.ok) return;
       const data = await res.json();
-      if (res.ok) {
-        setReports((rs) => rs.map((r) => (r._id === item._id ? data.report : r)));
-      }
+      setReports((rs) => rs.map((r) => (r._id === item._id ? data.report : r)));
     } catch {
     }
   };
 
   const onDone = (updated) => setReports((rs) => rs.map((r) => (r._id === updated._id ? updated : r)));
+
+  const markArrived = async (item) => {
+    try {
+      const res = await fetch(`${API}/api/collector/report/${item._id}/arrived`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setReports((rs) => rs.map((r) => (r._id === item._id ? data.report : r)));
+      setSuccessMsg('Marked as arrived at destination');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch {}
+  };
 
   const revokeCompletion = async () => {
     if (!revokeTarget) return;
@@ -702,17 +775,188 @@ const PublicWasteTasks = () => {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) return;
       const data = await res.json();
-      if (res.ok) {
-        setReports((rs) => rs.map((r) => (r._id === revokeTarget._id ? data.report : r)));
-        setRevokeTarget(null);
-      }
+      setReports((rs) => rs.map((r) => (r._id === revokeTarget._id ? data.report : r)));
+      setRevokeTarget(null);
     } catch {} finally { setRevokeLoading(false); }
   };
 
   const goToDestination = (r) => {
     setRouteMapTarget(r);
   };
+
+  const availableReports = reports.filter(r =>
+    ['Submitted', 'Verified', 'Resubmitted', 'Clarification Expired', 'Under Re-Verification'].includes(r.status)
+  );
+  const activeReports = reports.filter(r =>
+    ['Assigned', 'Arrived', 'In Progress', 'Delayed'].includes(r.status)
+  );
+  const completedReports = reports.filter(r =>
+    ['Resolved', 'Completed'].includes(r.status)
+  );
+
+  const renderReportCard = (r) => (
+    <div key={r._id} className={`rounded-lg border p-4 shadow-sm transition ${dk('bg-white/5 border-gray-700 hover:bg-white/[0.07]', 'bg-white border-slate-100 hover:shadow-md')}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-1 min-w-0">
+          {/* LEFT: Details (70-75%) */}
+          <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-orange-600 text-white">Public Waste</span>
+            {r.reportId && (
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-lg bg-green-50 text-green-600 border border-green-100">
+                {r.reportId}
+              </span>
+            )}
+            <p className={`text-sm font-semibold ${dk('text-slate-100', 'text-slate-900')}`}>{r.wasteType}</p>
+            <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${sevCls(r.severity, dk)}`}>{r.severity}</span>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${staCls(r.status, dk)}`}>{r.status}</span>
+          </div>
+
+          <WorkflowProgress status={r.status} dk={dk} />
+
+          <p className={`text-xs flex items-center gap-1 font-medium ${dk('text-slate-200', 'text-slate-700')}`}>
+            <HiUser className="h-3 w-3 text-orange-500 shrink-0" />
+            {r.userId?.name || 'Unknown Citizen'}
+            {r.userId?.phone && (
+              <span className={`font-normal ${dk('text-slate-400', 'text-slate-500')}`}>· {r.userId.phone}</span>
+            )}
+          </p>
+
+          <p className={`text-xs flex items-center gap-1 ${dk('text-slate-400', 'text-slate-500')}`}>
+            <HiLocationMarker className="h-3 w-3 text-orange-500 shrink-0" />
+            <span className="truncate">{r.location?.address}</span>
+            {distances[r._id] && (
+              <span className="shrink-0">
+                · {distances[r._id].distance < 1
+                  ? `${Math.round(distances[r._id].distance * 1000)}m`
+                  : `${distances[r._id].distance.toFixed(1)}km`} · {distances[r._id].duration} mins away
+              </span>
+            )}
+          </p>
+
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
+            {r.village && (
+              <span className={`flex items-center gap-1 font-medium ${dk('text-orange-400', 'text-orange-700')}`}>
+                <HiLocationMarker className="h-3 w-3 shrink-0" />{r.village}
+              </span>
+            )}
+            <span className={`flex items-center gap-1 ${dk('text-slate-500', 'text-slate-400')}`}>
+              <HiClock className="h-3 w-3 shrink-0" /> {fmt(r.createdAt)}
+            </span>
+          </div>
+
+          <div className={`p-2 rounded-lg border flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold ${
+            dk('bg-white/[0.02] border-slate-700/50', 'bg-slate-50 border-slate-200/60')
+          }`}>
+            <div className="flex items-center gap-1">
+              <span className={dk('text-slate-400', 'text-slate-500')}>Quality:</span>
+              <span className={getReportQuality(r) === 'Good' ? 'text-green-500 font-bold' : 'text-amber-500 font-bold'}>{getReportQuality(r)}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className={dk('text-slate-400', 'text-slate-500')}>Duplicate:</span>
+              <span className={
+                getDuplicateRisk(r) === 'High' ? 'text-red-500 font-bold' :
+                getDuplicateRisk(r) === 'Medium' ? 'text-amber-500 font-bold' :
+                'text-green-500 font-bold'
+              }>{getDuplicateRisk(r)}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className={dk('text-slate-400', 'text-slate-500')}>Support:</span>
+              <span className={`font-bold ${r.supportedBy?.length ? dk('text-green-400', 'text-green-600') : dk('text-slate-300', 'text-slate-700')}`}>
+                {r.supportedBy?.length || 0}
+              </span>
+            </div>
+          </div>
+
+          {r.quantity && <p className={`text-xs font-medium ${dk('text-slate-300', 'text-slate-700')}`}>Quantity: {r.quantity}</p>}
+          {r.description && <p className={`text-xs line-clamp-2 ${dk('text-slate-400', 'text-slate-600')}`}>{r.description}</p>}
+          {r.aiGeneratedDetected && (
+            <p className="text-xs text-red-500 font-medium flex items-center gap-1">
+              <HiExclamation className="h-3 w-3" /> AI generated content detected
+            </p>
+          )}
+          {r.supportedBy?.length > 0 && (
+            <p className={`text-xs font-medium flex items-center gap-1 ${dk('text-green-400', 'text-green-700')}`}>
+              <HiUser className="h-3 w-3" /> Supported by {r.supportedBy.length} citizen{r.supportedBy.length > 1 ? 's' : ''}
+            </p>
+          )}
+          {(r.status === 'Clarification Requested') && (
+            <p className={`text-xs font-medium flex items-center gap-1 ${dk('text-purple-400', 'text-purple-700')}`}>Awaiting citizen response</p>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-2 pt-1">
+            {r.location?.lat != null && r.location?.lng != null && (r.status === 'Assigned' || r.status === 'Arrived') && (
+              <button type="button" onClick={() => goToDestination(r)}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center gap-1.5 ${
+                  dk('border-orange-800/50 text-orange-400 hover:bg-orange-900/30', 'border-orange-200 text-orange-600 hover:bg-orange-50')
+                }`}>
+                <HiMap className="h-3.5 w-3.5" /> Navigate
+              </button>
+            )}
+            {(r.status === 'Submitted' || r.status === 'Resubmitted' || r.status === 'Clarification Expired') && (
+              <button type="button" onClick={() => setVerifyTarget(r)}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-500 transition">Verify Report</button>
+            )}
+            {r.status === 'Verified' && (
+              <button type="button" onClick={() => updateStatus(r, 'Assigned')}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition">Accept Task</button>
+            )}
+            {r.status === 'Assigned' && (
+              <>
+                <button type="button" onClick={() => markArrived(r)}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-teal-600 text-white hover:bg-teal-500 transition">Mark Arrived</button>
+              </>
+            )}
+            {r.status === 'Arrived' && (
+              <button type="button" onClick={() => updateStatus(r, 'In Progress')}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-yellow-600 text-white hover:bg-yellow-500 transition">Start Work</button>
+            )}
+            {r.status === 'In Progress' && (
+              <>
+                <button type="button" onClick={() => setComplete(r)}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-500 transition">Complete Task</button>
+                <button type="button" onClick={() => updateStatus(r, 'Delayed')}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-orange-600 text-white hover:bg-orange-500 transition flex items-center gap-1">
+                  <HiExclamation className="h-3.5 w-3.5" /> Report Delay
+                </button>
+              </>
+            )}
+            {(r.status === 'Resolved' || r.status === 'Completed') && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`text-xs font-medium flex items-center gap-1 ${dk('text-green-400', 'text-green-700')}`}>
+                  <HiCheckCircle className="h-3.5 w-3.5" /> Completed {fmt(r.completedAt || r.updatedAt)}
+                </span>
+                <button type="button" onClick={() => setRevokeTarget(r)}
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center gap-1.5 ${
+                    dk('border-red-800/50 text-red-400 hover:bg-red-900/30', 'border-red-200 text-red-600 hover:bg-red-50')
+                  }`}>
+                  <HiX className="h-3.5 w-3.5" /> Revoke Completion
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT: Image (25-30%) */}
+        {r.image && (
+          <button type="button" onClick={() => setDetail(r)}
+            className="w-full sm:w-[28%] sm:min-w-[140px] shrink-0">
+            <div className="w-full h-36 sm:h-40 rounded-lg overflow-hidden">
+              <img src={r.image} alt="Waste" className="w-full h-full object-cover" />
+            </div>
+          </button>
+        )}
+        </div>
+        <button type="button" onClick={() => setDetail(r)}
+          className={`shrink-0 text-xs px-2.5 py-1 rounded-lg border font-medium transition ${dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-600 hover:bg-slate-50')}`}>
+          View
+        </button>
+      </div>
+    </div>
+  );
 
   const selectCls = dk(
     'rounded-lg border border-gray-700 bg-white/5 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500',
@@ -750,6 +994,12 @@ const PublicWasteTasks = () => {
         />
       )}
 
+      {error && (
+        <div className={`text-xs font-medium px-3 py-2 rounded-lg border ${dk('bg-red-900/30 text-red-400 border-red-800', 'bg-red-50 text-red-600 border-red-200')}`}>
+          {error}
+        </div>
+      )}
+
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className={`text-lg font-bold tracking-tight text-left ${dk('text-slate-200', 'text-slate-800')}`}>Public Waste Tasks</h1>
@@ -767,7 +1017,7 @@ const PublicWasteTasks = () => {
 
       <div className="flex flex-wrap gap-3">
         <select value={filter} onChange={(e) => setFilter(e.target.value)} className={selectCls}>
-          {['all', 'High', 'Medium', 'Low', 'Submitted', 'Verified', 'Assigned', 'In Progress', 'Resolved', 'Clarification Requested', 'Resubmitted'].map((v) => (
+          {['all', 'High', 'Medium', 'Low', 'Submitted', 'Verified', 'Assigned', 'Arrived', 'In Progress', 'Completed', 'Resolved', 'Delayed', 'Reopened', 'Clarification Expired'].map((v) => (
             <option key={v} value={v}>
               {v === 'all' ? 'All' : v}
             </option>
@@ -779,6 +1029,12 @@ const PublicWasteTasks = () => {
         </select>
       </div>
 
+      {successMsg && (
+        <div className="fixed top-4 right-4 z-[100] flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg shadow-xl text-sm font-semibold animate-in slide-in-from-top">
+          <HiCheckCircle className="h-4 w-4" /> {successMsg}
+        </div>
+      )}
+
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <div className="h-7 w-7 rounded-full border-[3px] border-orange-500 border-t-transparent animate-spin" />
@@ -786,199 +1042,38 @@ const PublicWasteTasks = () => {
       ) : reports.length === 0 ? (
         <div className={`text-center py-16 text-sm ${dk('text-slate-500', 'text-slate-400')}`}>No public waste reports found.</div>
       ) : (
-        reports.map((r) => (
-          <div
-            key={r._id}
-            className={`rounded-lg border p-4 space-y-3 shadow-sm transition ${dk('bg-white/5 border-gray-700 hover:bg-white/[0.07]', 'bg-white border-slate-100 hover:shadow-md')}`}
-          >
-            <div className="flex items-start justify-between gap-2 flex-wrap">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-orange-600 text-white">Public Waste</span>
-                  {r.reportId && (
-                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-lg bg-green-50 text-green-600 border border-green-100">
-                      {r.reportId}
-                    </span>
-                  )}
-                  <p className={`text-sm font-semibold ${dk('text-slate-100', 'text-slate-900')}`}>{r.wasteType}</p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${sevCls(r.severity, dk)}`}>{r.severity}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${staCls(r.status, dk)}`}>{r.status}</span>
-                </div>
-                <p className={`text-xs mt-1 flex items-center gap-1 font-medium ${dk('text-slate-200', 'text-slate-700')}`}>
-                  <HiUser className="h-3 w-3 text-orange-500 shrink-0" />
-                  {r.userId?.name || 'Unknown Citizen'}
-                  {r.userId?.phone && (
-                    <span className={`font-normal ${dk('text-slate-400', 'text-slate-500')}`}>
-                      · {r.userId.phone}
-                    </span>
-                  )}
-                </p>
-                <p className={`text-xs mt-1 flex items-center gap-1 ${dk('text-slate-400', 'text-slate-500')}`}>
-                  <HiLocationMarker className="h-3 w-3 text-orange-500 shrink-0" />
-                  <span className="truncate">{r.location?.address}</span>
-                  {distances[r._id] && (
-                    <span className="shrink-0">
-                      · {distances[r._id].distance < 1
-                        ? `${Math.round(distances[r._id].distance * 1000)}m`
-                        : `${distances[r._id].distance.toFixed(1)}km`} · {distances[r._id].duration} mins away
-                    </span>
-                  )}
-                </p>
-                {r.village && (
-                  <p className={`text-xs flex items-center gap-1 mt-0.5 font-medium ${dk('text-orange-400', 'text-orange-700')}`}>
-                    <HiLocationMarker className="h-3 w-3 shrink-0" />
-                    {r.village}
-                  </p>
-                )}
-                <p className={`text-xs flex items-center gap-1 mt-0.5 ${dk('text-slate-500', 'text-slate-400')}`}>
-                  <HiClock className="h-3 w-3 shrink-0" /> {fmt(r.createdAt)}
-                </p>
-
-                <div className={`mt-2 p-2 rounded-lg border flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold ${
-                  dk('bg-white/[0.02] border-slate-700/50', 'bg-slate-50 border-slate-200/60')
-                }`}>
-                  <div className="flex items-center gap-1">
-                    <span className={dk('text-slate-400', 'text-slate-500')}>Report Quality:</span>
-                    <span className={getReportQuality(r) === 'Good' ? 'text-green-500 font-bold' : 'text-amber-500 font-bold'}>
-                      {getReportQuality(r)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className={dk('text-slate-400', 'text-slate-500')}>Duplicate Risk:</span>
-                    <span className={
-                      getDuplicateRisk(r) === 'High' ? 'text-red-500 font-bold' : 
-                      getDuplicateRisk(r) === 'Medium' ? 'text-amber-500 font-bold' : 
-                      'text-green-500 font-bold'
-                    }>
-                      {getDuplicateRisk(r)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className={dk('text-slate-400', 'text-slate-500')}>Supporting Citizens:</span>
-                    <span className={`font-bold ${r.supportedBy?.length ? dk('text-green-400', 'text-green-600') : dk('text-slate-300', 'text-slate-700')}`}>
-                      {r.supportedBy?.length || 0}
-                    </span>
-                  </div>
-                </div>
-                {r.quantity && (
-                  <p className={`text-xs font-medium mt-1 ${dk('text-slate-300', 'text-slate-700')}`}>Quantity: {r.quantity}</p>
-                )}
-                {r.description && (
-                  <p className={`text-xs mt-1 line-clamp-2 ${dk('text-slate-400', 'text-slate-600')}`}>{r.description}</p>
-                )}
-                {r.aiGeneratedDetected && (
-                  <p className="text-xs mt-1 text-red-500 font-medium flex items-center gap-1">
-                    <HiExclamation className="h-3 w-3" /> AI generated content detected
-                  </p>
-                )}
-                {r.supportedBy?.length > 0 && (
-                  <p className={`text-xs mt-1 font-medium flex items-center gap-1 ${dk('text-green-400', 'text-green-700')}`}>
-                    <HiUser className="h-3 w-3" /> Supported by {r.supportedBy.length} citizen{r.supportedBy.length > 1 ? 's' : ''}
-                  </p>
-                )}
-                {(r.status === 'Clarification Requested') && (
-                  <p className={`text-xs mt-1 font-medium flex items-center gap-1 ${dk('text-purple-400', 'text-purple-700')}`}>
-                    Awaiting citizen response
-                  </p>
-                )}
+        <>
+          {availableReports.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <h2 className={`text-sm font-bold uppercase tracking-wider ${dk('text-slate-300', 'text-slate-700')}`}>Available Tasks</h2>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${dk('bg-blue-900/40 text-blue-400', 'bg-blue-100 text-blue-700')}`}>{availableReports.length}</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setDetail(r)}
-                className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition ${dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-600 hover:bg-slate-50')}`}
-              >
-                View
-              </button>
+              {availableReports.map(renderReportCard)}
             </div>
-
-            {r.image && (
-              <img src={r.image} alt="Waste" className="w-full max-w-full h-auto max-h-28 sm:max-h-32 rounded-lg object-cover" />
-            )}
-
-            <div className="flex flex-wrap gap-2">
-              {r.location?.lat != null && r.location?.lng != null && r.status !== 'Resolved' && (
-                <button
-                  type="button"
-                  onClick={() => goToDestination(r)}
-                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center gap-1.5 ${
-                    dk('border-orange-800/50 text-orange-400 hover:bg-orange-900/30', 'border-orange-200 text-orange-600 hover:bg-orange-50')
-                  }`}
-                >
-                  <HiMap className="h-3.5 w-3.5" /> Navigate
-                </button>
-              )}
-              {(r.status === 'Submitted' || r.status === 'Resubmitted' || r.status === 'Clarification Expired') && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setVerifyTarget(r)}
-                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-500 transition"
-                  >
-                    Verify Report
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateStatus(r, 'Assigned')}
-                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition"
-                  >
-                    Accept Task
-                  </button>
-                </>
-              )}
-              {r.status === 'Verified' && (
-                <button
-                  type="button"
-                  onClick={() => updateStatus(r, 'Assigned')}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition"
-                >
-                  Accept Task
-                </button>
-              )}
-              {r.status === 'Assigned' && (
-                <button
-                  type="button"
-                  onClick={() => updateStatus(r, 'In Progress')}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-yellow-600 text-white hover:bg-yellow-500 transition"
-                >
-                  Start Work
-                </button>
-              )}
-              {r.status === 'In Progress' && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setComplete(r)}
-                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-500 transition"
-                  >
-                    Mark Resolved
-                  </button>
-                  <button
-                    type="button"
-                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-orange-600 text-white hover:bg-orange-500 transition flex items-center gap-1"
-                  >
-                    <HiExclamation className="h-3.5 w-3.5" /> Report Delay
-                  </button>
-                </>
-              )}
-              {r.status === 'Resolved' && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={`text-xs font-medium flex items-center gap-1 ${dk('text-green-400', 'text-green-700')}`}>
-                    <HiCheckCircle className="h-3.5 w-3.5" /> Completed {fmt(r.completedAt || r.updatedAt)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setRevokeTarget(r)}
-                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center gap-1.5 ${
-                      dk('border-red-800/50 text-red-400 hover:bg-red-900/30', 'border-red-200 text-red-600 hover:bg-red-50')
-                    }`}
-                  >
-                    <HiX className="h-3.5 w-3.5" /> Revoke Completion
-                  </button>
-                </div>
-              )}
+          )}
+          {activeReports.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <h2 className={`text-sm font-bold uppercase tracking-wider ${dk('text-slate-300', 'text-slate-700')}`}>My Active Tasks</h2>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${dk('bg-yellow-900/40 text-yellow-400', 'bg-amber-100 text-amber-800')}`}>{activeReports.length}</span>
+              </div>
+              {activeReports.map(renderReportCard)}
             </div>
-          </div>
-        ))
+          )}
+          {completedReports.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <h2 className={`text-sm font-bold uppercase tracking-wider ${dk('text-slate-300', 'text-slate-700')}`}>Completed Tasks</h2>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${dk('bg-green-900/40 text-green-400', 'bg-green-100 text-green-700')}`}>{completedReports.length}</span>
+              </div>
+              {completedReports.map(renderReportCard)}
+            </div>
+          )}
+          {reports.length > 0 && availableReports.length === 0 && activeReports.length === 0 && completedReports.length === 0 && (
+            <div className={`text-center py-16 text-sm ${dk('text-slate-500', 'text-slate-400')}`}>No reports match the current filter.</div>
+          )}
+        </>
       )}
     </div>
   );

@@ -23,8 +23,11 @@ const GreenChampionStatus = () => {
     setError(null);
     try {
       const res = await fetch(apiUrl(`/api/green-champion/status/${requestId.trim().toUpperCase()}`));
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.message || 'Failed to fetch status'); setStatus(null); setRequestData(null); return;
+      }
       const data = await res.json();
-      if (!res.ok) { setError(data.message || 'Failed to fetch status'); setStatus(null); setRequestData(null); return; }
       setStatus(data.status);
       setRequestData(data);
       setError(null);

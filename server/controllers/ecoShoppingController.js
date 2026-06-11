@@ -276,6 +276,7 @@ const buyItem = async (req, res) => {
       paymentStatus: 'Completed',
       quantity: 1,
       deliveryAddress,
+      deliveryVillage: user.village || '',
       deliveryLatitude,
       deliveryLongitude,
       deliveryStatus,

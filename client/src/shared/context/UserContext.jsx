@@ -66,8 +66,8 @@ export const UserProvider = ({ children }) => {
         const data = await res.json();
         setUser(data);
         localStorage.setItem('user', JSON.stringify(data));
-      } else if (res.status === 401) {
-        console.warn('refreshUser: token invalid or expired');
+      } else if (res.status === 401 || res.status === 404) {
+        console.warn('refreshUser: token invalid or user not found');
         setUser(null);
         localStorage.removeItem('token');
         localStorage.removeItem('user');

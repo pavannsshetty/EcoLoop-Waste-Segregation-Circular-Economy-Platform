@@ -15,8 +15,10 @@ const RecyclingPickups = () => {
             const res = await fetch(apiUrl('/api/green-champion/recycling-requests'), {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            const data = await res.json();
-            if (res.ok) setRequests(data);
+            if (res.ok) {
+                const data = await res.json();
+                setRequests(data);
+            }
         } catch (err) {
             console.error('Error fetching pickups:', err);
         } finally {

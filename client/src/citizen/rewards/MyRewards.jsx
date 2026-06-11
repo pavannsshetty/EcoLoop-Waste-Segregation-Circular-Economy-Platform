@@ -4,6 +4,7 @@ import { API } from '../../shared/constants';
 import { MdRecycling, MdEmojiNature, MdEmojiEvents, MdLeaderboard } from 'react-icons/md';
 import { useTheme } from '../../shared/context/ThemeContext';
 import { useUser } from '../../shared/context/UserContext';
+import socket from '../../socket';
 
 const BADGE_META = {
   'Eco Beginner': { Icon: MdEmojiNature, color: 'bg-green-50 border-green-200 text-green-700', threshold: 50 },
@@ -41,10 +42,10 @@ const HOW_TO_EARN = [
 
 const MyRewards = () => {
   const { dark } = useTheme();
-  const { user: ctxUser } = useUser();
+  const { user: ctxUser, updateUser } = useUser();
   const dk = (d, l) => dark ? d : l;
   const token = localStorage.getItem('token');
-  const [data, setData] = useState({ ecoPoints: 0, badges: [], history: [], streakCount: 0 });
+  const [data, setData] = useState({ ecoPoints: null, badges: [], history: [], streakCount: 0 });
   const [loading, setLoading] = useState(true);
 
   const fetchRewards = async () => {
@@ -53,7 +54,7 @@ const MyRewards = () => {
       const res = await fetch(`${API}/api/citizen/profile`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const d = await res.json();
-        setData({ ecoPoints: d.ecoPoints || 0, badges: d.badges || [], history: d.pointsHistory || [], streakCount: d.streakCount || 0 });
+        setData({ ecoPoints: d.ecoPoints ?? d.rewards?.points ?? 0, badges: d.badges || [], history: d.pointsHistory || [], streakCount: d.streakCount || 0 });
       }
     } catch { }
     finally { setLoading(false); }
@@ -61,8 +62,34 @@ const MyRewards = () => {
 
   useEffect(() => { fetchRewards(); }, []);
 
-  const ecoPoints = ctxUser?.ecoPoints ?? data.ecoPoints;
-  const badges = ctxUser?.badges ?? data.badges;
+  useEffect(() => {
+    const handleEcoPointsUpdated = (d) => {
+      const userId = localStorage.getItem('userId') || '';
+      if (d.userId === userId || d.userId === ctxUser?._id) {
+        const pts = d.rewardsPoints ?? d.ecoPoints ?? 0;
+        setData(prev => ({ ...prev, ecoPoints: pts }));
+        if (updateUser) updateUser({ ecoPoints: pts, rewards: { ...(ctxUser?.rewards || {}), points: pts } });
+      }
+    };
+
+    const handlePointsUpdated = (d) => {
+      if (d.points !== undefined) {
+        setData(prev => ({ ...prev, ecoPoints: d.points }));
+        if (updateUser) updateUser({ ecoPoints: d.points, rewards: { ...(ctxUser?.rewards || {}), points: d.points } });
+      }
+    };
+
+    socket.on('eco_points_updated', handleEcoPointsUpdated);
+    socket.on('points_updated', handlePointsUpdated);
+    return () => {
+      socket.off('eco_points_updated', handleEcoPointsUpdated);
+      socket.off('points_updated', handlePointsUpdated);
+    };
+  }, [ctxUser?._id, ctxUser?.rewards, updateUser]);
+
+  const ecoPoints = data.ecoPoints ?? ctxUser?.rewards?.points ?? ctxUser?.ecoPoints ?? 0;
+  const badges = data.badges.length > 0 ? data.badges : (ctxUser?.badges || []);
+  const streakCount = data.streakCount || ctxUser?.streakCount || 0;
   const nextBadge = ALL_BADGES.find(b => ecoPoints < b.threshold);
   const progress = nextBadge ? Math.min((ecoPoints / nextBadge.threshold) * 100, 100) : 100;
   const currentBadge = [...ALL_BADGES].reverse().find(b => ecoPoints >= b.threshold);
@@ -81,7 +108,9 @@ const MyRewards = () => {
         <div className="relative flex items-center justify-between gap-4">
           <div>
             <p className="text-sm opacity-80">Total Eco Points</p>
-            <p className="text-3xl sm:text-5xl font-bold mt-1">{loading ? '—' : ecoPoints}</p>
+            <p className="text-3xl sm:text-5xl font-bold mt-1">
+              {loading && data.ecoPoints === null ? <span className="inline-block h-9 w-24 rounded bg-white/20 animate-pulse align-middle" /> : ecoPoints}
+            </p>
             {currentBadge && (
               <div className="flex items-center gap-2 mt-2">
                 <currentBadge.Icon className="h-5 w-5 opacity-90" />
@@ -93,7 +122,7 @@ const MyRewards = () => {
           <div className="flex flex-col items-end gap-1">
             <div className="flex items-center gap-1.5 bg-white/20 px-2 py-1 rounded-lg text-xs font-bold">
               <HiTrendingUp className="h-3.5 w-3.5" />
-              {ctxUser?.streakCount ?? data.streakCount} day streak
+              {streakCount} day streak
             </div>
           </div>
         </div>

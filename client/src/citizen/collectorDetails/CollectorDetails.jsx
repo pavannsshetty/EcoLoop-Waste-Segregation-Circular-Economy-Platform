@@ -21,7 +21,7 @@ const CollectorsDetails = () => {
     const fetchCollector = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch('/api/user/assigned-collector', {
+        const res = await fetch(apiUrl('/api/user/assigned-collector'), {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {

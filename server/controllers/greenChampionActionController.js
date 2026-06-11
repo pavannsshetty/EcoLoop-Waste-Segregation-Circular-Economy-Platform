@@ -4,16 +4,40 @@ const Campaign = require('../models/Campaign');
 const GCTask = require('../models/GCTask');
 const RecyclingPickup = require('../models/RecyclingPickup');
 const GCFeedback = require('../models/GCFeedback');
+const GreenChampionRequest = require('../models/GreenChampionRequest');
 const User = require('../models/User');
 const Collector = require('../models/Collector');
 const Notification = require('../models/Notification');
-const { emitToAll } = require('../socket');
+const { emitToAll, emitAnalyticsUpdate } = require('../socket');
+const { getAnalyticsByVillages } = require('../services/analyticsService');
+
+const MAX_REASONABLE_POINTS = 100;
+
+const awardEcoPoints = async (userId, points, action) => {
+  try {
+    if (!userId || typeof points !== 'number' || points <= 0 || points > MAX_REASONABLE_POINTS) {
+      console.warn(`[SUSPICIOUS] ecoPoints bypass blocked: userId=${userId}, points=${points}, action=${action}`);
+      return;
+    }
+    const user = await User.findById(userId).select('_id ecoPoints');
+    if (!user) {
+      console.warn(`[SUSPICIOUS] ecoPoints to non-existent user: userId=${userId}, action=${action}`);
+      return;
+    }
+    await User.findByIdAndUpdate(userId, { $inc: { ecoPoints: points } });
+  } catch (err) {
+    console.error(`[awardEcoPoints Error] action=${action}:`, err);
+  }
+};
 
 // 1. Dashboard Stats
 exports.getDashboardStats = async (req, res) => {
     try {
         const gcId = req.user._id;
         const village = req.user.village;
+        if (!village) {
+            return res.status(400).json({ message: 'Green Champion has no assigned village. Contact admin.' });
+        }
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today);
@@ -235,6 +259,8 @@ exports.getDashboardStats = async (req, res) => {
             }))
         ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 6); // Keep only latest 6 activities
 
+        const analytics = village ? await getAnalyticsByVillages([village]) : { totalRecycledWeight: 0, totalCo2Saved: 0 };
+
         res.json({
             stats: {
                 totalCitizens,
@@ -244,6 +270,8 @@ exports.getDashboardStats = async (req, res) => {
                 pendingPickups,
                 wasteCollectedToday,
                 resolvedReports,
+                recycledWeight: analytics.totalRecycledWeight,
+                co2Saved: analytics.totalCo2Saved,
                 cleanupCompletionRate: completionRate,
                 recyclingRate: recyclingRate
             },
@@ -270,6 +298,9 @@ exports.getDashboardStats = async (req, res) => {
 exports.getNearbyReports = async (req, res) => {
     try {
         const village = req.user.village;
+        if (!village) {
+            return res.status(400).json({ message: 'Green Champion has no assigned village.' });
+        }
         const reports = await WasteReport.find({ village }).sort({ createdAt: -1 });
         res.json(reports);
     } catch (err) {
@@ -296,8 +327,7 @@ exports.verifyCleanup = async (req, res) => {
         };
 
         if (status === 'Verified') {
-            // Reward GC
-            await User.findByIdAndUpdate(gcId, { $inc: { ecoPoints: 10 } });
+            await awardEcoPoints(gcId, 10, 'verifyCleanup');
         }
 
         await report.save();
@@ -350,8 +380,7 @@ exports.createCampaign = async (req, res) => {
             village: req.user.village
         });
         
-        // Reward for organizing
-        await User.findByIdAndUpdate(req.user._id, { $inc: { ecoPoints: 50 } });
+        await awardEcoPoints(req.user._id, 50, 'createCampaign');
         
         emitToAll('NEW_CAMPAIGN', campaign);
         res.status(201).json(campaign);
@@ -390,11 +419,14 @@ exports.updatePickupStatus = async (req, res) => {
         pickup.assignedGC = req.user._id;
 
         if (status === 'Collected' && !pickup.pointsGiven) {
-            await User.findByIdAndUpdate(req.user._id, { $inc: { ecoPoints: 20 } });
+            await awardEcoPoints(req.user._id, 20, 'updatePickupStatus');
             pickup.pointsGiven = true;
         }
 
         await pickup.save();
+        emitToAll('recycling_updated', pickup);
+        emitToAll('recycling_request_updated', pickup);
+        emitAnalyticsUpdate('all');
         res.json(pickup);
     } catch (err) {
         res.status(500).json({ message: 'Error updating pickup', error: err.message });
@@ -421,7 +453,7 @@ exports.updateTaskStatus = async (req, res) => {
         task.status = status;
         if (status === 'Completed') {
             task.completionDate = new Date();
-            await User.findByIdAndUpdate(req.user._id, { $inc: { ecoPoints: task.points } });
+            await awardEcoPoints(req.user._id, task.points, 'updateTaskStatus');
         }
         await task.save();
         res.json(task);
@@ -474,5 +506,94 @@ exports.createBroadcast = async (req, res) => {
     } catch (err) {
         console.error('Broadcast error:', err);
         res.status(500).json({ message: 'Error creating broadcast', error: err.message });
+    }
+};
+
+// 16. My Profile (combined user + application + stats)
+exports.getMyProfile = async (req, res) => {
+    try {
+        const user = req.user;
+        const userId = user._id;
+
+        const application = await GreenChampionRequest.findOne({ email: user.email }).lean();
+
+        const campaignCount = await Campaign.countDocuments({ organizer: userId });
+        const postCount = await AwarenessPost.countDocuments({ author: userId });
+        const verifiedCount = await WasteReport.countDocuments({
+            'gcVerification.verifiedBy': userId,
+            'gcVerification.status': 'Verified'
+        });
+        const taskCount = await GCTask.countDocuments({ assignedTo: userId });
+
+        let leaderboardRank = null;
+        try {
+            const above = await User.countDocuments({
+                _id: { $ne: userId },
+                role: 'green_champion',
+                'rewards.totalEarned': { $gt: user.rewards?.totalEarned || 0 }
+            });
+            leaderboardRank = above + 1;
+        } catch { }
+
+        const profile = {
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+                village: user.village,
+                greenChampionId: user.greenChampionId,
+                profilePhoto: user.profilePhoto,
+                ecoPoints: user.ecoPoints || 0,
+                rewards: user.rewards || { points: 0, totalEarned: 0, level: 'Green Beginner', badges: [] },
+                accountStatus: user.accountStatus || 'Active',
+                isFirstLogin: user.isFirstLogin,
+                assignedAreas: user.assignedAreas || [],
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt,
+                lastActiveDate: user.lastActiveDate,
+            },
+            application: application ? {
+                requestId: application.requestId,
+                fullName: application.fullName,
+                gender: application.gender,
+                email: application.email,
+                mobile: application.mobile,
+                village: application.village,
+                reason: application.reason,
+                otherReason: application.otherReason,
+                profilePhoto: application.profilePhoto,
+                idProof: application.idProof,
+                idProofType: application.idProofType,
+                otherIdProofType: application.otherIdProofType,
+                status: application.status,
+                rejectionReason: application.rejectionReason,
+                suspensionReason: application.suspensionReason,
+                greenChampionId: application.greenChampionId,
+                reviewedBy: application.reviewedBy,
+                reviewedAt: application.reviewedAt,
+                approvedAt: application.approvedAt,
+                rejectedAt: application.rejectedAt,
+                createdAt: application.createdAt,
+            } : null,
+            stats: {
+                ecoPoints: user.ecoPoints || 0,
+                rewardsPoints: user.rewards?.points || 0,
+                totalEarned: user.rewards?.totalEarned || 0,
+                level: user.rewards?.level || 'Green Beginner',
+                badges: user.rewards?.badges || [],
+                campaignsParticipated: campaignCount,
+                awarenessPosts: postCount,
+                reportsVerified: verifiedCount,
+                tasksCompleted: taskCount,
+                leaderboardRank,
+            }
+        };
+
+        res.json(profile);
+    } catch (err) {
+        console.error('getMyProfile error:', err);
+        res.status(500).json({ message: 'Error fetching profile', error: err.message });
     }
 };

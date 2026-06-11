@@ -14,10 +14,10 @@ const villageSchema = new mongoose.Schema({
   boundary: {
     type: {
       type: String,
-      enum: ['Polygon']
+      enum: ['Polygon', 'MultiPolygon']
     },
     coordinates: {
-      type: [[[Number]]], // Array of arrays of [lng, lat]
+      type: mongoose.Schema.Types.Mixed,
       default: undefined
     }
   }

@@ -16,8 +16,10 @@ const Leaderboard = () => {
                 const res = await fetch(apiUrl('/api/green-champion/leaderboard'), {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                const data = await res.json();
-                if (res.ok) setChampions(data);
+                if (res.ok) {
+                    const data = await res.json();
+                    setChampions(data);
+                }
             } catch (err) {
                 console.error('Error fetching leaderboard:', err);
             } finally {

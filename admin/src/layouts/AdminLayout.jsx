@@ -7,6 +7,7 @@ import {
   HiChartBar,
   HiUserAdd,
   HiUsers,
+  HiUserGroup,
   HiClipboardList,
   HiCog,
   HiMoon,
@@ -19,6 +20,7 @@ import {
   HiClock,
   HiExclamation,
   HiHome,
+  HiMap,
 } from 'react-icons/hi';
 import DarkBg from '../components/DarkBg';
 import EcoLoopLogo from '../components/EcoLoopLogo';
@@ -36,6 +38,7 @@ const SECTIONS = [
     items: [
       { path: '/admin/add-collector', icon: HiUserAdd, label: 'Add Collector' },
       { path: '/admin/collectors', icon: HiUsers, label: 'View Collectors' },
+      { path: '/admin/citizens', icon: HiUserGroup, label: 'Citizens' },
       { path: '/admin/champions', icon: HiStar, label: 'Green Champions' },
     ],
   },
@@ -51,6 +54,12 @@ const SECTIONS = [
     items: [
       { path: '/admin/reports/public', icon: HiExclamation, label: 'Public Waste Reports' },
       { path: '/admin/reports/home-pickup', icon: HiHome, label: 'Home Pickup Requests' },
+    ],
+  },
+  {
+    title: 'Analytics',
+    items: [
+      { path: '/admin/waste-intelligence', icon: HiMap, label: 'Waste Intelligence Map' },
     ],
   },
   {
@@ -103,7 +112,9 @@ const AdminLayout = () => {
   const { dark, toggleDark } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const username = localStorage.getItem('admin-user') || 'Admin';
+  const username = (() => {
+    try { return JSON.parse(localStorage.getItem('admin-user') || '{}').username || 'Admin'; } catch { return 'Admin'; }
+  })();
 
   const sideW = collapsed ? 'lg:w-20' : 'lg:w-64';
   const mainML = collapsed ? 'lg:ml-20' : 'lg:ml-64';
@@ -125,7 +136,7 @@ const AdminLayout = () => {
 
   return (
     <div
-      className="min-h-screen relative overflow-x-hidden"
+      className="h-screen relative overflow-hidden"
       style={
         dark
           ? { background: '#000000' }
@@ -204,7 +215,7 @@ const AdminLayout = () => {
         </div>
       </aside>
 
-      <div className={`relative z-10 transition-all duration-300 ease-in-out ${mainML} flex flex-col min-h-screen`}>
+      <div className={`relative z-10 transition-all duration-300 ease-in-out ${mainML} flex flex-col h-full`}>
         <header
           className={`h-16 backdrop-blur-sm border-b sticky top-0 z-30 flex items-center px-4 sm:px-6 gap-4 shadow-sm ${headerBg}`}
         >
@@ -241,7 +252,7 @@ const AdminLayout = () => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto [scrollbar-width:thin]">
           <Outlet />
         </main>
       </div>

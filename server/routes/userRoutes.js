@@ -9,6 +9,7 @@ const EcoPointHistory = require('../models/EcoPointHistory');
 const ApprovalRequest = require('../models/ApprovalRequest');
 const upload = require('../middleware/uploadMiddleware');
 const { getCanonicalVillageName } = require('../data/kundapuraVillages');
+const { getAnalyticsByUserId } = require('../services/analyticsService');
 
 const CHANGE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -25,6 +26,8 @@ router.get('/profile', protect, async (req, res) => {
       WasteReport.countDocuments({ userId: req.user.id, status: 'Resolved' }),
       EcoPointHistory.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(20),
     ]);
+
+    const analytics = await getAnalyticsByUserId(req.user.id);
 
     const safeUser = {
       _id:          user._id,
@@ -52,6 +55,8 @@ router.get('/profile', protect, async (req, res) => {
       reportsCount,
       resolvedCount,
       pointsHistory: history,
+      recycledWeight: analytics.totalRecycledWeight,
+      co2Saved: analytics.totalCo2Saved,
       createdAt:    user.createdAt,
     };
 
@@ -246,7 +251,7 @@ router.get('/account-deletion-status', protect, async (req, res) => {
 
 router.post('/account-deletion-request', protect, async (req, res) => {
   try {
-    const { currentPassword } = req.body;
+    const { currentPassword, deletionReason, customReason } = req.body;
 
     const user = await User.findById(req.user.id).select('+password');
     if (!user) return res.status(404).json({ message: 'User not found.' });
@@ -265,7 +270,10 @@ router.post('/account-deletion-request', protect, async (req, res) => {
     const request = await ApprovalRequest.create({
       citizen: user._id,
       type: 'account_deletion',
-      reason: 'Citizen requested account deletion.',
+      userRole: user.role || '',
+      reason: `Deletion reason: ${deletionReason || 'Not specified'}${customReason ? ` — ${customReason}` : ''}`,
+      deletionReason: deletionReason || '',
+      customReason: customReason || '',
     });
 
     try {

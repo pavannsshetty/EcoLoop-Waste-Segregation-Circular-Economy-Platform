@@ -21,8 +21,8 @@ const CleanupVerification = () => {
             const res = await fetch(apiUrl('/api/green-champion/reports/nearby'), {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            const data = await res.json();
             if (res.ok) {
+                const data = await res.json();
                 // Filter only Resolved reports that need GC verification
                 setPending(data.filter(r => r.status === 'Resolved' && r.gcVerification?.status === 'Pending'));
             }

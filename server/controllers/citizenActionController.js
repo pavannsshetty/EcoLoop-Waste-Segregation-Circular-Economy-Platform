@@ -4,6 +4,25 @@ const RecyclingPickup = require('../models/RecyclingPickup');
 const GCFeedback = require('../models/GCFeedback');
 const User = require('../models/User');
 
+const MAX_REASONABLE_POINTS = 100;
+
+const awardEcoPoints = async (userId, points, action) => {
+  try {
+    if (!userId || typeof points !== 'number' || points <= 0 || points > MAX_REASONABLE_POINTS) {
+      console.warn(`[SUSPICIOUS] ecoPoints bypass blocked: userId=${userId}, points=${points}, action=${action}`);
+      return;
+    }
+    const user = await User.findById(userId).select('_id ecoPoints');
+    if (!user) {
+      console.warn(`[SUSPICIOUS] ecoPoints to non-existent user: userId=${userId}, action=${action}`);
+      return;
+    }
+    await User.findByIdAndUpdate(userId, { $inc: { ecoPoints: points } });
+  } catch (err) {
+    console.error(`[awardEcoPoints Error] action=${action}:`, err);
+  }
+};
+
 // 1. Get Awareness Posts (in user's village)
 exports.getCommunityPosts = async (req, res) => {
     try {
@@ -47,8 +66,7 @@ exports.joinCampaign = async (req, res) => {
         campaign.volunteers.push(userId);
         await campaign.save();
         
-        // Reward citizen for volunteering promise
-        await User.findByIdAndUpdate(userId, { $inc: { ecoPoints: 5 } });
+        await awardEcoPoints(userId, 5, 'joinCampaign');
 
         res.json({ message: 'Joined successfully', campaign });
     } catch (err) {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { HiRefresh, HiEye, HiEyeOff, HiCheckCircle, HiChevronDown, HiExclamation, HiCamera } from 'react-icons/hi';
 import { useTheme } from '../context/ThemeContext';
+import ModalOverlay from '../components/ModalOverlay';
 import { useSocket } from '../context/SocketContext';
 
 const VILLAGES = [
@@ -157,7 +158,7 @@ const VillageMultiSelect = ({ selected, onChange, error, inp, dark, dk, assigned
 };
 
 const ReassignModal = ({ conflicts, onConfirm, onCancel, dk }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+    <ModalOverlay onClose={onCancel} className="flex items-center justify-center p-4">
       <div className={`w-full max-w-[95vw] sm:max-w-sm rounded-lg border p-6 space-y-4 shadow-2xl ${dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200')}`}>
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0 w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center">
@@ -190,7 +191,7 @@ const ReassignModal = ({ conflicts, onConfirm, onCancel, dk }) => (
         </button>
       </div>
     </div>
-  </div>
+  </ModalOverlay>
 );
 
 const AddCollector = () => {
@@ -244,6 +245,12 @@ const AddCollector = () => {
     try {
       const token = localStorage.getItem('admin-token');
       const res = await fetch('/api/admin/assigned-villages', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       if (res.ok) { const d = await res.json(); setAssignedVillages(d.assignedVillages || []); }
     } catch {}
   }, []);
@@ -261,6 +268,12 @@ const AddCollector = () => {
     try {
       const token = localStorage.getItem('admin-token');
       const res = await fetch('/api/admin/next-collector-id', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       if (res.ok) { const d = await res.json(); set('collectorId', d.collectorId); }
     } catch { /* ignore */ }
   };
@@ -276,6 +289,12 @@ const AddCollector = () => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ field, value }),
       });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       if (res.ok) {
         const d = await res.json();
         if (d.duplicate) {
@@ -288,7 +307,7 @@ const AddCollector = () => {
   };
 
   const debouncedCheck = useCallback(
-    () => debounce((field, value) => checkField(field, value), 500),
+    debounce((field, value) => checkField(field, value), 500),
     []
   );
 
@@ -326,6 +345,12 @@ const AddCollector = () => {
           headers: { Authorization: `Bearer ${token}` },
           body: fd,
         });
+        if (photoRes.status === 401) {
+          localStorage.removeItem('admin-token');
+          localStorage.removeItem('admin-user');
+          window.location.href = '/admin/login';
+          return;
+        }
         if (photoRes.ok) { const pd = await photoRes.json(); photoUrl = pd.photoUrl; }
         else { const pe = await photoRes.json(); setErrors({ submit: pe.message || 'Photo upload failed.' }); setLoading(false); setUploadingPhoto(false); return; }
         setUploadingPhoto(false);
@@ -335,6 +360,12 @@ const AddCollector = () => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ...form, photo: photoUrl, forceReassign }),
       });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       const data = await res.json();
       if (!res.ok) {
         if (data.conflict) { setReassignData(data.conflicts); return; }

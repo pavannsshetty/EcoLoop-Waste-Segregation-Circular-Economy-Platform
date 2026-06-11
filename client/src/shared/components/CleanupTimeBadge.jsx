@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { HiCheckCircle, HiExclamation, HiClock } from 'react-icons/hi';
+import { HiCheckCircle, HiClock } from 'react-icons/hi';
 
 const pad = n => String(n).padStart(2, '0');
 
@@ -47,14 +47,7 @@ const CleanupTimeBadge = ({ report, showCountdown = true }) => {
   }
 
   if (info.type === 'delayed') {
-    const overdueMins = Math.floor(info.overdue / 60000);
-    const oh = Math.floor(overdueMins / 60);
-    const om = overdueMins % 60;
-    return (
-      <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 animate-pulse">
-        <HiExclamation className="h-3 w-3" /> Delayed {oh > 0 ? `${oh}h ` : ''}{om}m overdue
-      </span>
-    );
+    return null;
   }
 
   if (info.type === 'countdown') {

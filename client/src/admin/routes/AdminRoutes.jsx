@@ -14,6 +14,7 @@ function AdminLoginRedirect() {
 const adminRoutes = (
   <Route path="/admin" element={<AdminLayout />}>
     <Route index element={<AdminLoginRedirect />} />
+    <Route path="citizens" element={<ManageCitizens />} />
     <Route path="manage-citizens" element={<ManageCitizens />} />
     <Route path="dashboard" element={<AdminDashboard />} />
     <Route path="add-collector" element={<AdminPlaceholder />} />

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const wasteReportSchema = new mongoose.Schema({
   userId:      { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   reportType:  { type: String, enum: ['Public', 'Home Pickup'], default: 'Public' },
-  reportId:    { type: String, unique: true },
+  reportId:    { type: String, unique: true, sparse: true },
   wasteType:   { 
     type: String, 
     required: true, 
@@ -38,7 +38,7 @@ const wasteReportSchema = new mongoose.Schema({
   village:      { type: String, default: '' },
   photoLocation: { lat: { type: Number, default: null }, lng: { type: Number, default: null } },
   accuracy:     { type: Number, default: null },
-  pickupTime:   { type: Date,   required: true },
+  priorityLevel: { type: String, enum: ['Normal', 'Urgent'], default: 'Normal' },
   status: { 
     type: String, 
     enum: ['Submitted', 'Verified', 'Under Re-Verification', 'Assigned', 'In Progress', 'Resolved', 'Reopened', 'Cancelled', 'Rejected', 'Scheduled', 'Picked Up', 'Clarification Requested', 'Resubmitted', 'Clarification Expired'], 

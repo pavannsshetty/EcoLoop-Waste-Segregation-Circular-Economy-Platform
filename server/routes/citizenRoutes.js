@@ -14,6 +14,7 @@ const Collector = require('../models/Collector');
 const WasteReport = require('../models/WasteReport');
 const EcoPointHistory = require('../models/EcoPointHistory');
 const upload = require('../middleware/uploadMiddleware');
+const { getAnalyticsByUserId } = require('../services/analyticsService');
 
 const CHANGE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 const isWithinChangeWindow = (date) => date && (Date.now() - new Date(date).getTime()) < CHANGE_WINDOW_MS;
@@ -29,6 +30,8 @@ router.get('/profile', protect, async (req, res) => {
       WasteReport.countDocuments({ userId: req.user.id, status: 'Resolved' }),
       EcoPointHistory.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(20),
     ]);
+
+    const analytics = await getAnalyticsByUserId(req.user.id);
 
     res.json({
       _id:          user._id,
@@ -56,6 +59,8 @@ router.get('/profile', protect, async (req, res) => {
       reportsCount,
       resolvedCount,
       pointsHistory: history,
+      recycledWeight: analytics.totalRecycledWeight,
+      co2Saved: analytics.totalCo2Saved,
       createdAt:    user.createdAt,
     });
   } catch (err) {

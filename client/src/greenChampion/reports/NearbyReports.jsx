@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '../../shared/context/ThemeContext';
 import { apiUrl } from '../../shared/utils/api';
-import { HiLocationMarker, HiClock, HiOutlineLocationMarker, HiInformationCircle, HiCollection } from 'react-icons/hi';
+import { HiLocationMarker, HiClock, HiOutlineLocationMarker, HiInformationCircle, HiCollection, HiX } from 'react-icons/hi';
 
 const NearbyReports = () => {
     const { dark } = useTheme();
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedReport, setSelectedReport] = useState(null);
     const dk = (d, l) => (dark ? d : l);
 
     useEffect(() => {
@@ -16,8 +17,10 @@ const NearbyReports = () => {
                 const res = await fetch(apiUrl('/api/green-champion/reports/nearby'), {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                const data = await res.json();
-                if (res.ok) setReports(data);
+                if (res.ok) {
+                    const data = await res.json();
+                    setReports(data);
+                }
             } catch (err) {
                 console.error('Error fetching nearby reports:', err);
             } finally {
@@ -29,7 +32,7 @@ const NearbyReports = () => {
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'Resolved': return 'bg-green-500 text-green-500';
+            case 'Resolved': return 'bg-green-100 text-green-800';
             case 'In Progress': return 'bg-blue-100 text-blue-700';
             case 'Assigned': return 'bg-amber-100 text-amber-700';
             default: return 'bg-slate-100 text-slate-700';
@@ -97,7 +100,7 @@ const NearbyReports = () => {
                                     </div>
                                 </div>
                                 <div className={`pt-3 border-t flex justify-between items-center ${dk('border-gray-800', 'border-slate-50')}`}>
-                                    <button className="text-xs font-bold text-green-500 flex items-center gap-1">
+                                    <button onClick={() => setSelectedReport(report)} className="text-xs font-bold text-green-500 flex items-center gap-1">
                                         <HiInformationCircle className="h-4 w-4" /> View Details
                                     </button>
                                     <p className={`text-[10px] font-medium ${dk('text-slate-500', 'text-slate-400')}`}>
@@ -107,6 +110,27 @@ const NearbyReports = () => {
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {selectedReport && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedReport(null)}>
+                    <div className={`w-full max-w-lg rounded-lg border p-6 space-y-4 ${dk('bg-slate-900 border-gray-800 text-slate-100', 'bg-white border-slate-200 text-slate-900')}`} onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold">Report Details</h3>
+                            <button onClick={() => setSelectedReport(null)} className={`p-1.5 rounded-lg transition ${dk('text-slate-400 hover:bg-slate-800', 'text-slate-500 hover:bg-slate-100')}`}>
+                                <HiX className="h-5 w-5" />
+                            </button>
+                        </div>
+                        <div className="space-y-3 text-sm">
+                            <div className="flex justify-between"><span className={dk('text-slate-400', 'text-slate-500')}>Waste Type</span><span className="font-semibold">{selectedReport.wasteType}</span></div>
+                            <div className="flex justify-between"><span className={dk('text-slate-400', 'text-slate-500')}>Status</span><span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${getStatusColor(selectedReport.status)}`}>{selectedReport.status}</span></div>
+                            <div className="flex justify-between"><span className={dk('text-slate-400', 'text-slate-500')}>Severity</span><span className="font-semibold">{selectedReport.severity}</span></div>
+                            <div className="flex justify-between"><span className={dk('text-slate-400', 'text-slate-500')}>Impacted</span><span className="font-semibold">{selectedReport.upvotes?.length || 0} citizens</span></div>
+                            <div><span className={dk('text-slate-400', 'text-slate-500')}>Location</span><p className="font-medium mt-1">{selectedReport.location?.address}</p></div>
+                            <div><span className={dk('text-slate-400', 'text-slate-500')}>Reported</span><p className="font-medium mt-1">{new Date(selectedReport.createdAt).toLocaleDateString()} at {new Date(selectedReport.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p></div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

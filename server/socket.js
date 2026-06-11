@@ -67,4 +67,30 @@ const emitToAll = (event, data) => {
   }
 };
 
-module.exports = { init, getIO, emitToUser, emitToAll };
+const emitPopupNotification = (userId, data) => {
+  if (io) {
+    io.to(userId).emit('popup_notification', data);
+  }
+};
+
+const emitPopupNotificationBulk = (userIds, data) => {
+  if (io) {
+    userIds.forEach((uid) => {
+      io.to(uid).emit('popup_notification', data);
+    });
+  }
+};
+
+const broadcastPopupNotification = (data) => {
+  if (io) {
+    io.emit('popup_notification', data);
+  }
+};
+
+const emitAnalyticsUpdate = (scope = 'all', identifier = null) => {
+  if (io) {
+    io.emit('analytics_updated', { scope, identifier, timestamp: new Date() });
+  }
+};
+
+module.exports = { init, getIO, emitToUser, emitToAll, emitPopupNotification, emitPopupNotificationBulk, broadcastPopupNotification, emitAnalyticsUpdate };

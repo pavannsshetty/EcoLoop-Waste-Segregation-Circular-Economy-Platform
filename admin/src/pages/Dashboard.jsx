@@ -20,6 +20,7 @@ import {
   HiDocumentText,
   HiBadgeCheck,
 } from 'react-icons/hi';
+import { MdRecycling, MdCloudQueue } from 'react-icons/md';
 import { useTheme } from '../context/ThemeContext';
 import { useSocket } from '../context/SocketContext';
 import Dropdown from '../components/Dropdown';
@@ -41,6 +42,8 @@ const INITIAL = {
   ecoShopOrders: 0,
   pendingRequests: 0,
   totalGreenChampions: 0,
+  totalRecycledWeight: 0,
+  totalCo2Saved: 0,
   collectors: [],
   recentActivity: [],
   topCollectors: [],
@@ -70,8 +73,19 @@ const Dashboard = () => {
     try {
       const token = localStorage.getItem('admin-token');
       const res = await fetch('/api/admin/dashboard', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        let msg = 'Unable to load dashboard.';
+        try { const p = JSON.parse(body); if (p.message) msg = p.message; } catch {}
+        throw new Error(msg);
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Unable to load dashboard.');
       setStats({ ...INITIAL, ...data });
     } catch (err) {
       setError(err.message || 'Unable to load dashboard.');
@@ -96,6 +110,7 @@ const Dashboard = () => {
       'RECYCLE_ITEM_UPDATED',
       'STORE_ANALYTICS_UPDATED',
       'notification',
+      'analytics_updated',
     ];
     events.forEach((event) => socket.on(event, sync));
     return () => {
@@ -122,10 +137,12 @@ const Dashboard = () => {
   const statCards = [
     { label: 'Collectors', value: stats.totalCollectors, icon: HiUsers, gradient: dk('linear-gradient(135deg, #0a7a79 0%, #1fa89a 100%)', 'linear-gradient(135deg, #14B8A6 0%, #2DD4BF 100%)'), onClick: '/admin/collectors' },
     { label: 'Citizens', value: stats.totalCitizens, icon: HiUsers, gradient: dk('linear-gradient(135deg, #2563c4 0%, #3b7fd4 100%)', 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)') },
+    { label: 'Green Champions', value: stats.totalGreenChampions, icon: HiBadgeCheck, gradient: dk('linear-gradient(135deg, #178a3e 0%, #2db85a 100%)', 'linear-gradient(135deg, #10B981 0%, #34D399 100%)'), onClick: '/admin/champions' },
     { label: 'Reports', value: stats.totalReports, icon: HiClipboardList, gradient: dk('linear-gradient(135deg, #b85a00 0%, #d9730a 100%)', 'linear-gradient(135deg, #F97316 0%, #FBBF24 100%)'), onClick: '/admin/reports' },
     { label: 'Resolved', value: stats.completedReports, icon: HiCheckCircle, gradient: dk('linear-gradient(135deg, #157a50 0%, #22a06b 100%)', 'linear-gradient(135deg, #22C55E 0%, #4ADE80 100%)') },
     { label: 'Pending', value: stats.pendingReports, icon: HiExclamation, gradient: dk('linear-gradient(135deg, #b87208 0%, #d4960e 100%)', 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)') },
-    { label: 'Green Champions', value: stats.totalGreenChampions, icon: HiBadgeCheck, gradient: dk('linear-gradient(135deg, #178a3e 0%, #2db85a 100%)', 'linear-gradient(135deg, #10B981 0%, #34D399 100%)'), onClick: '/admin/champions' },
+    { label: 'Recycled Waste', value: `${stats.totalRecycledWeight} kg`, icon: MdRecycling, gradient: dk('linear-gradient(135deg, #0a7a79 0%, #1fa89a 100%)', 'linear-gradient(135deg, #14B8A6 0%, #2DD4BF 100%)') },
+    { label: 'CO₂ Saved', value: `${stats.totalCo2Saved} kg`, icon: MdCloudQueue, gradient: dk('linear-gradient(135deg, #157a50 0%, #22a06b 100%)', 'linear-gradient(135deg, #22C55E 0%, #4ADE80 100%)') },
   ];
 
   const filteredCollectors = useMemo(() => {
@@ -160,7 +177,7 @@ const Dashboard = () => {
 
   return (
     <div className={`min-h-screen ${dk('bg-[#0A0A0A]', 'bg-[#F9FAFB]')}`}>
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-in fade-in duration-500">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-5 animate-in fade-in duration-500">
 
         {/* Modern Hero Card */}
         <section
@@ -214,11 +231,18 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Stats Cards */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* Stats Cards — Row 1 */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-fr">
           {loading
-            ? [1,2,3,4,5,6].map(i => <StatCardSkeleton key={i} />)
-            : statCards.map(card => <StatCard key={card.label} {...card} />)
+            ? [1,2,3,4].map(i => <StatCardSkeleton key={i} />)
+            : statCards.slice(0, 4).map(card => <StatCard key={card.label} {...card} />)
+          }
+        </section>
+        {/* Stats Cards — Row 2 */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-fr">
+          {loading
+            ? [5,6,7,8].map(i => <StatCardSkeleton key={i} />)
+            : statCards.slice(4, 8).map(card => <StatCard key={card.label} {...card} />)
           }
         </section>
 

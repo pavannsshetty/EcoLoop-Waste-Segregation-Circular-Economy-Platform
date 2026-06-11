@@ -25,7 +25,8 @@ const {
     getTasks,
     updateTaskStatus,
     getLeaderboard,
-    createBroadcast
+    createBroadcast,
+    getMyProfile
 } = require('../controllers/greenChampionActionController');
 
 const { greenChampionAuth } = require('../middleware/greenChampionAuth');
@@ -50,6 +51,7 @@ router.get('/admin/requests', adminProtect, getAllRequests);
 router.put('/admin/request/:id', adminProtect, reviewRequest);
 
 // CHAMPION ACTIONS
+router.get('/my-profile', protect, greenChampionAuth, getMyProfile);
 router.get('/dashboard/stats', protect, greenChampionAuth, getDashboardStats);
 router.get('/reports/nearby', protect, greenChampionAuth, getNearbyReports);
 router.put('/report/:reportId/verify', protect, greenChampionAuth, upload.single('proofImage'), verifyCleanup);

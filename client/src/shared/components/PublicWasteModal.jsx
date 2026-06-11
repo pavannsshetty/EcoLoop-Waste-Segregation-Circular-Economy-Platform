@@ -117,9 +117,8 @@ const PublicWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
     if (isOpen) refreshUser();
   }, [isOpen, refreshUser]);
 
-  const handleLocationSelect = (loc) => {
+  const handleLocationSelect = (loc, clearedSource) => {
     // loc can be null (clear) with optional second arg clearedSource
-    const clearedSource = arguments[1] || null;
     console.debug('[PublicWasteModal] handleLocationSelect called', { loc, clearedSource });
     if (!loc) {
       console.debug('[PublicWasteModal] clearing location', { clearedSource });
@@ -135,12 +134,15 @@ const PublicWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
         setRegionValid(null);
       }
     } else if (loc.source === 'detect') {
-      console.debug('[PublicWasteModal] setting detected location', { lat: loc.lat, lng: loc.lng, address: loc.displayAddress, regionValid: loc.regionValid });
+      console.debug('[PublicWasteModal] setting detected location, clearing manual', { lat: loc.lat, lng: loc.lng, address: loc.displayAddress, regionValid: loc.regionValid });
       setDetectedLocation(loc);
+      setLocation(null);
+      setRegionValid(null);
     } else {
-      console.debug('[PublicWasteModal] setting selected location', { lat: loc.lat, lng: loc.lng, address: loc.displayAddress, regionValid: loc.regionValid });
+      console.debug('[PublicWasteModal] setting selected location, clearing detected', { lat: loc.lat, lng: loc.lng, address: loc.displayAddress, regionValid: loc.regionValid });
       setLocation(loc);
       setRegionValid(loc.regionValid !== false ? (loc.regionValid ?? null) : false);
+      setDetectedLocation(null);
     }
     setErrors(e => ({ ...e, location: '' }));
   };
@@ -282,40 +284,28 @@ const PublicWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
             
             <div className={card}>
               <p className={`text-xs font-bold uppercase tracking-wide text-orange-500`}>Service Area: {user?.village}, Kundapura Taluk</p>
-              <MapPicker onLocationSelect={handleLocationSelect} villageName={user?.village} dark={dark} />
-              {detectedLocation && (
-                <div className={`mt-3 rounded-none border p-3 ${dark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                  <p className={`text-xs font-semibold ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Detected location</p>
-                  <p className={`text-sm mt-1 ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
-                    {detectedLocation.displayAddress || detectedLocation.address || `${detectedLocation.lat?.toFixed(6)}, ${detectedLocation.lng?.toFixed(6)}`}
-                  </p>
-                  <p className={`text-[11px] mt-1 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-                    {detectedLocation.village ? `Village: ${detectedLocation.village}` : ''}
-                    {detectedLocation.village && detectedLocation.taluk ? ` · ` : ''}
-                    {detectedLocation.taluk ? `Taluk: ${detectedLocation.taluk}` : ''}
-                  </p>
-                  <p className={`text-[11px] mt-1 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-                    Lat: {detectedLocation.lat?.toFixed(6)} | Lng: {detectedLocation.lng?.toFixed(6)}
-                  </p>
-                </div>
-              )}
-
-              {location && (
-                <div className={`mt-3 rounded-none border p-3 ${dark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                  <p className={`text-xs font-semibold ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Selected Location</p>
-                  <p className={`text-sm mt-1 ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
-                    {location.displayAddress || location.address || `${location.lat?.toFixed(6)}, ${location.lng?.toFixed(6)}`}
-                  </p>
-                  <p className={`text-[11px] mt-1 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-                    {location.village ? `Village: ${location.village}` : ''}
-                    {location.village && location.taluk ? ` · ` : ''}
-                    {location.taluk ? `Taluk: ${location.taluk}` : ''}
-                  </p>
-                  <p className={`text-[11px] mt-1 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-                    Lat: {location.lat?.toFixed(6)} | Lng: {location.lng?.toFixed(6)}
-                  </p>
-                </div>
-              )}
+              <MapPicker onLocationSelect={handleLocationSelect} villageName={user?.village} dark={dark} hideLocationCard={true} />
+              {(() => {
+                const activeLoc = location || detectedLocation;
+                const isDetected = !!detectedLocation;
+                if (!activeLoc) return null;
+                return (
+                  <div className={`mt-3 rounded-none border p-3 ${dark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                    <p className={`text-xs font-semibold ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{isDetected ? 'Detected Location' : 'Selected Location'}</p>
+                    <p className={`text-sm mt-1 ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
+                      {activeLoc.displayAddress || activeLoc.address || `${activeLoc.lat?.toFixed(6)}, ${activeLoc.lng?.toFixed(6)}`}
+                    </p>
+                    <p className={`text-[11px] mt-1 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+                      {activeLoc.village ? `Village: ${activeLoc.village}` : ''}
+                      {activeLoc.village && activeLoc.taluk ? ` · ` : ''}
+                      {activeLoc.taluk ? `Taluk: ${activeLoc.taluk}` : ''}
+                    </p>
+                    <p className={`text-[11px] mt-1 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+                      Lat: {activeLoc.lat?.toFixed(6)} | Lng: {activeLoc.lng?.toFixed(6)}
+                    </p>
+                  </div>
+                );
+              })()}
               {errors.location && <p className={errCls}>{errors.location}</p>}
             </div>
 

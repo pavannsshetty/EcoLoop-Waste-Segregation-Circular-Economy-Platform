@@ -1,5 +1,6 @@
 import { HiExclamation, HiX } from 'react-icons/hi';
 import { useTheme } from '../context/ThemeContext';
+import ModalOverlay from './ModalOverlay';
 
 const ConfirmationModal = ({ 
   isOpen, 
@@ -23,8 +24,7 @@ const ConfirmationModal = ({
   const theme = colors[type] || colors.danger;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+    <ModalOverlay onClose={onClose} className="flex items-center justify-center p-4">
       
       <div className={`relative w-full max-w-md rounded-lg shadow-2xl overflow-hidden transform transition-all animate-in fade-in zoom-in duration-300 ${dark ? 'bg-[#151B23] border border-white/5' : 'bg-white'}`}>
         <div className="p-6">
@@ -52,7 +52,7 @@ const ConfirmationModal = ({
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 };
 

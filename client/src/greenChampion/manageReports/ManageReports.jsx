@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { HiSearch, HiEye, HiX, HiExclamationCircle, HiLocationMarker, HiClipboardCheck, HiCheckCircle, HiClock, HiXCircle } from 'react-icons/hi';
 import { API } from '../../shared/constants';
 import { useTheme } from '../../shared/context/ThemeContext';
+import ModalOverlay from '../../shared/components/ModalOverlay';
 import { useToast } from '../../shared/components/Toast';
 import socket from '../../socket';
 
@@ -17,20 +17,17 @@ const STATUS_BADGE = {
 };
 
 const ModalShell = ({ title, children, onClose, dark, width = 'max-w-4xl' }) => (
-  createPortal(
-    <div className="fixed inset-0 z-[9999] flex p-4 sm:p-6 bg-black/60 overflow-y-auto" onClick={(e) => { if (e.target === e.target.currentTarget) onClose(); }}>
-      <div className={`relative m-auto w-full sm:max-w-[90vw] md:max-w-4xl max-h-full flex flex-col rounded-lg border shadow-2xl ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
-        <div className={`px-4 sm:px-6 py-4 border-b flex justify-between items-center shrink-0 rounded-t-lg sticky top-0 z-10 ${dark ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-white'}`}>
-          <h2 className={`text-lg font-bold truncate ${dark ? 'text-slate-200' : 'text-slate-800'}`}>{title}</h2>
-          <button onClick={onClose} className={`p-1.5 rounded-lg transition shrink-0 ${dark ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>
-            <HiX className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1">{children}</div>
+  <ModalOverlay onClose={onClose} className="flex p-4 sm:p-6 overflow-y-auto">
+    <div className={`relative m-auto w-full sm:max-w-[90vw] md:max-w-4xl max-h-full flex flex-col rounded-lg border shadow-2xl ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+      <div className={`px-4 sm:px-6 py-4 border-b flex justify-between items-center shrink-0 rounded-t-lg sticky top-0 z-10 ${dark ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-white'}`}>
+        <h2 className={`text-lg font-bold truncate ${dark ? 'text-slate-200' : 'text-slate-800'}`}>{title}</h2>
+        <button onClick={onClose} className={`p-1.5 rounded-lg transition shrink-0 ${dark ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>
+          <HiX className="h-5 w-5" />
+        </button>
       </div>
-    </div>,
-    document.body
-  )
+      <div className="p-4 sm:p-6 overflow-y-auto flex-1">{children}</div>
+    </div>
+  </ModalOverlay>
 );
 
 const StatCard = ({ label, value, icon: Icon, gradient }) => (
@@ -275,7 +272,7 @@ const ManageReports = () => {
       </div>
 
       {rejectModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50" onClick={() => setRejectModal(null)}>
+        <ModalOverlay onClose={() => setRejectModal(null)} className="flex items-center justify-center p-4">
           <div className={`w-full max-w-md rounded-lg border shadow-2xl p-5 space-y-4 ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}
             onClick={(e) => e.stopPropagation()}>
             <h2 className={`text-sm font-bold ${dark ? 'text-slate-100' : 'text-slate-800'}`}>Reject Report</h2>
@@ -298,6 +295,7 @@ const ManageReports = () => {
             </div>
           </div>
         </div>
+        </ModalOverlay>
       )}
 
       {viewModal && (

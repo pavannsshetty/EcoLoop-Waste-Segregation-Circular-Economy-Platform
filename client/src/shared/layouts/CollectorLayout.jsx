@@ -3,7 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   HiLogout, HiMenu, HiX, HiCog, HiUser, HiMap, HiChartBar,
   HiClipboardList, HiCheckCircle, HiCollection, HiUserGroup,
-  HiMoon, HiSun,
+  HiMoon, HiSun, HiShoppingCart, HiCube,
 } from 'react-icons/hi';
 import EcoLoopLogo from '../components/EcoLoopLogo';
 import NotificationBell from '../components/NotificationBell';
@@ -20,12 +20,13 @@ const NAV_MAIN = [
   { path: '/collector/home-pickup', Icon: () => <HiCollection className="h-5 w-5" />, label: 'Home Pickup' },
   { path: '/collector/scrap-requests', Icon: () => <HiClipboardList className="h-5 w-5" />, label: 'Scrap Requests' },
   { path: '/collector/eco-deliveries', Icon: () => <HiCollection className="h-5 w-5" />, label: 'Eco Deliveries' },
+  { path: '/collector/eco-products', Icon: () => <HiCube className="h-5 w-5" />, label: 'Eco Products' },
+  { path: '/collector/eco-buyers', Icon: () => <HiShoppingCart className="h-5 w-5" />, label: 'Eco Buyers' },
   { path: '/collector/completed', Icon: () => <HiCheckCircle className="h-5 w-5" />, label: 'Completed' },
   { path: '/collector/community', Icon: () => <HiUserGroup className="h-5 w-5" />, label: 'Community Updates' },
 ];
 const NAV_FIELD = [
   { path: '/collector/nearby', Icon: () => <HiMap className="h-5 w-5" />, label: 'Nearby Issues' },
-  { path: '/collector/performance', Icon: () => <HiChartBar className="h-5 w-5" />, label: 'Performance' },
 ];
 const NAV_ACCOUNT = [
   { path: '/collector/profile', Icon: () => <HiUser className="h-5 w-5" />, label: 'Profile' },

@@ -106,7 +106,7 @@ const CitizenProfile = () => {
 
   const totalReports    = ctxUser?.reportsCount  ?? reports.length;
   const resolvedReports = ctxUser?.resolvedCount ?? reports.filter(r => r.status === 'Resolved').length;
-  const ecoPoints       = ctxUser?.ecoPoints     ?? 0;
+  const ecoPoints       = ctxUser?.rewards?.points ?? ctxUser?.ecoPoints ?? 0;
   const streakDays      = 1;
 
   const BADGES = [
@@ -192,8 +192,11 @@ const CitizenProfile = () => {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ email: form.email, currentPassword: confirmPassword }),
         });
+        if (!emailRes.ok) {
+          const emailData = await emailRes.json().catch(() => ({}));
+          throw new Error(emailData.message || 'Email updates require verification.');
+        }
         const emailData = await emailRes.json();
-        if (!emailRes.ok) throw new Error(emailData.message || 'Email updates require verification.');
       }
 
       const profilePayload = {
@@ -205,7 +208,7 @@ const CitizenProfile = () => {
         ...(phoneChanged ? { currentPassword: confirmPassword } : {}),
       };
 
-      const res = await fetch(`${API}/api/user/profile`, {
+      const res = await fetch(`/api/citizen/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(profilePayload),
@@ -270,13 +273,23 @@ const CitizenProfile = () => {
     }
   };
 
-  const changePassword = (e) => {
+  const changePassword = async (e) => {
     e.preventDefault();
     if (!pwForm.current)          { setPwMsg('Enter current password.'); return; }
     if (pwForm.next.length < 8)   { setPwMsg('New password must be 8+ characters.'); return; }
     if (pwForm.next !== pwForm.confirm) { setPwMsg('Passwords do not match.'); return; }
-    setPwMsg('Password updated successfully!');
-    setPwForm({ current: '', next: '', confirm: '' });
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API}/api/auth/update-password`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ currentPassword: pwForm.current, newPassword: pwForm.next }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setPwMsg(data.message || 'Failed to update password.'); return; }
+      setPwMsg('Password updated successfully!');
+      setPwForm({ current: '', next: '', confirm: '' });
+    } catch { setPwMsg('Network error. Please try again.'); }
   };
 
   const logout = () => { localStorage.removeItem('token'); localStorage.removeItem('user'); navigate('/'); };
@@ -499,7 +512,7 @@ const CitizenProfile = () => {
               <div className="flex items-center gap-2">
                 <HiMap className={`h-4 w-4 ${dk('text-green-400', 'text-green-600')}`} />
                 <p className={`text-xs font-bold ${dk('text-slate-300', 'text-slate-700')}`}>Home Map Location</p>
-                {homeLat != null && homeLng != null && (
+                {!showMapEditor && homeLat != null && homeLng != null && (
                   <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg ${dk('bg-green-900/30 text-green-400', 'bg-green-50 text-green-700')}`}>
                     <HiCheckCircle className="h-3 w-3" /> GPS Verified
                   </span>
@@ -513,43 +526,35 @@ const CitizenProfile = () => {
               )}
             </div>
 
-            {showMapEditor && editAddress && (
-              <MapPicker
-                key={mapKeyRef.current}
-                villageName={form.village}
-                dark={dark}
-                onLocationSelect={(data) => {
-                  if (data.regionValid) {
-                    setHomeLat(data.lat);
-                    setHomeLng(data.lng);
-                    if (data.street && !form.streetArea) set('streetArea', data.street);
-                    if (data.pincode) set('locality', data.pincode);
-                  }
-                }}
-              />
-            )}
-
-            {homeLat != null && homeLng != null && !showMapEditor && (
-              <div className={`rounded-lg border p-3.5 ${dk('bg-white/5 border-slate-700', 'bg-green-50 border-green-200')}`}>
-                <div className="flex items-start gap-2.5">
-                  <HiLocationMarker className={`h-4 w-4 shrink-0 mt-0.5 ${dk('text-green-400', 'text-green-600')}`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className={`text-xs font-semibold ${dk('text-green-400', 'text-green-700')}`}>Saved Home Location</p>
-                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-lg ${dk('bg-slate-800 text-slate-400', 'bg-white text-slate-500 border')}`}>
-                        <HiCheckCircle className="h-3 w-3 inline -mt-0.5 text-green-500" /> GPS
-                      </span>
-                    </div>
-                    <div className={`mt-1 flex items-center gap-1.5 text-[10px] font-mono ${dk('text-slate-500', 'text-slate-400')}`}>
-                      <span>Lat: {homeLat.toFixed(6)}</span>
-                      <span className="w-px h-3 bg-slate-300 dark:bg-slate-700" />
-                      <span>Lng: {homeLng.toFixed(6)}</span>
-                    </div>
-                    <p className={`text-[10px] mt-1 ${dk('text-slate-600', 'text-slate-400')}`}>Last updated: {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Always show the village boundary map - read-only when not editing, interactive when editing */}
+            <div className="mb-0">
+              {showMapEditor && editAddress ? (
+                <MapPicker
+                  key={mapKeyRef.current}
+                  villageName={form.village}
+                  dark={dark}
+                  hideLocationCard={true}
+                  onLocationSelect={(data) => {
+                      if (data && data.regionValid) {
+                        setHomeLat(data.lat);
+                        setHomeLng(data.lng);
+                        if (data.street && !form.streetArea) set('streetArea', data.street);
+                        if (data.pincode) set('locality', data.pincode);
+                      }
+                    }}
+                />
+              ) : (
+                <MapPicker
+                  key={`display-${form.village}`}
+                  villageName={form.village}
+                  dark={dark}
+                  readOnly={true}
+                  initialLat={homeLat}
+                  initialLng={homeLng}
+                  onLocationSelect={() => {}}
+                />
+              )}
+            </div>
           </div>
         </div>
 
@@ -559,7 +564,7 @@ const CitizenProfile = () => {
               type="button"
               aria-label="Close village change request"
               onClick={() => setShowVillageRequest(false)}
-              className={`absolute inset-0 h-full w-full cursor-default ${dk('bg-black/75','bg-slate-950/55')} backdrop-blur-[2px]`}
+              className="absolute inset-0 h-full w-full cursor-default bg-black/60 backdrop-blur-sm"
             />
             <form onSubmit={submitVillageRequest} className={`relative z-10 w-full max-w-[95vw] sm:max-w-md max-h-[92vh] overflow-y-auto rounded-lg border shadow-2xl p-5 space-y-4 ${dk('bg-slate-900 border-slate-700','bg-white border-slate-200')}`}>
               <div className="flex items-start justify-between gap-3">

@@ -15,8 +15,10 @@ const TaskManager = () => {
             const res = await fetch(apiUrl('/api/green-champion/tasks'), {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            const data = await res.json();
-            if (res.ok) setTasks(data);
+            if (res.ok) {
+                const data = await res.json();
+                setTasks(data);
+            }
         } catch (err) {
             console.error('Error fetching tasks:', err);
         } finally {

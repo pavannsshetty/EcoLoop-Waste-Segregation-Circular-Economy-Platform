@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API } from '../../shared/constants';
 import { HiChartBar, HiClipboardCheck, HiUserGroup, HiClock, HiCheckCircle, HiExclamation, HiEye, HiLocationMarker, HiRefresh, HiChevronRight, HiCollection, HiSpeakerphone, HiFlag, HiHome, HiUserAdd, HiUsers, HiClipboardList } from 'react-icons/hi';
-import { MdRecycling } from 'react-icons/md';
+import { MdRecycling, MdCloudQueue } from 'react-icons/md';
 import { ToastContainer, useToast } from '../../shared/components/Toast';
 import StatCard, { StatCardSkeleton } from '../../shared/components/StatCard';
 import { Skeleton } from '../../shared/components/SkeletonLoader';
@@ -89,11 +89,15 @@ const GreenChampionDashboard = () => {
     socket.on('notification', handler);
     socket.on('profile_updated', handler);
     socket.on('new_broadcast', handler);
+    socket.on('analytics_updated', handler);
+    socket.on('recycling_updated', handler);
     return () => {
       socket.off('report_updated', handler);
       socket.off('notification', handler);
       socket.off('profile_updated', handler);
       socket.off('new_broadcast', handler);
+      socket.off('analytics_updated', handler);
+      socket.off('recycling_updated', handler);
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
     };
   }, [fetchDashboard]);
@@ -173,6 +177,10 @@ const GreenChampionDashboard = () => {
       gradient: dark ? 'linear-gradient(135deg, #0a7a79 0%, #1fa89a 100%)' : 'linear-gradient(135deg, #14B8A6 0%, #0891B2 100%)' },
     { label: 'Resolved Reports', value: stats.resolvedReports ?? 0, Icon: HiCheckCircle, subtitle: 'Verified cleanups',
       gradient: dark ? 'linear-gradient(135deg, #157a50 0%, #22a06b 100%)' : 'linear-gradient(135deg, #10B981 0%, #16A34A 100%)' },
+    { label: 'Recycled Waste', value: `${stats.recycledWeight ?? 0} kg`, Icon: MdRecycling, subtitle: 'Total recycled',
+      gradient: dark ? 'linear-gradient(135deg, #0a7a79 0%, #1fa89a 100%)' : 'linear-gradient(135deg, #14B8A6 0%, #2DD4BF 100%)' },
+    { label: 'CO₂ Saved', value: `${stats.co2Saved ?? 0} kg`, Icon: MdCloudQueue, subtitle: 'Carbon footprint reduced',
+      gradient: dark ? 'linear-gradient(135deg, #157a50 0%, #22a06b 100%)' : 'linear-gradient(135deg, #22C55E 0%, #4ADE80 100%)' },
   ];
 
   const quickActions = [

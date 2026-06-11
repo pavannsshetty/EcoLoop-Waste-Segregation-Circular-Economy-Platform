@@ -1,25 +1,22 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { HiSearch, HiEye, HiX, HiOutlineUser, HiOutlineUserCircle, HiUsers, HiBadgeCheck } from 'react-icons/hi';
 import { API } from '../../shared/constants';
 import { useTheme } from '../../shared/context/ThemeContext';
+import ModalOverlay from '../../shared/components/ModalOverlay';
 import socket from '../../socket';
 
 const ModalShell = ({ title, children, onClose, dark, width = 'max-w-3xl' }) => (
-  createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className={`w-full ${width} max-h-[90vh] overflow-hidden rounded-lg border shadow-2xl ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
-        <div className={`flex items-center justify-between gap-3 px-5 py-4 border-b ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
-          <h2 className={`text-lg font-semibold ${dark ? 'text-slate-100' : 'text-slate-900'}`}>{title}</h2>
-          <button type="button" onClick={onClose} className={`rounded-lg p-2 transition ${dark ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}`}>
-            <HiX className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="max-h-[calc(90vh-72px)] overflow-y-auto p-5">{children}</div>
+  <ModalOverlay onClose={onClose} className="flex items-center justify-center p-4">
+    <div className={`w-full ${width} max-h-[90vh] overflow-hidden rounded-lg border shadow-2xl ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+      <div className={`flex items-center justify-between gap-3 px-5 py-4 border-b ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
+        <h2 className={`text-lg font-semibold ${dark ? 'text-slate-100' : 'text-slate-900'}`}>{title}</h2>
+        <button type="button" onClick={onClose} className={`rounded-lg p-2 transition ${dark ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}`}>
+          <HiX className="h-5 w-5" />
+        </button>
       </div>
-    </div>,
-    document.body,
-  )
+      <div className="max-h-[calc(90vh-72px)] overflow-y-auto p-5">{children}</div>
+    </div>
+  </ModalOverlay>
 );
 
 const Detail = ({ label, value, dark }) => (

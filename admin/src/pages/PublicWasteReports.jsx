@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createPortal } from 'react-dom';
 import { HiEye, HiX, HiExclamationCircle, HiLocationMarker, HiSearch, HiThumbUp, HiPhotograph, HiClock } from 'react-icons/hi';
 import { useTheme } from '../context/ThemeContext';
+import ModalOverlay from '../components/ModalOverlay';
 
 const ModalWrapper = ({ children, onClose, title, dk }) => {
-  return createPortal(
-    <div className="fixed inset-0 z-[9999] flex p-4 sm:p-6 bg-black/60 overflow-y-auto" onClick={(e) => { if(e.target === e.currentTarget) onClose(); }}>
-        <div className={`relative m-auto w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-4xl max-h-full flex flex-col rounded-lg border shadow-2xl ${dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200')}`}>
+  return (
+    <ModalOverlay onClose={onClose} className="flex p-4 sm:p-6 overflow-y-auto">
+      <div className={`relative m-auto w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-4xl max-h-full flex flex-col rounded-lg border shadow-2xl ${dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200')}`}>
         <div className={`px-4 sm:px-6 py-4 border-b flex justify-between items-center shrink-0 rounded-t-lg sticky top-0 z-10 ${dk('border-slate-800 bg-slate-900', 'border-slate-100 bg-white')}`}>
           <h2 className={`text-lg font-bold truncate ${dk('text-slate-200', 'text-slate-800')}`}>{title}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg transition shrink-0 ${dk('text-slate-400 hover:bg-slate-800 hover:text-white', 'text-slate-500 hover:bg-slate-100 hover:text-slate-800')}`}>
@@ -18,8 +18,7 @@ const ModalWrapper = ({ children, onClose, title, dk }) => {
           {children}
         </div>
       </div>
-    </div>,
-    document.body
+    </ModalOverlay>
   );
 };
 
@@ -53,7 +52,7 @@ const PublicWasteReports = () => {
     if (!search.trim()) return reports;
     const q = search.toLowerCase();
     return reports.filter((r) =>
-      [r.reportId, r.wasteType, r.status, r.village, r.location?.address, r.userId?.name, r.userId?.phone]
+      [r.reportId, r.wasteType, r.village, r.userId?.name, r.userId?.phone]
         .some((f) => f?.toLowerCase().includes(q))
     );
   }, [reports, search]);
@@ -119,6 +118,12 @@ const PublicWasteReports = () => {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       const data = await res.json();
       if (res.ok) {
         setViewModal(data.report);
@@ -148,16 +153,6 @@ const PublicWasteReports = () => {
       case 'High': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-400';
       case 'Medium': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-400';
       case 'Low': return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-400';
-      default: return dk('bg-slate-800 text-slate-400', 'bg-slate-100 text-slate-500');
-    }
-  };
-
-  const getAiStatusColor = (status) => {
-    switch (status) {
-      case 'APPROVED': return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-400';
-      case 'REJECTED': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-400';
-      case 'SUSPICIOUS': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-400';
-      case 'PENDING_VERIFICATION': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-400';
       default: return dk('bg-slate-800 text-slate-400', 'bg-slate-100 text-slate-500');
     }
   };
@@ -196,37 +191,6 @@ const PublicWasteReports = () => {
       .filter((r) => r.distance <= 100)
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 5);
-  };
-
-  const renderMapLink = (lat, lng) => {
-    if (!lat || !lng) return null;
-    const url = `https://www.google.com/maps?q=${lat},${lng}`;
-    return (
-      <a href={url} target="_blank" rel="noopener noreferrer"
-        className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg border transition ${
-          dark ? 'border-slate-700 bg-slate-800 text-orange-400 hover:bg-slate-700' : 'border-slate-200 bg-white text-orange-600 hover:bg-orange-50'
-        }`}>
-        <HiLocationMarker className="w-3.5 h-3.5" /> Map
-      </a>
-    );
-  };
-
-  const renderImages = (images) => {
-    if (!images || images.length === 0) return null;
-    return (
-      <div className="flex flex-wrap gap-1.5">
-        {images.slice(0, 3).map((img, i) => (
-          <div key={i} className="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0">
-            <img src={img} alt={`Report img ${i+1}`} className="w-full h-full object-cover" />
-          </div>
-        ))}
-        {images.length > 3 && (
-          <span className={`text-xs font-medium flex items-center ${dk('text-slate-400', 'text-slate-500')}`}>
-            +{images.length - 3}
-          </span>
-        )}
-      </div>
-    );
   };
 
   return (
@@ -293,18 +257,13 @@ const PublicWasteReports = () => {
                   <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Waste Type</th>
                   <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Severity</th>
                   <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Village</th>
-                  <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Location</th>
                   <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Collector</th>
-                  <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Duplicate</th>
-                  <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">AI Status</th>
-                  <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Status</th>
                   <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Date & Time</th>
-                  <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Images</th>
-                  <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Action</th>
+                  <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredReports.map((r) => (
+                  {filteredReports.map((r) => (
                   <tr key={r._id} className={`border-b transition ${dk('border-gray-800/50 hover:bg-white/5', 'border-slate-100 hover:bg-slate-50')}`}>
                     <td className="px-5 py-4 whitespace-nowrap font-mono font-bold text-orange-600">
                       {r.reportId || 'ECO-PENDING'}
@@ -329,11 +288,6 @@ const PublicWasteReports = () => {
                       {r.village || 'N/A'}
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
-                      {r.location?.lat && r.location?.lng ? renderMapLink(r.location.lat, r.location.lng) : (
-                        <span className={`text-xs ${dk('text-slate-500', 'text-slate-400')}`}>N/A</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-4 whitespace-nowrap">
                       {r.assignedCollector ? (
                         <div>
                           <p className={`font-medium text-sm ${dk('text-slate-200', 'text-slate-800')}`}>{r.assignedCollector.name}</p>
@@ -343,37 +297,9 @@ const PublicWasteReports = () => {
                         <span className={`text-xs italic ${dk('text-slate-500', 'text-slate-400')}`}>Unassigned</span>
                       )}
                     </td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold">
-                      {r.supportedBy?.length || 0}
-                    </td>
-                    <td className="px-5 py-4 whitespace-nowrap">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${getDuplicateStatusColor(r)}`}>
-                        {isDuplicateReport(r) ? 'Yes' : 'No'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 whitespace-nowrap">
-                      <div className="flex flex-col gap-0.5">
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg inline-block w-fit ${getAiStatusColor(r.aiStatus)}`}>
-                          {r.aiStatus || 'PENDING'}
-                        </span>
-                        {r.aiConfidenceScore != null && (
-                          <span className={`text-[10px] font-medium ${dk('text-slate-500', 'text-slate-400')}`}>
-                            {r.aiConfidenceScore}% conf.
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 whitespace-nowrap">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${getStatusColor(r.status)}`}>
-                        {r.status}
-                      </span>
-                    </td>
                     <td className={`px-5 py-4 whitespace-nowrap text-xs ${dk('text-slate-400', 'text-slate-600')}`}>
                       <div>{new Date(r.createdAt).toLocaleDateString()}</div>
                       <div className="opacity-70">{new Date(r.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                    </td>
-                    <td className="px-5 py-4 whitespace-nowrap">
-                      {renderImages(r.images || (r.image ? [r.image] : []))}
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
                       <button onClick={() => setViewModal(r)} className={`p-2 rounded-lg border transition flex items-center gap-1.5 text-xs font-medium ${dk('border-slate-700 bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700', 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-800')}`}>
@@ -427,28 +353,9 @@ const PublicWasteReports = () => {
                         <p className={`text-[11px] uppercase font-semibold ${dk('text-slate-500', 'text-slate-400')}`}>Collector</p>
                         <p className={`text-sm ${dk('text-slate-300', 'text-slate-700')}`}>{r.assignedCollector?.name || 'Unassigned'}</p>
                       </div>
-                      <div>
-                        <p className={`text-[11px] uppercase font-semibold ${dk('text-slate-500', 'text-slate-400')}`}>Duplicate</p>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg inline-block mt-0.5 ${getDuplicateStatusColor(r.isDuplicate)}`}>
-                          {r.isDuplicate ? 'Yes' : 'No'}
-                        </span>
-                      </div>
-                      <div>
-                        <p className={`text-[11px] uppercase font-semibold ${dk('text-slate-500', 'text-slate-400')}`}>AI Status</p>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg inline-block mt-0.5 ${getAiStatusColor(r.aiStatus)}`}>
-                          {r.aiStatus || 'PENDING'}
-                        </span>
-                        {r.aiConfidenceScore != null && (
-                          <span className={`text-[10px] ml-1 ${dk('text-slate-500', 'text-slate-400')}`}>{r.aiConfidenceScore}%</span>
-                        )}
-                      </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        {r.location?.lat && r.location?.lng && renderMapLink(r.location.lat, r.location.lng)}
-                        {renderImages(r.images || (r.image ? [r.image] : []))}
-                      </div>
+                    <div className="flex justify-end">
                       <button onClick={() => setViewModal(r)} className={`p-2 rounded-lg border transition text-xs font-medium flex items-center gap-1.5 ${dk('border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200', 'border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700')}`} title="View">
                         <HiEye className="w-4 h-4" /> View
                       </button>
@@ -546,62 +453,7 @@ const PublicWasteReports = () => {
                 </div>
               </div>
 
-              <div>
-                <h4 className={`text-xs font-bold tracking-wider uppercase mb-3 pb-2 border-b ${dk('border-slate-800 text-slate-500', 'border-slate-100 text-slate-400')}`}>AI Verification & Fraud Detection</h4>
-                <div className={`p-4 rounded-lg border space-y-4 ${dk('bg-slate-800/50 border-slate-700', 'bg-slate-50 border-slate-200')}`}>
-                  <div className="flex items-center justify-between">
-                    <span className={`text-sm font-medium ${dk('text-slate-400', 'text-slate-500')}`}>AI Status:</span>
-                    <span className={`text-xs font-bold px-2 py-1 rounded-lg ${getAiStatusColor(viewModal.aiStatus)}`}>
-                      {viewModal.aiStatus || 'PENDING'}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className={`text-[10px] uppercase font-bold ${dk('text-slate-500', 'text-slate-400')}`}>Confidence Score</p>
-                      <p className={`text-lg font-bold ${viewModal.aiConfidenceScore > 80 ? 'text-green-500' : 'text-amber-500'}`}>
-                        {viewModal.aiConfidenceScore || 0}%
-                      </p>
-                    </div>
-                    <div>
-                      <p className={`text-[10px] uppercase font-bold ${dk('text-slate-500', 'text-slate-400')}`}>Fake Probability</p>
-                      <p className={`text-lg font-bold ${viewModal.fakeProbabilityScore > 60 ? 'text-red-500' : 'text-slate-400'}`}>
-                        {viewModal.fakeProbabilityScore || 0}%
-                      </p>
-                    </div>
-                  </div>
-                  {viewModal.aiDetectedLabels && viewModal.aiDetectedLabels.length > 0 && (
-                    <div>
-                      <p className={`text-[10px] uppercase font-bold mb-1.5 ${dk('text-slate-500', 'text-slate-400')}`}>AI Detected Labels</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {viewModal.aiDetectedLabels.map((l, i) => (
-                          <span key={i} className={`text-[10px] px-2 py-0.5 rounded-full border ${dk('bg-slate-900 border-slate-700 text-slate-400', 'bg-white border-slate-200 text-slate-500')}`}>
-                            {l}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {(viewModal.duplicateImage || viewModal.aiGeneratedDetected) && (
-                    <div className="space-y-2">
-                      {viewModal.duplicateImage && (
-                        <p className="text-xs text-red-500 flex items-center gap-1.5 font-semibold">
-                          <HiExclamationCircle /> Duplicate/Internet Image Detected
-                        </p>
-                      )}
-                      {viewModal.aiGeneratedDetected && (
-                        <p className="text-xs text-amber-500 flex items-center gap-1.5 font-semibold">
-                          <HiExclamationCircle /> AI Generated/Edited Suspicion
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  {viewModal.rejectionReason && (
-                    <div className={`p-2.5 rounded-lg border text-xs ${dk('bg-red-900/20 border-red-900/30 text-red-400', 'bg-red-50 border-red-100 text-red-700')}`}>
-                      <strong>Reason:</strong> {viewModal.rejectionReason}
-                    </div>
-                  )}
-                </div>
-              </div>
+
               <div>
                 <h4 className={`text-xs font-bold tracking-wider uppercase mb-3 pb-2 border-b ${dk('border-slate-800 text-slate-500', 'border-slate-100 text-slate-400')}`}>Verification & Clarification</h4>
                 <div className={`p-4 rounded-lg border space-y-4 ${dk('bg-slate-800/50 border-slate-700', 'bg-slate-50 border-slate-200')}`}>

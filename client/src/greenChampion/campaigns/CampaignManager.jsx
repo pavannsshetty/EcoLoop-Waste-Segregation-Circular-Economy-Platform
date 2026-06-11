@@ -20,8 +20,10 @@ const CampaignManager = () => {
             const res = await fetch(apiUrl('/api/green-champion/campaigns'), {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            const data = await res.json();
-            if (res.ok) setCampaigns(data);
+            if (res.ok) {
+                const data = await res.json();
+                setCampaigns(data);
+            }
         } catch (err) {
             console.error('Error fetching campaigns:', err);
         } finally {

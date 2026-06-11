@@ -138,6 +138,13 @@ const AdminNotifications = () => {
         body: JSON.stringify(payload)
       });
 
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
+
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || 'Unable to send broadcast.');

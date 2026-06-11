@@ -80,7 +80,7 @@ const AdminLogin = () => {
       const data = await res.json();
       if (!res.ok) { setErrors({ submit: data.message || 'Login failed.' }); return; }
       localStorage.setItem('admin-token', data.token);
-      localStorage.setItem('admin-user', data.username);
+      localStorage.setItem('admin-user', JSON.stringify({ username: data.username }));
       toast.success('Login successful! Welcome back.');
       setTimeout(() => navigate('/admin/dashboard'), 500);
     } catch {

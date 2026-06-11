@@ -17,18 +17,30 @@ L.Icon.Default.mergeOptions({
 
 // Ray-casting algorithm for Point-in-Polygon check.
 // Implements strict geometric validation - location is valid ONLY if it's inside the polygon boundary.
-const isPointInPolygon = (lat, lng, polygonCoords) => {
-  if (!polygonCoords || !polygonCoords[0]) return false;
-  let x = lng, y = lat;
+// Supports Polygon and MultiPolygon types.
+const pointInRing = (x, y, ring) => {
   let inside = false;
-  const vs = polygonCoords[0];
-  for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-    let xi = vs[i][0], yi = vs[i][1];
-    let xj = vs[j][0], yj = vs[j][1];
-    let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
     if (intersect) inside = !inside;
   }
   return inside;
+};
+
+const isPointInPolygon = (lat, lng, polygon) => {
+  if (!polygon || !polygon.coordinates) return false;
+  const x = lng, y = lat;
+
+  if (polygon.type === 'MultiPolygon') {
+    for (const polyCoords of polygon.coordinates) {
+      if (pointInRing(x, y, polyCoords[0])) return true;
+    }
+    return false;
+  }
+
+  return pointInRing(x, y, polygon.coordinates[0]);
 };
 
 const normalizeVillageName = (value) => {
@@ -96,8 +108,28 @@ const MapEvents = ({ onClick }) => {
 const ChangeView = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, zoom);
+    if (center?.length === 2 && typeof center[0] === 'number' && typeof center[1] === 'number') {
+      map.setView(center, zoom);
+    }
   }, [center, zoom, map]);
+  return null;
+};
+
+const VillageNameOverlay = ({ name, bounds }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (!name || !bounds || !bounds.isValid()) return;
+    const center = bounds.getCenter();
+    const icon = L.divIcon({
+      className: 'village-name-label',
+      html: `<div style="background:rgba(10,175,41,0.85);color:white;padding:4px 12px;border-radius:4px;font-size:13px;font-weight:700;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.3);">${name}</div>`,
+      iconSize: [0, 0],
+      iconAnchor: [0, 0],
+    });
+    const marker = L.marker([center.lat, center.lng], { icon, interactive: false, keyboard: false });
+    marker.addTo(map);
+    return () => { marker.remove(); };
+  }, [map, name, bounds]);
   return null;
 };
 
@@ -116,7 +148,7 @@ const FitToPolygon = ({ polygonBounds }) => {
   return null;
 };
 
-const MapPicker = ({ onLocationSelect, villageName, dark = false }) => {
+const MapPicker = ({ onLocationSelect, villageName, dark = false, hideLocationCard = false, readOnly = false, initialLat = null, initialLng = null }) => {
   const [mapLayer, setMapLayer] = useState('osm');
   const [query,       setQuery]       = useState('');
   const [suggestions, setSuggestions] = useState([]);
@@ -145,7 +177,7 @@ const MapPicker = ({ onLocationSelect, villageName, dark = false }) => {
           if (!active) return;
           if (data) {
             setVillageData(data);
-            if (data.center) {
+            if (data.center && typeof data.center.lat === 'number' && typeof data.center.lng === 'number') {
               setMapCenter({ lat: data.center.lat, lng: data.center.lng, zoom: 14 });
             }
             // Log polygon boundary data for debugging
@@ -157,6 +189,8 @@ const MapPicker = ({ onLocationSelect, villageName, dark = false }) => {
             } else {
               console.warn('[MapPicker] village boundary polygon not available for', villageName);
             }
+          } else {
+            console.error('[MapPicker] village not found via API:', villageName);
           }
         })
         .catch(err => console.error('Error fetching village data:', err))
@@ -167,54 +201,28 @@ const MapPicker = ({ onLocationSelect, villageName, dark = false }) => {
     return () => { active = false; };
   }, [villageName]);
 
-  // If API did not provide a polygon boundary, attempt to fetch GeoJSON from Nominatim
+  // Auto-populate location from initialLat/initialLng when village boundary is loaded
   useEffect(() => {
-    let active = true;
-    const tryFetchNominatim = async (village) => {
-      try {
-        const q = encodeURIComponent(`${village}, Kundapura, India`);
-        const url = `https://nominatim.openstreetmap.org/search.php?q=${q}&polygon_geojson=1&format=jsonv2&limit=3`;
-        const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
-        const data = await res.json();
-        if (!active || !data || !data.length) return;
-        // prefer first feature with geojson polygon
-        const hit = data.find(d => d.geojson && (d.geojson.type === 'Polygon' || d.geojson.type === 'MultiPolygon')) || data[0];
-        if (hit && hit.geojson && (hit.geojson.coordinates?.length > 0)) {
-          const geo = hit.geojson;
-          let boundary = null;
-          if (geo.type === 'Polygon') {
-            boundary = { type: 'Polygon', coordinates: geo.coordinates };
-          } else if (geo.type === 'MultiPolygon') {
-            // use first polygon in multipolygon
-            boundary = { type: 'Polygon', coordinates: geo.coordinates[0] };
-          }
-          if (boundary) {
-            console.debug('[MapPicker] Nominatim polygon loaded', { village: village, coords: boundary.coordinates[0].length });
-            setVillageData(prev => ({ ...(prev || {}), boundary }));
-          }
-        }
-      } catch (err) {
-        console.debug('[MapPicker] nominatim polygon fetch failed', { village, error: err });
-      }
+    if (!readOnly || initialLat == null || initialLng == null || !villageData || !ready) return;
+    if (locInfo && locInfo.lat === initialLat && locInfo.lng === initialLng) return;
+    const lat = initialLat;
+    const lng = initialLng;
+    const hasValidBoundary = (b) => {
+      if (!b?.coordinates || !b.type) return false;
+      if (b.type === 'MultiPolygon') return b.coordinates.some(p => p[0]?.length >= 3);
+      return b.coordinates[0]?.length >= 3;
     };
-
-    const isRectangleBoundary = (b) => {
-      try {
-        if (!b || !b.coordinates || !b.coordinates[0]) return false;
-        const coords = b.coordinates[0];
-        if (coords.length !== 5) return false;
-        const lats = [...new Set(coords.map(c => c[1]))];
-        const lngs = [...new Set(coords.map(c => c[0]))];
-        return lats.length === 2 && lngs.length === 2;
-      } catch (e) { return false; }
-    };
-
-    if (villageName && (!villageData || !villageData.boundary || !villageData.boundary.coordinates || villageData.boundary.coordinates[0].length < 5 || isRectangleBoundary(villageData.boundary))) {
-      tryFetchNominatim(villageName);
+    let pointValid = false;
+    if (hasValidBoundary(villageData?.boundary)) {
+      pointValid = isPointInPolygon(lat, lng, villageData.boundary);
     }
+    setLocInfo({ lat, lng, displayAddress: `${lat.toFixed(6)}, ${lng.toFixed(6)}` });
+    setRegionValid(pointValid || null);
+    setMapCenter({ lat, lng, zoom: 16 });
+    setError('');
+    console.debug('[MapPicker] initial location auto-populated', { lat, lng, villageName, regionValid: pointValid });
+  }, [initialLat, initialLng, villageData, ready, readOnly]);
 
-    return () => { active = false; };
-  }, [villageName, villageData]);
 
   const applyLocation = useCallback(async (lat, lng, data, source = 'map') => {
     const requestId = ++requestSeq.current;
@@ -235,13 +243,22 @@ const MapPicker = ({ onLocationSelect, villageName, dark = false }) => {
     let pointValid = false;
     
     // DEBUG: Log village and polygon info
+    const polyType = villageData?.boundary?.type || 'none';
+    const polyLoaded = !!(villageData?.boundary?.coordinates?.length > 0);
     console.debug('[MapPicker] village validation start', { 
       villageName, 
-      polygonLoaded: !!(villageData?.boundary?.coordinates?.length > 0),
-      polygonCoordinates: villageData?.boundary?.coordinates?.[0]?.length || 0
+      polyType,
+      polygonLoaded: polyLoaded,
+      polygonCoordinates: polyLoaded ? (polyType === 'MultiPolygon' ? villageData.boundary.coordinates[0][0]?.length || 0 : villageData.boundary.coordinates[0]?.length || 0) : 0
     });
 
-    if (!villageData?.boundary?.coordinates?.[0] || villageData.boundary.coordinates[0].length < 3) {
+    const hasValidBoundary = (b) => {
+      if (!b?.coordinates || !b.type) return false;
+      if (b.type === 'MultiPolygon') return b.coordinates.some(p => p[0]?.length >= 3);
+      return b.coordinates[0]?.length >= 3;
+    };
+
+    if (!hasValidBoundary(villageData?.boundary)) {
       // No valid polygon - MUST REJECT
       console.debug('[MapPicker] NO POLYGON AVAILABLE - location INVALID', { villageName, lat, lng });
       const message = `Village boundary not configured. Please contact support for ${villageName} village.`;
@@ -373,9 +390,27 @@ const MapPicker = ({ onLocationSelect, villageName, dark = false }) => {
   };
 
   // Convert GeoJSON coordinates for react-leaflet Polygon [lat, lng]
+  // Supports both Polygon and MultiPolygon types
   const polygonPositions = useMemo(() => {
-    if (!villageData?.boundary?.coordinates?.[0]) return [];
-    return villageData.boundary.coordinates[0].map(coord => [coord[1], coord[0]]);
+    if (!villageData?.boundary?.coordinates) {
+      console.debug('[MapPicker] polygonPositions: no boundary coordinates', { village: villageName, hasVillageData: !!villageData });
+      return [];
+    }
+    const coords = villageData.boundary;
+    console.debug('[MapPicker] polygonPositions: converting', { type: coords.type, rings: coords.type === 'MultiPolygon' ? coords.coordinates.length : coords.coordinates.length, firstRingLen: coords.coordinates[0]?.length || 0, village: villageName });
+    if (coords.type === 'MultiPolygon') {
+      const result = coords.coordinates.map(poly => poly[0].map(c => [c[1], c[0]]));
+      console.debug('[MapPicker] polygonPositions: MultiPolygon result', { polyCount: result.length, totalPts: result.reduce((s, p) => s + p.length, 0) });
+      return result;
+    }
+    // Polygon
+    if (coords.coordinates[0]) {
+      const result = [coords.coordinates[0].map(c => [c[1], c[0]])];
+      console.debug('[MapPicker] polygonPositions: Polygon result', { pointCount: result[0].length });
+      return result;
+    }
+    console.debug('[MapPicker] polygonPositions: coordinates[0] is falsy');
+    return [];
   }, [villageData]);
 
   // Log active tile layer when it changes
@@ -383,114 +418,110 @@ const MapPicker = ({ onLocationSelect, villageName, dark = false }) => {
     console.debug('[MapPicker] active map layer', mapLayer);
   }, [mapLayer]);
 
-  // Calculate polygon bounds for map fitting
+  // Calculate combined polygon bounds for map fitting
   const polygonBounds = useMemo(() => {
     if (polygonPositions.length === 0) return null;
     try {
-      return L.latLngBounds(polygonPositions);
+      const allBounds = polygonPositions.reduce((bounds, positions) => {
+        const b = L.latLngBounds(positions);
+        if (bounds) return bounds.extend(b);
+        return b;
+      }, null);
+      return allBounds;
     } catch (err) {
       console.error('[MapPicker] error calculating polygon bounds', err);
       return null;
     }
   }, [polygonPositions]);
 
+
+
   return (
     <div className="w-full space-y-3">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <label className={`text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
-            Pick Location on Map
-          </label>
-          <p className={`text-xs mt-0.5 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-            Service Area: <span className="font-medium text-green-600">{villageName ? `${villageName} Village, Kundapura Taluk` : 'Kundapura Taluk'}</span>
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-            {locInfo && (
-            <button type="button" onClick={() => {
-              console.debug('[MapPicker] clear selection');
-              setLocInfo(null);
-              setRegionValid(null);
-              setError('');
-              setQuery('');
-              setSuggestions([]);
-              requestSeq.current += 1;
-              const cleared = lastSelectionSource.current || null;
-              lastSelectionSource.current = null;
-              onLocationSelect(null, cleared);
-            }}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
-            >
-              <HiX className="h-3.5 w-3.5" /> Clear
-            </button>
-          )}
-          <button type="button" onClick={detectLocation} disabled={detecting}
-            className="shrink-0 flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed">
-            <HiLocationMarker className="h-3.5 w-3.5" />
-            {detecting ? 'Detecting...' : 'Detect My Location'}
-          </button>
-        </div>
-      </div>
-
-      <div className="relative w-full">
-        <div className="flex w-full items-center gap-2">
-          <div className={`flex flex-1 items-center rounded-lg border overflow-hidden shadow-sm transition-all focus-within:ring-2 focus-within:ring-green-500 focus-within:border-green-500 ${dark ? 'border-slate-600 bg-slate-800' : 'border-gray-200 bg-white'}`}>
-            <HiSearch className={`ml-3 h-4 w-4 shrink-0 ${dark ? 'text-slate-500' : 'text-slate-400'}`} />
-            <input
-              ref={searchRef}
-              type="text"
-              value={query}
-              onChange={onQueryChange}
-              onFocus={() => suggestions.length > 0 && setShowDrop(true)}
-              onBlur={() => setTimeout(() => setShowDrop(false), 200)}
-              placeholder={`Search exactly in ${villageName || 'your village'}...`}
-              className={`flex-1 min-w-0 bg-transparent py-2.5 px-2 text-sm outline-none focus:ring-0 border-none ${dark ? 'text-slate-100 placeholder-slate-500' : 'text-slate-900 placeholder-slate-400'}`}
-            />
-            {query && (
-              <button type="button" tabIndex={-1} onMouseDown={(e) => { e.preventDefault(); clearSearch(); }}
-                className={`shrink-0 p-1.5 transition ${dark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}>
-                <HiX className="h-4 w-4" />
+      {!readOnly && (
+        <>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <label className={`text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
+                Pick Location on Map
+              </label>
+              <p className={`text-xs mt-0.5 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+                Service Area: <span className="font-medium text-green-600">{villageName ? `${villageName} Village, Kundapura Taluk` : 'Kundapura Taluk'}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {locInfo && (
+                <button type="button" onClick={() => {
+                  console.debug('[MapPicker] clear selection');
+                  setLocInfo(null);
+                  setRegionValid(null);
+                  setError('');
+                  setQuery('');
+                  setSuggestions([]);
+                  requestSeq.current += 1;
+                  const cleared = lastSelectionSource.current || null;
+                  lastSelectionSource.current = null;
+                  onLocationSelect(null, cleared);
+                }}
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
+                >
+                  <HiX className="h-3.5 w-3.5" /> Clear
+                </button>
+              )}
+              <button type="button" onClick={detectLocation} disabled={detecting}
+                className="shrink-0 flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                <HiLocationMarker className="h-3.5 w-3.5" />
+                {detecting ? 'Detecting...' : 'Detect My Location'}
               </button>
+            </div>
+          </div>
+
+          <div className="relative w-full">
+            <div className="flex w-full items-center gap-2">
+              <div className={`flex flex-1 items-center rounded-lg border overflow-hidden shadow-sm transition-all focus-within:ring-2 focus-within:ring-green-500 focus-within:border-green-500 ${dark ? 'border-slate-600 bg-slate-800' : 'border-gray-200 bg-white'}`}>
+                <HiSearch className={`ml-3 h-4 w-4 shrink-0 ${dark ? 'text-slate-500' : 'text-slate-400'}`} />
+                <input
+                  ref={searchRef}
+                  type="text"
+                  value={query}
+                  onChange={onQueryChange}
+                  onFocus={() => suggestions.length > 0 && setShowDrop(true)}
+                  onBlur={() => setTimeout(() => setShowDrop(false), 200)}
+                  placeholder={`Search exactly in ${villageName || 'your village'}...`}
+                  className={`flex-1 min-w-0 bg-transparent py-2.5 px-2 text-sm outline-none focus:ring-0 border-none ${dark ? 'text-slate-100 placeholder-slate-500' : 'text-slate-900 placeholder-slate-400'}`}
+                />
+                {query && (
+                  <button type="button" tabIndex={-1} onMouseDown={(e) => { e.preventDefault(); clearSearch(); }}
+                    className={`shrink-0 p-1.5 transition ${dark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}>
+                    <HiX className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {showDrop && suggestions.length > 0 && (
+              <ul className={`absolute z-[1000] left-0 right-0 mt-1 rounded-lg border shadow-2xl overflow-hidden max-h-64 overflow-y-auto ${dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+                {suggestions.map((s) => (
+                  <li key={s.place_id} className={`border-b last:border-0 ${dark ? 'border-slate-700' : 'border-gray-100'}`}>
+                    <button type="button" onMouseDown={(e) => { e.preventDefault(); onSuggestionPick(s); }}
+                      className={`w-full flex items-start gap-3 px-4 py-3 text-left transition ${dark ? 'hover:bg-slate-700' : 'hover:bg-green-50'}`}>
+                      <HiLocationMarker className="h-4 w-4 shrink-0 mt-0.5 text-green-500" />
+                      <span className="min-w-0">
+                        <span className={`block text-sm font-medium ${dark ? 'text-slate-200' : 'text-slate-800'}`}>
+                          {s.name || s.display_name.split(',')[0]}
+                        </span>
+                        <span className={`block text-xs mt-0.5 truncate ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {s.display_name}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
-        </div>
 
-        {showDrop && suggestions.length > 0 && (
-          <ul className={`absolute z-[1000] left-0 right-0 mt-1 rounded-lg border shadow-2xl overflow-hidden max-h-64 overflow-y-auto ${dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-            {suggestions.map((s) => (
-              <li key={s.place_id} className={`border-b last:border-0 ${dark ? 'border-slate-700' : 'border-gray-100'}`}>
-                <button type="button" onMouseDown={(e) => { e.preventDefault(); onSuggestionPick(s); }}
-                  className={`w-full flex items-start gap-3 px-4 py-3 text-left transition ${dark ? 'hover:bg-slate-700' : 'hover:bg-green-50'}`}>
-                  <HiLocationMarker className="h-4 w-4 shrink-0 mt-0.5 text-green-500" />
-                  <span className="min-w-0">
-                    <span className={`block text-sm font-medium ${dark ? 'text-slate-200' : 'text-slate-800'}`}>
-                      {s.name || s.display_name.split(',')[0]}
-                    </span>
-                    <span className={`block text-xs mt-0.5 truncate ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      {s.display_name}
-                    </span>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {error && (
-        <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
-          <HiExclamation className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
-          <p className="text-xs text-red-700 leading-relaxed font-semibold">
-            {error}
-          </p>
-        </div>
-      )}
-
-      {regionValid === true && (
-        <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-4 py-2">
-          <HiCheckCircle className="h-4 w-4 text-green-500 shrink-0" />
-          <p className="text-xs text-green-700 font-medium">Location is within your registered village.</p>
-        </div>
+        </>
       )}
 
       <div 
@@ -503,6 +534,12 @@ const MapPicker = ({ onLocationSelect, villageName, dark = false }) => {
             center={[mapCenter.lat, mapCenter.lng]} 
             zoom={mapCenter.zoom} 
             className="w-full h-64 sm:h-80 z-10"
+            zoomControl={!readOnly}
+            dragging={!readOnly}
+            scrollWheelZoom={!readOnly}
+            doubleClickZoom={!readOnly}
+            touchZoom={!readOnly}
+            keyboard={!readOnly}
           >
             <ChangeView center={[mapCenter.lat, mapCenter.lng]} zoom={mapCenter.zoom} />
             {polygonBounds && <FitToPolygon polygonBounds={polygonBounds} />}
@@ -519,16 +556,18 @@ const MapPicker = ({ onLocationSelect, villageName, dark = false }) => {
               );
             })()}
             <MapLayerSwitcher currentLayer={mapLayer} onLayerChange={setMapLayer} position="top-right" />
-            {polygonPositions.length > 0 && (
+            {polygonPositions.length > 0 && polygonPositions.map((positions, idx) => (
               <Polygon 
-                positions={polygonPositions} 
+                key={idx}
+                positions={positions} 
                 pathOptions={{ fillColor: '#0AAF29', color: '#0AAF29', weight: 2, fillOpacity: 0.1 }} 
               />
-            )}
+            ))}
             {locInfo && locInfo.lat != null && locInfo.lng != null && (
               <Marker position={[locInfo.lat, locInfo.lng]} />
             )}
-            <MapEvents onClick={applyLocation} />
+            {readOnly && <VillageNameOverlay name={villageName} bounds={polygonBounds} />}
+            {!readOnly && <MapEvents onClick={applyLocation} />}
           </MapContainer>
         ) : (
           <div className="w-full h-64 sm:h-80 flex items-center justify-center bg-slate-100 dark:bg-slate-800 animate-pulse">
@@ -540,7 +579,42 @@ const MapPicker = ({ onLocationSelect, villageName, dark = false }) => {
         )}
       </div>
 
-      {locInfo ? (
+      {error && (
+        <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
+          <HiExclamation className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+          <p className="text-xs text-red-700 leading-relaxed font-semibold">
+            {error}
+          </p>
+        </div>
+      )}
+
+      {regionValid === true && !error && (
+        <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-4 py-2">
+          <HiCheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+          <p className="text-xs text-green-700 font-medium">Location is within your registered village.</p>
+        </div>
+      )}
+
+      {!hideLocationCard && (readOnly ? (
+        locInfo && (
+          <div className={`rounded-lg border p-3.5 ${dark ? 'bg-slate-800 border-slate-700' : 'bg-green-50 border-green-200'}`}>
+            <div className="flex items-start gap-2.5">
+              <HiLocationMarker className="h-4 w-4 shrink-0 mt-0.5 text-green-500" />
+              <div className="flex-1 min-w-0">
+                <p className={`text-xs font-semibold mb-0.5 ${dark ? 'text-green-400' : 'text-green-700'}`}>Saved Home Location</p>
+                <p className={`text-sm font-medium leading-snug ${dark ? 'text-slate-200' : 'text-slate-800'}`}>
+                  {locInfo.displayAddress || locInfo.address}
+                </p>
+                <div className={`mt-1 flex items-center gap-1.5 text-[10px] font-mono ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <span>Lat: {locInfo.lat?.toFixed(6)}</span>
+                  <span className="w-px h-2 bg-slate-300 dark:bg-slate-700" />
+                  <span>Lng: {locInfo.lng?.toFixed(6)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      ) : (locInfo ? (
         <div className={`rounded-lg border p-3.5 ${dark ? 'bg-slate-800 border-slate-700' : 'bg-green-50 border-green-200'}`}>
           <div className="flex items-start gap-2.5">
             <HiLocationMarker className="h-4 w-4 shrink-0 mt-0.5 text-green-500" />
@@ -561,7 +635,7 @@ const MapPicker = ({ onLocationSelect, villageName, dark = false }) => {
         <p className={`text-xs text-center ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
           Tap inside your village boundary on the map to select the exact location.
         </p>
-      )}
+      )))}
     </div>
   );
 };

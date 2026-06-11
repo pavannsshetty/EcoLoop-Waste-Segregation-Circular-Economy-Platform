@@ -1,24 +1,12 @@
 import { useEffect, useState } from 'react';
-import {
-  HiSearch,
-  HiX,
-  HiUser,
-  HiShoppingCart,
-  HiLocationMarker,
-  HiRefresh,
-} from 'react-icons/hi';
+import { HiSearch, HiX, HiCube, HiShoppingCart, HiChartBar, HiExclamation } from 'react-icons/hi';
 import { useTheme } from '../context/ThemeContext';
+import ModalOverlay from '../components/ModalOverlay';
 import socket from '../socket';
 
 const API_BASE = '/api/admin/eco-shopping/buyers';
+const ANALYTICS_BASE = '/api/eco-shopping';
 const ADMIN_TOKEN = () => localStorage.getItem('admin-token');
-
-const STATUS_STYLES = {
-  Pending: 'bg-yellow-100 text-yellow-900',
-  Assigned: 'bg-blue-100 text-blue-900',
-  'Out for Delivery': 'bg-amber-100 text-amber-900',
-  Delivered: 'bg-green-100 text-green-900',
-};
 
 const BADGE_VARIANTS = {
   default: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200',
@@ -52,27 +40,35 @@ const EcoProductBuyers = () => {
   const dk = (d, l) => (dark ? d : l);
 
   const [buyers, setBuyers] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
   const [selected, setSelected] = useState(null);
   const [details, setDetails] = useState(null);
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('all');
-  const [sort, setSort] = useState('recent');
   const [loading, setLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [error, setError] = useState('');
   const totalOrders = buyers.reduce((sum, buyer) => sum + (buyer.totalOrders || 0), 0);
+  const totalRevenue = buyers.reduce((sum, buyer) => sum + (buyer.totalAmount || 0), 0);
+  const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+  const card = `rounded-lg border shadow-sm ${dk('bg-slate-800 border-gray-700', 'bg-white border-slate-100')}`;
+  const textMuted = dk('text-slate-400', 'text-slate-500');
 
   const fetchBuyers = async () => {
     setLoading(true);
     setError('');
     try {
       const params = new URLSearchParams();
-      if (status !== 'all') params.set('status', status);
       if (search.trim()) params.set('search', search.trim());
-      if (sort) params.set('sort', sort);
       const res = await fetch(`${API_BASE}?${params.toString()}`, {
         headers: { Authorization: `Bearer ${ADMIN_TOKEN()}` },
       });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Unable to load buyers.');
       setBuyers(Array.isArray(data) ? data : []);
@@ -91,6 +87,12 @@ const EcoProductBuyers = () => {
       const res = await fetch(`${API_BASE}/${userId}`, {
         headers: { Authorization: `Bearer ${ADMIN_TOKEN()}` },
       });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Unable to load buyer history.');
       setDetails(data);
@@ -102,19 +104,37 @@ const EcoProductBuyers = () => {
     }
   };
 
-  useEffect(() => {
-    fetchBuyers();
-  }, [status, search, sort]);
+  const fetchAnalytics = async () => {
+    try {
+      const res = await fetch(`${ANALYTICS_BASE}/analytics`, { headers: { Authorization: `Bearer ${ADMIN_TOKEN()}` } });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
+      const data = await res.json();
+      setAnalytics(data);
+    } catch { }
+  };
 
   useEffect(() => {
+    fetchBuyers();
+  }, [search]);
+
+  useEffect(() => {
+    fetchAnalytics();
     if (!socket.connected) socket.connect();
     const handler = () => {
       fetchBuyers();
       if (selected) fetchDetails(selected._id);
     };
+    const analyticsHandler = () => fetchAnalytics();
     socket.on('ECO_SHOPPING_ORDER_UPDATED', handler);
+    socket.on('STORE_ANALYTICS_UPDATED', analyticsHandler);
     return () => {
       socket.off('ECO_SHOPPING_ORDER_UPDATED', handler);
+      socket.off('STORE_ANALYTICS_UPDATED', analyticsHandler);
     };
   }, [selected]);
 
@@ -135,67 +155,30 @@ const EcoProductBuyers = () => {
         </div>
       </div>
 
-      <div className={`rounded-lg border shadow-sm overflow-hidden ${dk('bg-white/5 border-gray-700', 'bg-white border-slate-100')}`}>
-        <div className="grid gap-3 lg:grid-cols-[1.4fr_auto] p-4">
-          <div className={`flex items-center gap-2.5 px-4 h-11 rounded-lg border transition-all duration-200 focus-within:ring-2 focus-within:ring-green-500/20 group ${dark ? 'bg-slate-800 border-slate-600 focus-within:border-green-500' : 'bg-white border-slate-200 focus-within:border-green-500 shadow-sm'}`}>
-            <HiSearch className={`h-4 w-4 shrink-0 ${dark ? 'text-slate-500' : 'text-slate-400'}`} />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search buyer, email, phone or product"
-              className="w-full bg-transparent border-none text-sm outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
-            />
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">Order status</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="mt-2 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-              >
-                <option value="all">All statuses</option>
-                <option value="Pending">Pending</option>
-                <option value="Assigned">Assigned</option>
-                <option value="Out for Delivery">Out for Delivery</option>
-                <option value="Delivered">Delivered</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">Sort</label>
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-                className="mt-2 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-              >
-                <option value="recent">Most Recent</option>
-                <option value="amount">Highest Spend</option>
-                <option value="orders">Most Orders</option>
-                <option value="name">Name A-Z</option>
-              </select>
-            </div>
-            <div className="hidden lg:flex items-center justify-end">
-              <span className={`inline-flex rounded-full px-3 py-1.5 text-xs font-semibold ${dk('bg-slate-800 text-slate-200', 'bg-slate-100 text-slate-600')}`}>{buyers.length} buyers</span>
-            </div>
-          </div>
-        </div>
+      <div className={`flex items-center gap-2.5 px-4 h-11 rounded-lg border transition-all duration-200 focus-within:ring-2 focus-within:ring-green-500/20 group max-w-md ${dark ? 'bg-slate-800 border-slate-600 focus-within:border-green-500' : 'bg-white border-slate-200 focus-within:border-green-500 shadow-sm'}`}>
+        <HiSearch className={`h-4 w-4 shrink-0 ${dark ? 'text-slate-500' : 'text-slate-400'}`} />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search order, customer or product..."
+          className="w-full bg-transparent border-none text-sm outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
+        />
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
-        <div className={`rounded-lg border bg-white p-4 text-sm shadow-sm transition dark:border-slate-700/80 dark:bg-slate-950 ${dk('border-gray-700','border-slate-200')}`}>
-          <p className="text-[11px] uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">Total buyers</p>
-          <p className={`mt-2 text-xl font-semibold ${dk('text-white','text-slate-900')}`}>{buyers.length}</p>
-        </div>
-        <div className={`rounded-lg border bg-white p-4 text-sm shadow-sm transition dark:border-slate-700/80 dark:bg-slate-950 ${dk('border_gray-700','border-slate-200')}`}>
-          <p className="text-[11px] uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">Total orders</p>
-          <p className={`mt-2 text-xl font-semibold ${dk('text-white','text-slate-900')}`}>{totalOrders}</p>
-        </div>
-        <div className={`rounded-lg border bg-white p-4 text-sm shadow-sm transition dark:border-slate-700/80 dark:bg-slate-950 ${dk('border-gray-700','border-slate-200')}`}>
-          <p className="text-[11px] uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">List status</p>
-          <p className={`mt-2 text-xl font-semibold ${dk('text-white','text-slate-900')}`}>{loading ? 'Refreshing' : 'Live'}</p>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Buyers', value: buyers.length, icon: HiCube, color: 'text-blue-500', grad: 'from-blue-500/10 to-blue-500/5' },
+          { label: 'Total Orders', value: totalOrders, icon: HiShoppingCart, color: 'text-purple-500', grad: 'from-purple-500/10 to-purple-500/5' },
+          { label: 'Total Revenue', value: `₹${totalRevenue.toLocaleString()}`, icon: HiChartBar, color: 'text-green-500', grad: 'from-green-500/10 to-green-500/5' },
+          { label: 'Avg Order Value', value: `₹${avgOrderValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: HiExclamation, color: 'text-red-500', grad: 'from-red-500/10 to-red-500/5' },
+        ].map(({ label, value, icon: Icon, color, grad }) => (
+          <div key={label} className={`${card} p-4 text-center bg-gradient-to-br ${grad}`}>
+            <Icon className={`h-5 w-5 mx-auto mb-1 ${color}`} />
+            <p className={`text-2xl font-extrabold ${color}`}>{value}</p>
+            <p className={`text-xs mt-0.5 ${textMuted}`}>{label}</p>
+          </div>
+        ))}
       </div>
 
       {error && (
@@ -209,70 +192,42 @@ const EcoProductBuyers = () => {
           <table className="min-w-full text-sm">
             <thead>
               <tr className={`border-b text-xs uppercase tracking-wide ${dk('bg-slate-800/50 border-gray-800 text-slate-500', 'bg-slate-50 border-slate-100 text-slate-500')}`}>
-                <th className="px-5 py-3 text-left font-semibold">Buyer</th>
-                <th className="px-5 py-3 text-left font-semibold">Contact</th>
-                <th className="px-5 py-3 text-left font-semibold">Address</th>
-                <th className="px-5 py-3 text-left font-semibold">Product</th>
-                <th className="px-5 py-3 text-left font-semibold">Qty</th>
-                <th className="px-5 py-3 text-left font-semibold">Order Date</th>
-                <th className="px-5 py-3 text-left font-semibold">Status</th>
-                <th className="px-5 py-3 text-left font-semibold">Payment</th>
-                <th className="px-5 py-3 text-left font-semibold">Total</th>
-                <th className="px-5 py-3 text-left font-semibold">Delivery</th>
-                <th className="px-5 py-3 text-right font-semibold">Actions</th>
+                <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Order ID</th>
+                <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Customer &amp; Phone</th>
+                <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Address</th>
+                <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Product</th>
+                <th className="px-5 py-3 text-right font-semibold whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, index) => (
                   <tr key={index} className={`border-b ${dk('border-gray-800/50 hover:bg-white/5', 'border-slate-100 hover:bg-green-50/50')}`}>
-                    <td colSpan="11" className="px-5 py-4">
+                    <td colSpan="5" className="px-5 py-4">
                       <div className="h-3.5 w-full rounded-full bg-slate-200 dark:bg-slate-800" />
                     </td>
                   </tr>
                 ))
               ) : buyers.length === 0 ? (
                 <tr>
-                  <td colSpan="11" className={`px-5 py-12 text-center text-sm ${dk('text-slate-500', 'text-slate-400')}`}>
-                    No buyers matched your filters. Try another search or refresh the list.
+                  <td colSpan="5" className={`px-5 py-12 text-center text-sm ${dk('text-slate-500', 'text-slate-400')}`}>
+                    No buyers found.
                   </td>
                 </tr>
               ) : (
-                buyers.map((buyer) => (
+                buyers.map((buyer, idx) => (
                   <tr key={buyer._id} className={`border-b transition ${dk('border-gray-800/50 hover:bg-white/5', 'border-slate-100 hover:bg-green-50/50')}`}>
-                    <td className="px-5 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full overflow-hidden bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-xs font-bold">
-                          {buyer.profilePhoto ? (
-                            <img src={buyer.profilePhoto} alt={buyer.name} className="h-full w-full object-cover" />
-                          ) : (
-                            (buyer.name || 'B')[0].toUpperCase()
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className={`truncate font-semibold ${dk('text-slate-200', 'text-slate-800')}`}>{buyer.name}</p>
-                          <p className={`truncate text-[10px] uppercase tracking-wide ${dk('text-slate-500', 'text-slate-500')}`}>{buyer.totalOrders || 0} orders</p>
-                        </div>
-                      </div>
+                    <td className="px-5 py-4 whitespace-nowrap font-mono font-bold text-green-600 text-sm">
+                      ECO-ORD-{String(buyer._id).slice(-6).toUpperCase()}
                     </td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm leading-5 text-slate-500 dark:text-slate-400">
-                      <div className="truncate">{buyer.email || 'Not provided'}</div>
-                      <div className="truncate mt-1">{buyer.phone || 'Not provided'}</div>
+                    <td className="px-5 py-4 whitespace-nowrap text-sm leading-5">
+                      <div className={`font-semibold ${dk('text-slate-200', 'text-slate-800')}`}>{buyer.name || 'Unknown'}</div>
+                      <div className={`truncate mt-0.5 ${dk('text-slate-400', 'text-slate-500')}`}>{buyer.phone || 'Not provided'}</div>
                     </td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
+                    <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 max-w-[200px] truncate">
                       {buyer.address ? buyer.address : <span className={badgeClasses('muted')}>Not provided</span>}
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-slate-900 dark:text-white">{buyer.latestProductName || '—'}</td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{buyer.latestQuantity || 1}</td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{formatDate(buyer.latestOrderDate)}</td>
-                    <td className="px-5 py-4 whitespace-nowrap">
-                      <span className={badgeClasses(statusVariant(buyer.latestOrderStatus))}>{buyer.latestOrderStatus || 'Not provided'}</span>
-                    </td>
-                    <td className="px-5 py-4 whitespace-nowrap">
-                      <span className={badgeClasses(statusVariant(buyer.latestPaymentStatus))}>{buyer.latestPaymentStatus || 'Not provided'}</span>
-                    </td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-slate-900 dark:text-white">₹{buyer.totalAmount?.toLocaleString() || '0'}</td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{buyer.latestDeliveryAddress || 'Not provided'}</td>
                     <td className="px-5 py-4 whitespace-nowrap text-right">
                       <button
                         type="button"
@@ -291,138 +246,90 @@ const EcoProductBuyers = () => {
       </section>
 
       {selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={closeDetails} />
-          <div className="relative z-10 w-full max-w-3xl overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-2xl transition-all duration-200 ease-out dark:border-slate-800/80 dark:bg-slate-950 animate-in fade-in zoom-in-95">
-            <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-4 dark:border-slate-800/80 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 text-2xl font-semibold text-white shadow-lg">
-                  {details?.user?.profilePhoto ? (
-                    <img src={details?.user?.profilePhoto} alt={details?.user?.name || selected.name || 'Buyer'} className="h-full w-full rounded-xl object-cover" />
-                  ) : (
-                    (details?.user?.name || selected.name || 'U')[0].toUpperCase()
-                  )}
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-900 dark:text-white">{details?.user?.name || selected.name}</h3>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Eco buyer details, quick stats, and recent order history.</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={closeDetails}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
+        <ModalOverlay onClose={closeDetails} className="flex p-4 sm:p-6 overflow-y-auto">
+          <div className={`relative m-auto w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-4xl max-h-full flex flex-col rounded-lg border shadow-2xl ${dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200')}`}>
+            <div className={`px-4 sm:px-6 py-4 border-b flex justify-between items-center shrink-0 rounded-t-lg sticky top-0 z-10 ${dk('border-slate-800 bg-slate-900', 'border-slate-100 bg-white')}`}>
+              <h2 className={`text-lg font-bold truncate ${dk('text-slate-200', 'text-slate-800')}`}>
+                Order — ECO-ORD-{String(selected._id).slice(-6).toUpperCase()}
+              </h2>
+              <button onClick={closeDetails} className={`p-1.5 rounded-lg transition shrink-0 ${dk('text-slate-400 hover:bg-slate-800 hover:text-white', 'text-slate-500 hover:bg-slate-100 hover:text-slate-800')}`}>
                 <HiX className="h-5 w-5" />
               </button>
             </div>
-
-            <div className="px-5 py-5 sm:px-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-4 dark:border-slate-700/80 dark:bg-slate-900/80">
-                  <div className="text-[11px] uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">Buyer details</div>
-                  <div className="mt-4 grid gap-3 text-sm text-slate-900 dark:text-white">
-                    <div>
-                      <p className="text-[11px] uppercase tracking-[0.23em] text-slate-400 dark:text-slate-500">Email</p>
-                      <p className="mt-1 font-semibold">{details?.user?.email || selected.email || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] uppercase tracking-[0.23em] text-slate-400 dark:text-slate-500">Mobile</p>
-                      <p className="mt-1 font-semibold">{details?.user?.phone || selected.phone || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] uppercase tracking-[0.23em] text-slate-400 dark:text-slate-500">Status</p>
-                      <p className="mt-1 font-semibold">{details?.user?.isActive ? 'Active' : 'Inactive'}</p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] uppercase tracking-[0.23em] text-slate-400 dark:text-slate-500">Joined</p>
-                      <p className="mt-1 font-semibold">{formatDate(details?.user?.createdAt)}</p>
-                    </div>
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1">
+              <div className="space-y-5">
+                <div>
+                  <h4 className={`text-xs font-bold tracking-wider uppercase mb-3 pb-2 border-b ${dk('border-slate-800 text-slate-500', 'border-slate-100 text-slate-400')}`}>Customer Information</h4>
+                  <div className="space-y-2 text-sm">
+                    <p><span className={`inline-block w-20 sm:w-24 font-medium ${dk('text-slate-400', 'text-slate-500')}`}>Name:</span> <span className={dk('text-slate-200', 'text-slate-800')}>{details?.user?.name || selected.name || 'N/A'}</span></p>
+                    <p><span className={`inline-block w-20 sm:w-24 font-medium ${dk('text-slate-400', 'text-slate-500')}`}>Phone:</span> <span className={dk('text-slate-200', 'text-slate-800')}>{details?.user?.phone || selected.phone || 'N/A'}</span></p>
+                    <p><span className={`inline-block w-20 sm:w-24 font-medium ${dk('text-slate-400', 'text-slate-500')}`}>Email:</span> <span className={dk('text-slate-200', 'text-slate-800')}>{details?.user?.email || selected.email || 'N/A'}</span></p>
                   </div>
                 </div>
-                <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-4 dark:border-slate-700/80 dark:bg-slate-900/80">
-                  <div className="text-[11px] uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">Location</div>
-                  <div className="mt-4 grid gap-3 text-sm text-slate-900 dark:text-white">
-                    <div>
-                      <p className="text-[11px] uppercase tracking-[0.23em] text-slate-400 dark:text-slate-500">Address</p>
-                      <p className="mt-1 font-semibold">{details?.user?.homeAddress || details?.user?.currentLocation || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] uppercase tracking-[0.23em] text-slate-400 dark:text-slate-500">Orders</p>
-                      <p className="mt-1 font-semibold">{details?.orders?.length || 0}</p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] uppercase tracking-[0.23em] text-slate-400 dark:text-slate-500">Last order</p>
-                      <p className="mt-1 font-semibold">{details?.orders?.length ? formatDate(details?.orders?.[0]?.createdAt) : '—'}</p>
-                    </div>
+
+                <div>
+                  <h4 className={`text-xs font-bold tracking-wider uppercase mb-3 pb-2 border-b ${dk('border-slate-800 text-slate-500', 'border-slate-100 text-slate-400')}`}>Order Information</h4>
+                  <div className="space-y-2 text-sm">
+                    <p><span className={`inline-block w-20 sm:w-24 font-medium ${dk('text-slate-400', 'text-slate-500')}`}>Product:</span> <span className={dk('text-slate-200', 'text-slate-800')}>{selected.latestProductName || '—'}</span></p>
+                    <p><span className={`inline-block w-20 sm:w-24 font-medium ${dk('text-slate-400', 'text-slate-500')}`}>Quantity:</span> <span className={dk('text-slate-200', 'text-slate-800')}>{selected.latestQuantity || 1}</span></p>
+                    <p><span className={`inline-block w-20 sm:w-24 font-medium ${dk('text-slate-400', 'text-slate-500')}`}>Amount:</span> <span className={dk('text-slate-200', 'text-slate-800')}>₹{selected.totalAmount?.toLocaleString() || '0'}</span></p>
+                    <p><span className={`inline-block w-20 sm:w-24 font-medium ${dk('text-slate-400', 'text-slate-500')}`}>Status:</span> <span className={badgeClasses(statusVariant(selected.latestOrderStatus))}>{selected.latestOrderStatus || 'Not provided'}</span></p>
+                    <p><span className={`inline-block w-20 sm:w-24 font-medium ${dk('text-slate-400', 'text-slate-500')}`}>Date:</span> <span className={dk('text-slate-200', 'text-slate-800')}>{formatDate(selected.latestOrderDate)}</span></p>
                   </div>
                 </div>
-              </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                {[
-                  { label: 'Orders', value: details?.orders?.length || 0 },
-                  { label: 'Total Spend', value: `₹${((details?.orders?.reduce((sum, o) => sum + (o.finalAmount || 0), 0)) ?? 0).toLocaleString()}` },
-                  { label: 'Last order', value: details?.orders?.length ? formatDate(details?.orders?.[0]?.createdAt) : '—' },
-                ].map((item) => (
-                  <div key={item.label} className="rounded-2xl border border-slate-200/80 bg-white p-4 text-sm dark:border-slate-700/80 dark:bg-slate-950">
-                    <p className="text-[11px] uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">{item.label}</p>
-                    <p className="mt-3 text-2xl font-semibold text-slate-900 dark:text-white">{item.value}</p>
+                <div>
+                  <h4 className={`text-xs font-bold tracking-wider uppercase mb-3 pb-2 border-b ${dk('border-slate-800 text-slate-500', 'border-slate-100 text-slate-400')}`}>Delivery Address</h4>
+                  <div className="space-y-2 text-sm">
+                    <p className={dk('text-slate-200', 'text-slate-800')}>{selected.address || selected.latestDeliveryAddress || 'Not provided'}</p>
                   </div>
-                ))}
-              </div>
-
-              <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50 dark:border-slate-700/80 dark:bg-slate-900/80">
-                <div className="border-b border-slate-200/80 px-4 py-3 dark:border-slate-700/80">
-                  <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Recent orders</h4>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Latest purchase activity for this buyer.</p>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-white/95 text-slate-600 dark:bg-slate-950/95 dark:text-slate-300">
-                      <tr>
-                        <th className="px-3 py-3 text-left font-semibold">Order</th>
-                        <th className="px-3 py-3 text-left font-semibold">Product</th>
-                        <th className="px-3 py-3 text-left font-semibold">Qty</th>
-                        <th className="px-3 py-3 text-left font-semibold">Status</th>
-                        <th className="px-3 py-3 text-left font-semibold">Amount</th>
-                        <th className="px-3 py-3 text-left font-semibold">Placed</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {detailsLoading ? (
-                        Array.from({ length: 4 }).map((_, index) => (
-                          <tr key={index} className="border-t border-slate-200 dark:border-slate-700">
-                            <td colSpan="6" className="px-3 py-4">
-                              <div className="h-3.5 w-full rounded-full bg-slate-200 dark:bg-slate-800" />
-                            </td>
+
+                {(details?.orders?.length > 1) && (
+                  <div>
+                    <h4 className={`text-xs font-bold tracking-wider uppercase mb-3 pb-2 border-b ${dk('border-slate-800 text-slate-500', 'border-slate-100 text-slate-400')}`}>Recent Orders</h4>
+                    <div className={`overflow-hidden rounded-lg border ${dk('border-slate-700 bg-slate-800/50', 'border-slate-200 bg-slate-50')}`}>
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className={`border-b ${dk('border-slate-700', 'border-slate-200')}`}>
+                            <th className="px-3 py-2 text-left font-semibold">Order</th>
+                            <th className="px-3 py-2 text-left font-semibold">Product</th>
+                            <th className="px-3 py-2 text-left font-semibold">Status</th>
+                            <th className="px-3 py-2 text-left font-semibold">Amount</th>
+                            <th className="px-3 py-2 text-left font-semibold">Placed</th>
                           </tr>
-                        ))
-                      ) : details?.orders?.length === 0 ? (
-                        <tr>
-                          <td colSpan="6" className="px-3 py-8 text-center text-slate-500 dark:text-slate-400">No orders found for this buyer.</td>
-                        </tr>
-                      ) : (
-                        details?.orders?.map((order) => (
-                          <tr key={order._id} className="border-t border-slate-200 transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-900">
-                            <td className="px-3 py-3 font-medium text-slate-900 dark:text-white">{order._id.slice(-8)}</td>
-                            <td className="px-3 py-3 text-slate-500 dark:text-slate-300">{order.itemId?.itemName || 'Eco product'}</td>
-                            <td className="px-3 py-3 text-slate-500 dark:text-slate-300">{order.quantity || 1}</td>
-                            <td className="px-3 py-3">
-                              <span className={badgeClasses(statusVariant(order.deliveryStatus))}>{order.deliveryStatus || 'Not provided'}</span>
-                            </td>
-                            <td className="px-3 py-3 text-slate-900 dark:text-white">₹{order.finalAmount?.toLocaleString() || '0'}</td>
-                            <td className="px-3 py-3 text-slate-500 dark:text-slate-400">{formatDate(order.createdAt)}</td>
-                          </tr>
-                        )) || null
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                        </thead>
+                        <tbody>
+                          {detailsLoading ? (
+                            Array.from({ length: 3 }).map((_, index) => (
+                              <tr key={index} className={`border-b ${dk('border-slate-700', 'border-slate-200')}`}>
+                                <td colSpan="5" className="px-3 py-2">
+                                  <div className="h-3 w-full rounded-full bg-slate-200 dark:bg-slate-700" />
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            details?.orders?.map((order) => (
+                              <tr key={order._id} className={`border-b transition ${dk('border-slate-700 hover:bg-slate-700/50', 'border-slate-200 hover:bg-slate-100')}`}>
+                                <td className="px-3 py-2 font-mono font-semibold text-green-600">{order._id.slice(-8)}</td>
+                                <td className={`px-3 py-2 ${dk('text-slate-300', 'text-slate-600')}`}>{order.itemId?.itemName || 'Eco product'}</td>
+                                <td className="px-3 py-2">
+                                  <span className={badgeClasses(statusVariant(order.deliveryStatus))}>{order.deliveryStatus || '—'}</span>
+                                </td>
+                                <td className={`px-3 py-2 font-medium ${dk('text-slate-200', 'text-slate-800')}`}>₹{order.finalAmount?.toLocaleString() || '0'}</td>
+                                <td className={`px-3 py-2 ${dk('text-slate-400', 'text-slate-500')}`}>{formatDate(order.createdAt)}</td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

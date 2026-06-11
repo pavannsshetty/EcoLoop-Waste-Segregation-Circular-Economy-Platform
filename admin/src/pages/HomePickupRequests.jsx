@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { HiEye, HiX, HiSearch, HiCalendar, HiPhone, HiClock, HiCheckCircle, HiXCircle, HiExclamationCircle } from 'react-icons/hi';
+import { HiEye, HiX, HiSearch, HiFlag, HiPhone, HiClock, HiCheckCircle, HiXCircle, HiExclamationCircle } from 'react-icons/hi';
 import { useTheme } from '../context/ThemeContext';
+import ModalOverlay from '../components/ModalOverlay';
 
 const ModalWrapper = ({ children, onClose, title, dk }) => {
-  return createPortal(
-    <div className="fixed inset-0 z-[9999] flex p-4 sm:p-6 bg-black/60 overflow-y-auto" onClick={(e) => { if(e.target === e.currentTarget) onClose(); }}>
+  return (
+    <ModalOverlay onClose={onClose} className="flex p-4 sm:p-6 overflow-y-auto">
       <div className={`relative m-auto w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-4xl max-h-full flex flex-col rounded-lg border shadow-2xl ${dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200')}`}>
         <div className={`px-4 sm:px-6 py-4 border-b flex justify-between items-center shrink-0 rounded-t-lg sticky top-0 z-10 ${dk('border-slate-800 bg-slate-900', 'border-slate-100 bg-white')}`}>
           <h2 className={`text-lg font-bold truncate ${dk('text-slate-200', 'text-slate-800')}`}>{title}</h2>
@@ -17,8 +17,7 @@ const ModalWrapper = ({ children, onClose, title, dk }) => {
           {children}
         </div>
       </div>
-    </div>,
-    document.body
+    </ModalOverlay>
   );
 };
 
@@ -31,24 +30,8 @@ const HomePickupRequests = () => {
   const [search, setSearch] = useState('');
   const [viewModal, setViewModal] = useState(null);
 
-  const getDayGroup = (dateStr) => {
-    if (!dateStr) return 'Later';
-    const d = new Date(dateStr);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const endOfWeek = new Date(today);
-    endOfWeek.setDate(endOfWeek.getDate() + (7 - endOfWeek.getDay()));
-    if (d.toDateString() === today.toDateString()) return 'Today';
-    if (d.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
-    if (d <= endOfWeek) return 'This Week';
-    return 'Later';
-  };
-
   const scheduleGroup = (r) => {
-    const schedule = r.pickupTime || r.createdAt;
-    return getDayGroup(schedule);
+    return r.priorityLevel === 'Urgent' ? 'Urgent' : 'Normal';
   };
 
   const filteredRequests = useMemo(() => {
@@ -62,7 +45,7 @@ const HomePickupRequests = () => {
 
   const grouped = useMemo(() => {
     const groups = {};
-    const order = ['Today', 'Tomorrow', 'This Week', 'Later'];
+    const order = ['Urgent', 'Normal'];
     order.forEach(g => { groups[g] = []; });
     filteredRequests.forEach(r => {
       const g = scheduleGroup(r);
@@ -80,6 +63,8 @@ const HomePickupRequests = () => {
       const res = await fetch('/api/admin/reports/home-pickup', { headers: { Authorization: `Bearer ${token}` } });
       if (res.status === 401) {
         localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
         return;
       }
       if (!res.ok) {
@@ -111,23 +96,17 @@ const HomePickupRequests = () => {
     }
   };
 
-  const getDayGroupColor = (label) => {
-    switch (label) {
-      case 'Today': return dk('bg-blue-900/30 text-blue-400 border-blue-800', 'bg-blue-50 text-blue-700 border-blue-200');
-      case 'Tomorrow': return dk('bg-teal-900/30 text-teal-400 border-teal-800', 'bg-teal-50 text-teal-700 border-teal-200');
-      case 'This Week': return dk('bg-green-900/30 text-green-400 border-green-800', 'bg-green-50 text-green-700 border-green-200');
-      default: return dk('bg-slate-800 text-slate-400 border-slate-700', 'bg-slate-100 text-slate-600 border-slate-200');
-    }
+  const getPriorityBadge = (val) => {
+    if (val === 'Urgent') return dk('bg-red-900/30 text-red-400', 'bg-red-100 text-red-700');
+    return dk('bg-blue-900/30 text-blue-400', 'bg-blue-100 text-blue-700');
   };
 
-  const formatSchedule = (val) => {
-    if (!val) return '—';
-    try {
-      return new Date(val).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-    } catch {
-      return val;
-    }
+  const getDayGroupColor = (label) => {
+    if (label === 'Urgent') return dk('bg-red-900/30 text-red-400 border-red-800', 'bg-red-50 text-red-700 border-red-200');
+    return dk('bg-blue-900/30 text-blue-400 border-blue-800', 'bg-blue-50 text-blue-700 border-blue-200');
   };
+
+  const formatSchedule = () => '—';
 
   return (
     <div className="px-4 sm:px-6 md:px-8 lg:px-10 pt-4 sm:pt-6 md:pt-8 lg:pt-10 pb-6 space-y-5 animate-in fade-in duration-500">
@@ -190,7 +169,6 @@ const HomePickupRequests = () => {
                     <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Mobile Number</th>
                     <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Village</th>
                     <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Waste Type</th>
-                    <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Pickup Schedule</th>
                     <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Collector</th>
                     <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Status</th>
                     <th className="px-5 py-3 text-left font-semibold whitespace-nowrap">Date & Time</th>
@@ -219,12 +197,6 @@ const HomePickupRequests = () => {
                       </td>
                       <td className={`px-5 py-4 whitespace-nowrap font-medium text-sm ${dk('text-slate-200', 'text-slate-800')}`}>
                         {r.wasteType || '—'}
-                      </td>
-                      <td className="px-5 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
-                          <HiCalendar className={`w-3.5 h-3.5 shrink-0 ${dk('text-teal-400', 'text-teal-500')}`} />
-                          <span className={`text-xs ${dk('text-slate-300', 'text-slate-700')}`}>{formatSchedule(r.pickupTime)}</span>
-                        </div>
                       </td>
                       <td className="px-5 py-4 whitespace-nowrap">
                         {r.assignedCollector ? (
@@ -279,8 +251,9 @@ const HomePickupRequests = () => {
                       </div>
 
                       <div className="flex items-center gap-1.5">
-                        <HiCalendar className={`w-3.5 h-3.5 ${dk('text-teal-400', 'text-teal-500')}`} />
-                        <span className={`text-xs ${dk('text-slate-300', 'text-slate-600')}`}>{formatSchedule(r.pickupTime)}</span>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${getPriorityBadge(r.priorityLevel)}`}>
+                          <HiFlag className="h-3 w-3" /> {r.priorityLevel || 'Normal'}
+                        </span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3 text-sm">
@@ -359,15 +332,17 @@ const HomePickupRequests = () => {
 
             <div className="space-y-6">
               <div>
-                <h4 className={`text-xs font-bold tracking-wider uppercase mb-3 pb-2 border-b ${dk('border-slate-800 text-slate-500', 'border-slate-100 text-slate-400')}`}>Pickup Schedule</h4>
+                <h4 className={`text-xs font-bold tracking-wider uppercase mb-3 pb-2 border-b ${dk('border-slate-800 text-slate-500', 'border-slate-100 text-slate-400')}`}>Priority</h4>
                 <div className={`p-4 rounded-lg border space-y-3 ${dk('bg-slate-800 border-slate-700', 'bg-white border-slate-200 shadow-sm')}`}>
                   <div className="flex items-center gap-2.5">
-                    <HiCalendar className={`w-5 h-5 ${dk('text-teal-400', 'text-teal-500')}`} />
+                    <HiFlag className={`w-5 h-5 ${dk('text-teal-400', 'text-teal-500')}`} />
                     <div>
                       <p className={`text-sm font-semibold ${dk('text-slate-200', 'text-slate-800')}`}>
-                        {formatSchedule(viewModal.pickupTime)}
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold ${getPriorityBadge(viewModal.priorityLevel)}`}>
+                          <HiFlag className="h-3 w-3" /> {viewModal.priorityLevel || 'Normal'}
+                        </span>
                       </p>
-                      <p className={`text-xs ${dk('text-slate-500', 'text-slate-400')}`}>Scheduled Pickup Time</p>
+                      <p className={`text-xs ${dk('text-slate-500', 'text-slate-400')}`}>Request Priority</p>
                     </div>
                   </div>
                   {viewModal.pickupNotes && (

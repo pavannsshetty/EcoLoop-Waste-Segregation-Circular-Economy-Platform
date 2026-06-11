@@ -264,7 +264,7 @@ const EcoProductBuyers = () => {
       </div>
 
       {selectedBuyer && buyerDetails && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 px-4 py-6 sm:px-6">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm px-4 py-6 sm:px-6">
           <div className={`mx-auto w-full max-w-6xl rounded-3xl border shadow-2xl ${dk('bg-slate-950 border-slate-800', 'bg-white border-slate-200')} overflow-hidden`}> 
             <div className={`flex items-center justify-between gap-4 border-b px-5 py-4 ${dk('border-slate-800', 'border-slate-200')}`}>
               <div>

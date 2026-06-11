@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { HiCheckCircle, HiXCircle, HiEye } from 'react-icons/hi';
+import { HiCheckCircle, HiXCircle, HiEye, HiShieldCheck, HiUser } from 'react-icons/hi';
 import { useTheme } from '../context/ThemeContext';
+import ModalOverlay from '../components/ModalOverlay';
 import { useSocket } from '../context/SocketContext';
 
 const CITIZEN_TYPES = ['village_change', 'email_change', 'account_deletion'];
@@ -19,6 +20,12 @@ const groupLabel = (dateStr) => {
   return dateStr;
 };
 
+const ROLE_FILTERS = [
+  { label: 'All Requests', value: '' },
+  { label: 'Citizen', value: 'citizen' },
+  { label: 'Green Champion', value: 'green_champion' },
+];
+
 const ApprovalRequests = () => {
   const { dark } = useTheme();
   const { socket } = useSocket();
@@ -29,13 +36,21 @@ const ApprovalRequests = () => {
   const [message, setMessage] = useState('');
   const [adminNote, setAdminNote] = useState('');
   const [reviewAction, setReviewAction] = useState(null);
+  const [roleFilter, setRoleFilter] = useState('');
 
   const fetchRequests = useCallback(async () => {
     try {
       const token = localStorage.getItem('admin-token');
-      const res = await fetch('/api/admin/approval-requests', {
+      const params = roleFilter ? `?role=${roleFilter}` : '';
+      const res = await fetch(`/api/admin/approval-requests${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setRequests(data.requests || []);
@@ -43,7 +58,7 @@ const ApprovalRequests = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [roleFilter]);
 
   useEffect(() => { fetchRequests(); }, [fetchRequests]);
 
@@ -57,6 +72,18 @@ const ApprovalRequests = () => {
       socket.off('approval_request_updated', handler);
     };
   }, [socket, fetchRequests]);
+
+  const roleBadge = (r) => {
+    const role = r.userRole || r.citizen?.role;
+    if (!role) return null;
+    if (role === 'green_champion') {
+      return <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded ${dk('bg-blue-900/40 text-blue-300', 'bg-blue-100 text-blue-700')}`}><HiShieldCheck className="h-3 w-3" /> GC</span>;
+    }
+    if (role === 'citizen') {
+      return <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded ${dk('bg-slate-600 text-slate-200', 'bg-slate-100 text-slate-700')}`}><HiUser className="h-3 w-3" /> Citizen</span>;
+    }
+    return null;
+  };
 
   const rows = useMemo(() => {
     const citizenRequests = requests.filter((r) => CITIZEN_TYPES.includes(r.type));
@@ -131,6 +158,12 @@ const ApprovalRequests = () => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ action: reviewAction, adminNote: adminNote.trim() }),
       });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Unable to update request.');
       setMessage(data.message);
@@ -161,13 +194,22 @@ const ApprovalRequests = () => {
         </div>
       )}
 
+      <div className={`flex items-center gap-2 flex-wrap ${dk('text-slate-400', 'text-slate-500')}`}>
+        {ROLE_FILTERS.map((f) => (
+          <button key={f.value} type="button" onClick={() => setRoleFilter(f.value)}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition ${roleFilter === f.value ? dk('bg-green-900/40 text-green-400 ring-1 ring-green-700', 'bg-green-50 text-green-700 ring-1 ring-green-300') : dk('hover:bg-white/5', 'hover:bg-slate-50')}`}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <div className="h-7 w-7 rounded-full border-[3px] border-green-500 border-t-transparent animate-spin" />
         </div>
       ) : grouped.length === 0 ? (
         <div className={`text-center py-12 text-sm ${dk('text-slate-500', 'text-slate-400')}`}>
-          No citizen approval requests found.
+          No approval requests found.
         </div>
       ) : (
         <div className="space-y-6">
@@ -186,6 +228,7 @@ const ApprovalRequests = () => {
                         <span className={`text-xs ${dk('text-slate-500', 'text-slate-500')}`}>{r.phone}</span>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
+                        {r.type === 'account_deletion' && roleBadge(r)}
                         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${typeColor(r.type)}`}>{typeLabel(r.type)}</span>
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${statusClass(r.status)}`}>{r.status}</span>
                       </div>
@@ -226,19 +269,22 @@ const ApprovalRequests = () => {
       )}
 
       {selected && !reviewAction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <ModalOverlay onClose={() => setSelected(null)} className="flex items-center justify-center p-4">
           <div className={`w-full max-w-[95vw] sm:max-w-lg rounded-lg border shadow-2xl p-4 sm:p-5 space-y-4 ${dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200')}`}>
             <div className="flex items-start justify-between gap-3">
               <h2 className={`text-sm font-bold ${dk('text-slate-100', 'text-slate-800')}`}>Request Details</h2>
               <button type="button" onClick={() => setSelected(null)} className={dk('text-slate-400 hover:text-white', 'text-slate-400 hover:text-slate-700')}>x</button>
             </div>
             {[
-              ['Citizen Name', selected.citizenName],
+              ['Name', selected.citizenName],
               ['Phone Number', selected.phone],
               ['Type', typeLabel(selected.type)],
+              ...(selected.type === 'account_deletion' ? [['Account Type', selected.userRole === 'green_champion' ? 'Green Champion' : 'Citizen']] : []),
               ...(selected.type === 'village_change' ? [['Current Village', selected.currentVillage || selected.citizen?.village || '-'], ['Requested Village', selected.requestedVillage || '-']] : []),
               ...(selected.type === 'email_change' ? [['Requested Email', selected.requestedEmail || '-']] : []),
-              ['Reason', selected.reason || (selected.type === 'account_deletion' ? 'Citizen requested account deletion.' : '-')],
+              ['Reason', selected.reason || (selected.type === 'account_deletion' ? 'Account deletion request.' : '-')],
+              ...(selected.deletionReason ? [['Deletion Reason', selected.deletionReason]] : []),
+              ...(selected.customReason ? [['Additional Details', selected.customReason]] : []),
               ['Status', selected.status],
               ['Submitted', `${selected.dateStr} at ${selected.timeStr}`],
             ].filter(Boolean).map(([label, value]) => (
@@ -254,11 +300,11 @@ const ApprovalRequests = () => {
               </div>
             )}
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {selected && reviewAction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <ModalOverlay onClose={() => { setSelected(null); setReviewAction(null); }} className="flex items-center justify-center p-4">
           <div className={`w-full max-w-[95vw] sm:max-w-sm rounded-lg border shadow-2xl p-4 sm:p-5 space-y-4 ${dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200')}`}>
             <div className="flex items-start justify-between gap-3">
               <h2 className={`text-sm font-bold ${dk('text-slate-100', 'text-slate-800')}`}>{reviewAction === 'approve' ? 'Approve' : 'Reject'} Request</h2>
@@ -279,7 +325,7 @@ const ApprovalRequests = () => {
                 className={`flex-1 rounded-lg text-white text-sm font-bold px-4 py-2.5 ${reviewAction === 'approve' ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'}`}>{reviewAction === 'approve' ? 'Approve' : 'Reject'}</button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

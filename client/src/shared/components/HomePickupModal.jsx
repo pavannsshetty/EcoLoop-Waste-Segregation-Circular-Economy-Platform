@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   HiX, HiPhotograph, HiCheckCircle, HiHome,
-  HiCamera, HiPencil, HiCalendar, HiClock,
+  HiCamera, HiPencil,
   HiLocationMarker, HiExclamationCircle, HiArrowRight
 } from 'react-icons/hi';
 import { API } from '../constants';
@@ -49,7 +49,7 @@ const HomePickupModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   const { user, refreshUser } = useUser();
   const cameraRef = useRef(null);
   const [form, setForm] = useState({
-    wasteType: '', quantity: 'Medium Pile', pickupDate: '', pickupTime: '', description: '',
+    wasteType: '', quantity: 'Medium Pile', priorityLevel: 'Normal', description: '',
   });
   const [imageFile,    setImageFile]    = useState(null);
   const [preview,      setPreview]      = useState('');
@@ -74,8 +74,6 @@ const HomePickupModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   const validate = () => {
     const e = {};
     if (!form.wasteType)  e.wasteType  = 'Select a waste type.';
-    if (!form.pickupDate) e.pickupDate = 'Select a pickup date.';
-    if (!form.pickupTime) e.pickupTime = 'Select a pickup time.';
     if (!hasAddress && !hasGPS) {
       e.address = 'Please complete your address details in your profile before requesting pickup.';
     }
@@ -136,7 +134,7 @@ const HomePickupModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   };
 
   const handleClose = () => {
-    setForm({ wasteType: '', quantity: 'Medium Pile', pickupDate: '', pickupTime: '', description: '' });
+    setForm({ wasteType: '', quantity: 'Medium Pile', priorityLevel: 'Normal', description: '' });
     setImageFile(null); setPreview(''); setErrors({});
     setSubmittedId('');
     onClose();
@@ -245,17 +243,12 @@ const HomePickupModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
                   </Dropdown>
                 </div>
                 <div>
-                  <label className={lbl}><HiCalendar className="inline mr-1" /> Pickup Date</label>
-                  <input type="date" min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
-                    value={form.pickupDate} onChange={e => set('pickupDate', e.target.value)}
-                    className={`${inp} mt-1`} />
-                  {errors.pickupDate && <p className={errCls}>{errors.pickupDate}</p>}
-                </div>
-                <div>
-                  <label className={lbl}><HiClock className="inline mr-1" /> Pickup Time</label>
-                  <input type="time" value={form.pickupTime} onChange={e => set('pickupTime', e.target.value)}
-                    className={`${inp} mt-1`} />
-                  {errors.pickupTime && <p className={errCls}>{errors.pickupTime}</p>}
+                  <label className={lbl}>Priority</label>
+                  <Dropdown value={form.priorityLevel} onChange={e => set('priorityLevel', e.target.value)}
+                    placeholder="Select Priority" className="mt-1">
+                    <option value="Normal">Normal</option>
+                    <option value="Urgent">Urgent</option>
+                  </Dropdown>
                 </div>
               </div>
               <div>

@@ -11,6 +11,7 @@ const orderSchema = new mongoose.Schema({
   paymentMethod: { type: String, enum: ['Points', 'Cash on Delivery', 'Mixed'], required: true },
   paymentStatus: { type: String, enum: ['Pending', 'Completed'], default: 'Completed' },
   deliveryAddress: { type: String, default: '' },
+  deliveryVillage: { type: String, default: '' },
   deliveryLatitude: { type: Number, default: null },
   deliveryLongitude: { type: Number, default: null },
   scheduledDeliveryDate: { type: Date, default: null },
@@ -26,6 +27,8 @@ const orderSchema = new mongoose.Schema({
 orderSchema.index({ userId: 1 });
 orderSchema.index({ itemId: 1 });
 orderSchema.index({ assignedCollector: 1 });
+orderSchema.index({ deliveryStatus: 1 });
+orderSchema.index({ deliveryVillage: 1 });
 orderSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Order', orderSchema);

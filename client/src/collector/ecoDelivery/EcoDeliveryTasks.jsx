@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { HiLocationMarker, HiRefresh, HiUser, HiCheckCircle, HiPhone, HiTag, HiMap } from 'react-icons/hi';
 import { API } from '../../shared/constants';
 import { useTheme } from '../../shared/context/ThemeContext';
+import { useSocket } from '../../shared/context/SocketContext';
 import { getMapLayer } from '../../shared/utils/mapLayers';
 import MapLayerSwitcher from '../../shared/components/MapLayerSwitcher';
 import RouteMapModal from '../../shared/components/RouteMapModal';
@@ -20,16 +21,18 @@ const fmt = (iso) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: '2-
 
 const staCls = (st, dk) => {
   const map = {
+    'Pending':         dk('bg-gray-900/40 text-gray-400', 'bg-gray-100 text-gray-700'),
     'Assigned':        dk('bg-blue-900/40 text-blue-400', 'bg-blue-100 text-blue-700'),
     'Out for Delivery': dk('bg-yellow-900/40 text-yellow-400', 'bg-amber-100 text-amber-800'),
     'Delivered':       dk('bg-green-900/40 text-green-400', 'bg-green-100 text-green-700'),
   };
-  return map[st] || map.Assigned;
+  return map[st] || map.Pending;
 };
 
 const EcoDeliveryTasks = () => {
   const { dark } = useTheme();
   const dk = (d, l) => (dark ? d : l);
+  const { socket } = useSocket();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -37,7 +40,7 @@ const EcoDeliveryTasks = () => {
   const [mapLayer, setMapLayer] = useState('osm');
   const [routeMapTarget, setRouteMapTarget] = useState(null);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
       const url = filter === 'all'
@@ -49,18 +52,40 @@ const EcoDeliveryTasks = () => {
         setOrders(Array.isArray(data) ? data : []);
       }
     } catch {} finally { setLoading(false); }
-  };
+  }, [filter, token]);
 
-  useEffect(() => { fetchOrders(); }, [filter]);
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleNewDelivery = () => fetchOrders();
+    const handleOrderUpdate = () => fetchOrders();
+    socket.on('new_delivery', handleNewDelivery);
+    socket.on('ECO_SHOPPING_ORDER_UPDATED', handleOrderUpdate);
+    return () => {
+      socket.off('new_delivery', handleNewDelivery);
+      socket.off('ECO_SHOPPING_ORDER_UPDATED', handleOrderUpdate);
+    };
+  }, [socket, fetchOrders]);
+
+  const acceptDelivery = async (id) => {
+    try {
+      const res = await fetch(`${API}/api/collector/delivery/${id}/accept`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) fetchOrders();
+    } catch {}
+  };
 
   const updateDeliveryStatus = async (id, status) => {
     try {
-      await fetch(`${API}/api/collector/delivery/${id}/status`, {
+      const res = await fetch(`${API}/api/collector/delivery/${id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
       });
-      fetchOrders();
+      if (res.ok) fetchOrders();
     } catch {}
   };
 
@@ -96,6 +121,7 @@ const EcoDeliveryTasks = () => {
       <div className="flex flex-wrap gap-3">
         <select value={filter} onChange={(e) => setFilter(e.target.value)} className={selectCls}>
           <option value="all">All</option>
+          <option value="Pending">Pending</option>
           <option value="Assigned">Assigned</option>
           <option value="Out for Delivery">Out for Delivery</option>
           <option value="Delivered">Delivered</option>
@@ -168,6 +194,12 @@ const EcoDeliveryTasks = () => {
               )}
 
               <div className="flex flex-wrap gap-2">
+                {o.deliveryStatus === 'Pending' && !o.assignedCollector && (
+                  <button type="button" onClick={() => acceptDelivery(o._id)}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-500 transition">
+                    Accept Delivery
+                  </button>
+                )}
                 {hasCoords && o.deliveryStatus !== 'Delivered' && (
                   <button type="button" onClick={() => goToDestination(o)}
                     className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center gap-1.5 ${dk('border-purple-800/50 text-purple-400 hover:bg-purple-900/30', 'border-purple-200 text-purple-600 hover:bg-purple-50')}`}>

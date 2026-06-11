@@ -200,7 +200,7 @@ const CommunityUpdates = () => {
       )}
 
       {viewItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 overflow-y-auto" onClick={() => setViewItem(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto" onClick={() => setViewItem(null)}>
           <div className={`w-full max-w-2xl my-4 sm:my-8 mx-0 sm:mx-4 overflow-hidden rounded-2xl border shadow-2xl ${dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200')}`} onClick={(e) => e.stopPropagation()}>
             <div className={`flex items-center justify-between px-4 sm:px-5 py-4 border-b ${dk('border-slate-800', 'border-slate-100')}`}>
               <div className="min-w-0 flex-1 pr-4">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { HiChevronDown, HiChevronUp, HiMail, HiExclamationCircle, HiChat } from 'react-icons/hi';
+import { HiChevronDown, HiChevronUp, HiMail, HiExclamationCircle, HiChat, HiCheckCircle } from 'react-icons/hi';
 import { useTheme } from '../../shared/context/ThemeContext';
 
 const FAQ_ITEMS = [

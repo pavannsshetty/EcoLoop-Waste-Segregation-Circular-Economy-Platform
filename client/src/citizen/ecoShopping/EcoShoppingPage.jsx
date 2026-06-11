@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
   HiSearch, HiX, HiStar, HiShoppingCart, HiEye,
@@ -36,6 +36,7 @@ const CAT_ICONS = {
 };
 
 /* ── Item Detail Modal (Mobile-first) ── */
+const DISCOUNT_RATE = 2; // 2 pts = ₹1
 const ItemDetailModal = ({ item, dark, onClose, onBuy, buying, ecoPoints }) => {
   const [pointsToUse, setPointsToUse] = useState(0);
   const [descExpanded, setDescExpanded] = useState(false);
@@ -43,6 +44,16 @@ const ItemDetailModal = ({ item, dark, onClose, onBuy, buying, ecoPoints }) => {
   const textPrimary = dark ? 'text-[#f3f4f6]' : 'text-slate-900';
   const textMuted   = dark ? 'text-[#8b95a7]' : 'text-slate-500';
   const available   = item.status === 'Available' && item.stock > 0;
+
+  const maxMeaningfulPoints = Math.min(item.price * DISCOUNT_RATE, ecoPoints);
+  const discount = Math.floor(pointsToUse / DISCOUNT_RATE);
+  const finalPrice = Math.max(item.price - discount, 0);
+  const canRedeem = pointsToUse > 0;
+
+  const handlePointsChange = (val) => {
+    const parsed = parseInt(val) || 0;
+    setPointsToUse(Math.min(parsed, maxMeaningfulPoints));
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center p-4 bg-black/50 backdrop-blur-sm md:items-center md:justify-center">
@@ -111,30 +122,76 @@ const ItemDetailModal = ({ item, dark, onClose, onBuy, buying, ecoPoints }) => {
             </div>
           )}
 
-          {/* EcoPoints compact card */}
+          {/* EcoPoints section */}
           {available && (
-            <div className={`mb-3 p-3 rounded-lg border ${dark ? 'bg-[#0e141a] border-white/6' : 'bg-green-50 border-green-100'}`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] uppercase tracking-wider text-slate-500">Eco Points</p>
-                  <p className="text-lg font-bold text-emerald-700">{ecoPoints} pts</p>
+            <div className={`mb-3 rounded-lg border ${dark ? 'bg-[#0e141a] border-white/6' : 'bg-green-50 border-green-100'}`}>
+              <div className="p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wider text-slate-500">Your Eco Points</p>
+                    <p className="text-lg font-bold text-emerald-700">{ecoPoints} pts</p>
+                  </div>
+                  <div className="text-right px-2.5 py-1 rounded-lg bg-white/60 dark:bg-white/5">
+                    <p className="text-[11px] font-semibold text-emerald-600">{DISCOUNT_RATE} pts = ₹1</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-[11px] text-slate-500">2 pts = ₹1</p>
+
+                <div className="mt-3">
+                  <p className="text-[11px] uppercase tracking-wider text-slate-500 mb-1.5">Use Eco Points</p>
+                  <input
+                    type="number"
+                    placeholder="Enter points to redeem"
+                    min="0"
+                    max={maxMeaningfulPoints}
+                    value={pointsToUse || ''}
+                    onChange={(e) => handlePointsChange(e.target.value)}
+                    className={`w-full h-10 rounded-xl border px-3 text-sm font-medium outline-none ${dark ? 'bg-[#0d111a] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
+                  />
+                  {pointsToUse > maxMeaningfulPoints && (
+                    <p className="text-xs text-rose-500 mt-1">Max {maxMeaningfulPoints} pts can be used for this item.</p>
+                  )}
+                  {pointsToUse > 0 && pointsToUse % DISCOUNT_RATE !== 0 && (
+                    <p className="text-xs text-amber-500 mt-1">Only multiples of {DISCOUNT_RATE} pts give a discount.</p>
+                  )}
                 </div>
               </div>
 
-              <div className="mt-3">
-                <input
-                  type="number"
-                  placeholder="Points to use"
-                  min="0"
-                  max={Math.min(ecoPoints, item.price * 2)}
-                  value={pointsToUse || ''}
-                  onChange={(e) => setPointsToUse(Math.min(parseInt(e.target.value) || 0, ecoPoints, item.price * 2))}
-                  className={`w-full h-10 rounded-xl border px-3 text-sm font-medium outline-none ${dark ? 'bg-[#0d111a] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
-                />
-              </div>
+              {/* Pricing breakdown */}
+              {canRedeem && (
+                <div className={`mx-3 mb-3 p-3 rounded-lg border ${dark ? 'bg-white/[0.03] border-white/10' : 'bg-white border-green-200'}`}>
+                  <p className="text-[11px] uppercase tracking-wider text-slate-500 mb-2">Pricing Breakdown</p>
+                  <div className="space-y-1.5 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className={textMuted}>Original Price</span>
+                      <span className={`font-semibold ${textPrimary}`}>₹{item.price}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className={textMuted}>
+                        Eco Discount <span className="text-[10px]">({pointsToUse} pts)</span>
+                      </span>
+                      <span className="font-semibold text-emerald-600">- ₹{discount}</span>
+                    </div>
+                    <div className={`border-t my-1 ${dark ? 'border-white/10' : 'border-slate-200'}`} />
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">Final Price</span>
+                      <span className="text-lg font-bold text-emerald-600">
+                        {finalPrice === 0 ? 'FREE' : `₹${finalPrice}`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Purchase summary before buy */}
+              {canRedeem && (
+                <div className={`mx-3 mb-3 px-3 py-2 rounded-lg flex items-center justify-between text-xs ${dark ? 'bg-emerald-900/20 text-emerald-300' : 'bg-emerald-50 text-emerald-700'}`}>
+                  <span className="font-medium">
+                    <HiCheckCircle className="h-3.5 w-3.5 inline mr-1" />
+                    You save ₹{discount} with {pointsToUse} pts
+                  </span>
+                  <span className="font-bold text-sm">₹{finalPrice} payable</span>
+                </div>
+              )}
             </div>
           )}
 
@@ -147,10 +204,10 @@ const ItemDetailModal = ({ item, dark, onClose, onBuy, buying, ecoPoints }) => {
           )}
         </div>
 
-        {/* Sticky footer - never overlaps content */}
+        {/* Sticky footer */}
         <div className={`shrink-0 sticky bottom-0 px-4 py-3 md:py-2 md:px-6 bg-white dark:bg-[#0f1320] border-t ${dark ? 'border-white/10' : 'border-slate-200'}`}>
-          <div className="flex items-center gap-3">
-            <button type="button" onClick={onClose} className={`h-11 md:h-9 flex-1 rounded-lg border text-sm font-semibold ${dark ? 'border-white/10 text-[#b6bec9]' : 'border-slate-200 text-slate-500'} md:text-sm`}>Close</button>
+          <div className="flex items-center justify-end gap-3">
+            <button type="button" onClick={onClose} className={`h-11 md:h-9 px-4 rounded-lg border text-sm font-semibold ${dark ? 'border-white/10 text-[#b6bec9]' : 'border-slate-200 text-slate-500'} md:text-sm`}>Close</button>
             <button
               type="button"
               disabled={!available || buying}
@@ -158,7 +215,7 @@ const ItemDetailModal = ({ item, dark, onClose, onBuy, buying, ecoPoints }) => {
               className="h-11 md:h-9 inline-flex items-center justify-center gap-2 md:gap-1 px-4 md:px-3 rounded-lg bg-green-600 text-sm font-semibold text-white disabled:opacity-50"
             >
               <HiShoppingCart className="h-4 w-4 md:h-4 md:w-4" />
-              {buying ? 'Processing...' : (pointsToUse >= item.price * 2 ? 'Get with Points' : 'Buy Now')}
+              {buying ? 'Processing...' : (finalPrice === 0 ? 'Get for Free' : `Buy ₹${finalPrice}`)}
             </button>
           </div>
         </div>
@@ -240,13 +297,21 @@ const EcoShoppingPage = () => {
   const [catFilter,  setCatFilter]  = useState('all');
   const [categories, setCategories] = useState(CATEGORIES);
   const [selected,   setSelected]   = useState(null);
-  const [ecoPoints,  setEcoPoints]  = useState(ctxUser?.ecoPoints ?? 0);
+  const [modalPoints, setModalPoints] = useState(null);
+
+  const ecoPoints = modalPoints ?? ctxUser?.rewards?.points ?? ctxUser?.ecoPoints ?? 0;
+
+  const selectedRef  = useRef(selected);
+  const ctxUserRef   = useRef(ctxUser);
+  useEffect(() => { selectedRef.current = selected; }, [selected]);
+  useEffect(() => { ctxUserRef.current = ctxUser; }, [ctxUser]);
 
   const fetchCategories = async () => {
     try {
       const res = await fetch(`${API_BASE}/categories`);
+      if (!res.ok) return;
       const data = await res.json();
-      if (res.ok && Array.isArray(data.categories)) {
+      if (Array.isArray(data.categories)) {
         setCategories(['all', ...data.categories.filter(c => c && c.trim())]);
       }
     } catch (err) {
@@ -255,6 +320,9 @@ const EcoShoppingPage = () => {
   };
 
   const handleSelectItem = async (item) => {
+    const pts = await fetchEcoPoints();
+    console.log('[EcoShop] handleSelectItem: pts from fetchEcoPoints:', pts, 'modalPoints after set:', pts);
+    setModalPoints(pts);
     setSelected(item);
     try {
       const res = await fetch(`${API_BASE}/${item._id}`);
@@ -282,20 +350,26 @@ const EcoShoppingPage = () => {
   const [buying,    setBuying]    = useState(false);
   const [sortBy,    setSortBy]    = useState('newest');
 
-  const fetchEcoPoints = async (silent = true) => {
+  const fetchEcoPoints = async () => {
     const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!token) return ctxUser?.rewards?.points ?? ctxUser?.ecoPoints ?? 0;
     try {
       const res = await fetch(`${API}/api/citizen/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
         const data = await res.json();
-        const pts = data.ecoPoints ?? data.rewards?.points ?? 0;
-        setEcoPoints(pts);
+        const pts = data.rewards?.points ?? data.ecoPoints ?? 0;
+        console.log('[EcoShop] fetchEcoPoints got pts:', pts, '| rewards:', data.rewards, '| ecoPoints:', data.ecoPoints);
         if (updateUser) updateUser({ ecoPoints: pts, rewards: data.rewards || { points: pts } });
+        return pts;
       }
-    } catch { /* silent */ }
+      console.log('[EcoShop] fetchEcoPoints res not ok:', res.status);
+    } catch (e) {
+      console.log('[EcoShop] fetchEcoPoints error:', e);
+    }
+    console.log('[EcoShop] fetchEcoPoints fallback ctxUser:', { rewardsPts: ctxUser?.rewards?.points, ecoPoints: ctxUser?.ecoPoints });
+    return ctxUser?.rewards?.points ?? ctxUser?.ecoPoints ?? 0;
   };
 
   const fetchItems = async (cat = catFilter, q = search, sort = sortBy) => {
@@ -306,6 +380,7 @@ const EcoShoppingPage = () => {
       if (q) params.set('search', q);
       params.set('sort', sort);
       const res  = await fetch(`${API_BASE}?${params}`);
+      if (!res.ok) { setItems([]); return; }
       const data = await res.json();
       setItems(data.items || []);
     } catch { } finally { setLoading(false); }
@@ -314,25 +389,25 @@ const EcoShoppingPage = () => {
   useEffect(() => {
     fetchItems();
 
-    socket.on('eco_points_updated', (data) => {
+    const handleEcoPointsUpdated = (data) => {
       const userId = localStorage.getItem('userId') || '';
-      if (data.userId === userId || data.userId === ctxUser?._id) {
-        const pts = data.ecoPoints ?? data.rewardsPoints ?? 0;
-        setEcoPoints(pts);
-        if (updateUser) updateUser({ ecoPoints: pts });
+      const currentCtxUser = ctxUserRef.current;
+      if (data.userId === userId || data.userId === currentCtxUser?._id) {
+        const pts = data.rewardsPoints ?? data.ecoPoints ?? 0;
+        if (updateUser) updateUser({ ecoPoints: pts, rewards: { ...(currentCtxUser?.rewards || {}), points: pts } });
       }
-    });
-    socket.on('points_updated', (data) => {
-      if (data.points !== undefined) {
-        setEcoPoints(data.points);
-        if (updateUser) updateUser({ ecoPoints: data.points });
-      }
-    });
+    };
 
-    socket.on('RECYCLE_ITEM_UPDATED', (data) => {
+    const handlePointsUpdated = (data) => {
+      if (data.points !== undefined) {
+        if (updateUser) updateUser({ ecoPoints: data.points, rewards: { ...(ctxUserRef.current?.rewards || {}), points: data.points } });
+      }
+    };
+
+    const handleRecycleItemUpdated = (data) => {
       if (data.action === 'DELETE') {
         setItems(prev => prev.filter(i => i._id !== data.itemId));
-        if (selected?._id === data.itemId) setSelected(null);
+        if (selectedRef.current?._id === data.itemId) setSelected(null);
       } else {
         const updatedItem = data.item;
         setItems(prev => {
@@ -341,24 +416,25 @@ const EcoShoppingPage = () => {
           if (updatedItem.status === 'Available' && updatedItem.stock > 0) return [updatedItem, ...prev];
           return prev;
         });
-        
-        // Update selected item if it's the one being modified (to reflect views, stock changes, etc)
         setSelected(prev => {
           if (prev?._id === updatedItem._id) {
-            // Keep pointsToUse state intact if the user is typing
             return { ...updatedItem };
           }
           return prev;
         });
       }
-    });
+    };
+
+    socket.on('eco_points_updated', handleEcoPointsUpdated);
+    socket.on('points_updated', handlePointsUpdated);
+    socket.on('RECYCLE_ITEM_UPDATED', handleRecycleItemUpdated);
 
     return () => {
-      socket.off('eco_points_updated');
-      socket.off('points_updated');
-      socket.off('RECYCLE_ITEM_UPDATED');
+      socket.off('eco_points_updated', handleEcoPointsUpdated);
+      socket.off('points_updated', handlePointsUpdated);
+      socket.off('RECYCLE_ITEM_UPDATED', handleRecycleItemUpdated);
     };
-  }, [selected, ctxUser?._id]);
+  }, []);
 
   useEffect(() => { fetchItems(); }, [catFilter, search, sortBy]);
 
@@ -375,12 +451,23 @@ const EcoShoppingPage = () => {
         },
         body: JSON.stringify({ pointsToUse })
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 404 && data.message === 'User not found') {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          toast?.error('Session expired. Please log in again.');
+          setTimeout(() => navigate('/'), 1500);
+          return;
+        }
+        toast?.error(data.message || 'Purchase failed.'); return;
+      }
       const data = await res.json();
-      if (!res.ok) { toast?.error(data.message || 'Purchase failed.'); return; }
       toast?.success(data.message || 'Item purchased successfully!');
       if (data.ecoPoints !== undefined) {
-        setEcoPoints(data.ecoPoints);
-        if (updateUser) updateUser({ ecoPoints: data.ecoPoints });
+        const pts = data.ecoPoints;
+        setModalPoints(pts);
+        if (updateUser) updateUser({ ecoPoints: pts, rewards: { ...(ctxUser?.rewards || {}), points: data.rewardsPoints ?? pts } });
       }
       setSelected(null);
       fetchItems();
@@ -393,7 +480,7 @@ const EcoShoppingPage = () => {
         {selected && (
           <ItemDetailModal
             item={selected} dark={dark}
-            onClose={() => setSelected(null)}
+            onClose={() => { setSelected(null); setModalPoints(null); }}
             onBuy={handleBuy}
             buying={buying}
             ecoPoints={ecoPoints}

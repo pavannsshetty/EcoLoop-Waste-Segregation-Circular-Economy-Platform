@@ -9,6 +9,7 @@ import {
 } from 'react-icons/hi';
 
 const CommunityHub = () => {
+    const navigate = useNavigate();
     const { toast, dark } = useOutletContext();
     const [posts, setPosts] = useState([]);
     const [campaigns, setCampaigns] = useState([]);
@@ -75,23 +76,21 @@ const CommunityHub = () => {
                 body: JSON.stringify(pickupForm)
             });
             
-            const data = await res.json();
-            
-            if (res.ok) {
-                toast.success('Pickup request submitted! Green Champion will contact you soon.');
-                setShowPickupModal(false);
-                setPickupForm({ type: '', quantity: '', address: '', notes: '' });
-            } else {
-                // Check if error is due to incomplete address
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
                 if (data.addressRequired) {
                     toast.error('Please complete your address profile to request pickups.');
                     setShowPickupModal(false);
-                    // Redirect to complete profile after a short delay
                     setTimeout(() => navigate('/citizen/complete-profile'), 1500);
                 } else {
                     toast.error(data.message || 'Error submitting pickup request');
                 }
+                return;
             }
+            const data = await res.json();
+            toast.success('Pickup request submitted! Green Champion will contact you soon.');
+            setShowPickupModal(false);
+            setPickupForm({ type: '', quantity: '', address: '', notes: '' });
         } catch (err) {
             toast.error('Network error. Please try again.');
         } finally {

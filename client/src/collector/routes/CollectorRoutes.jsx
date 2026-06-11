@@ -7,7 +7,8 @@ import HomePickupTasks from '../homePickupTasks/HomePickupTasks';
 import CompletedTasks from '../completedTasks/CompletedTasks';
 import ScrapTasks from '../scrapTasks/ScrapTasks';
 import EcoDeliveryTasks from '../ecoDelivery/EcoDeliveryTasks';
-import CollectorPerformance from '../performance/CollectorPerformance';
+import EcoProducts from '../ecoProducts/EcoProducts';
+import EcoBuyers from '../ecoBuyers/EcoBuyers';
 import CollectorProfile from '../profile/CollectorProfile';
 import NearbyIssues from '../../shared/pages/NearbyIssues';
 import CommunityUpdates from '../../shared/pages/CommunityUpdates';
@@ -24,8 +25,9 @@ const collectorRoutes = (
     <Route path="completed" element={<CompletedTasks />} />
     <Route path="scrap-requests" element={<ScrapTasks />} />
     <Route path="eco-deliveries" element={<EcoDeliveryTasks />} />
+    <Route path="eco-products" element={<EcoProducts />} />
+    <Route path="eco-buyers" element={<EcoBuyers />} />
     <Route path="nearby" element={<NearbyIssues />} />
-    <Route path="performance" element={<CollectorPerformance />} />
     <Route path="community" element={<CommunityUpdates />} />
     <Route path="profile" element={<CollectorProfile />} />
     <Route path="settings" element={<Settings />} />

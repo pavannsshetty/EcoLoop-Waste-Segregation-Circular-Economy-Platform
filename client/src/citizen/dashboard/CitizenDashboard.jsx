@@ -18,6 +18,8 @@ import socket from '../../socket';
 
 
 
+const LOCKED_STATUSES = ['In Progress', 'Resolved', 'Delayed', 'Clarification Expired'];
+
 const CitizenDashboard = () => {
   const navigate = useNavigate();
   const { toasts, toast, remove } = useToast();
@@ -31,6 +33,7 @@ const CitizenDashboard = () => {
   const [loadingReports, setLoadingReports] = useState(false);
   const [scrapStats, setScrapStats] = useState({ totalWeight: 0, pickups: 0, points: 0, co2Saved: 0 });
   const [loadingScrap, setLoadingScrap] = useState(false);
+  const [analytics, setAnalytics] = useState({ recycledWeight: 0, co2Saved: 0 });
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -71,20 +74,38 @@ const CitizenDashboard = () => {
     finally { setLoadingNotifications(false); }
   }, []);
 
+  const fetchAnalytics = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/api/citizen/profile`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const d = await res.json();
+        setAnalytics({ recycledWeight: d.recycledWeight ?? 0, co2Saved: d.co2Saved ?? 0 });
+      }
+    } catch { }
+  }, []);
+
   useEffect(() => { 
     fetchReports();
     fetchScrapStats();
     fetchNotifications();
+    fetchAnalytics();
     refreshUser();
-  }, [fetchReports, fetchScrapStats, fetchNotifications, refreshUser]);
+  }, [fetchReports, fetchScrapStats, fetchNotifications, fetchAnalytics, refreshUser]);
 
   useEffect(() => {
     const handler = (updated) => {
       setRecentReports((rs) => rs.map((r) => (r._id === updated._id ? updated : r)));
     };
     socket.on('report_updated', handler);
-    return () => socket.off('report_updated', handler);
-  }, []);
+    const analyticsHandler = () => { fetchAnalytics(); };
+    socket.on('analytics_updated', analyticsHandler);
+    return () => {
+      socket.off('report_updated', handler);
+      socket.off('analytics_updated', analyticsHandler);
+    };
+  }, [fetchAnalytics]);
 
   const handleReportSuccess = (report) => {
     setRecentReports(rs => [report, ...rs]);
@@ -112,6 +133,8 @@ const CitizenDashboard = () => {
       }
     } catch { toast.error('Network error. Check your connection.'); }
   };
+
+  const canEdit = (r) => !LOCKED_STATUSES.includes(r.status) && !r.assignedCollector && !r.collectorId;
 
   const ecoPoints = user.ecoPoints || user.rewards?.points || 0;
   const streakCount = user.streakCount || 0;
@@ -233,8 +256,8 @@ const CitizenDashboard = () => {
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: 'Total Reports', value: recentReports.length, Icon: LuFileText, gradient: 'linear-gradient(135deg,#8B5CF6 0%,#A78BFA 100%)' },
-                { label: 'Waste Recycled', value: `${scrapStats.totalWeight || 0} kg`, Icon: LuRecycle, gradient: 'linear-gradient(135deg,#3B82F6 0%,#60A5FA 100%)' },
-                { label: 'CO2 Saved', value: `${scrapStats.co2Saved || 0}`, Icon: LuLeaf, gradient: 'linear-gradient(135deg,#16C55B 0%,#12B84F 100%)' },
+                { label: 'Waste Recycled', value: `${analytics.recycledWeight} kg`, Icon: LuRecycle, gradient: 'linear-gradient(135deg,#3B82F6 0%,#60A5FA 100%)' },
+                { label: 'CO₂ Saved', value: `${analytics.co2Saved} kg`, Icon: LuLeaf, gradient: 'linear-gradient(135deg,#16C55B 0%,#12B84F 100%)' },
                 { label: 'Eco Points', value: ecoPoints, Icon: LuAward, gradient: 'linear-gradient(135deg,#F59E0B 0%,#FBBF24 100%)' },
                 { label: 'Badges Earned', value: user.badges?.length || 0, Icon: LuAward, gradient: 'linear-gradient(135deg,#0EA5A4 0%,#06B6D4 100%)' },
                 { label: 'Community Posts', value: user.postsCount || 0, Icon: LuUsers, gradient: 'linear-gradient(135deg,#06B6D4 0%,#60E1D3 100%)' },
@@ -312,27 +335,36 @@ const CitizenDashboard = () => {
               </div>
             ) : (
               <div className="space-y-2">
-                {recentReports.slice(0, 2).map((r, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setViewReport(r)}
-                    className={`w-full text-left p-3 rounded-2xl border transition-all active:scale-95 ${dk('bg-[#151515] border-gray-800 hover:border-gray-700', 'bg-white border-gray-200 hover:border-gray-300')}`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        r.status === 'Resolved' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 
-                        r.status === 'In Progress' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 
-                        'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
-                      }`}>
-                        <LuFileText className="h-4 w-4" />
+                 {recentReports.slice(0, 2).map((r, i) => (
+                  <div key={i} className={`rounded-2xl border ${dk('bg-[#151515] border-gray-800', 'bg-white border-gray-200')}`}>
+                    <button
+                      onClick={() => setViewReport(r)}
+                      className={`w-full text-left p-3 transition-all active:scale-95`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          r.status === 'Resolved' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 
+                          r.status === 'In Progress' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 
+                          'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+                        }`}>
+                          <LuFileText className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-semibold truncate ${dk('text-white', 'text-gray-900')}`}>{r.wasteType}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{r.status} • {new Date(r.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</p>
+                        </div>
+                        <LuChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0 mt-1" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-semibold truncate ${dk('text-white', 'text-gray-900')}`}>{r.wasteType}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{r.status} • {new Date(r.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</p>
+                    </button>
+                    {canEdit(r) && (
+                      <div className="px-3 pb-2">
+                        <button onClick={() => setEditReport(r)}
+                          className="text-xs font-semibold text-blue-600 hover:text-blue-500 transition flex items-center gap-1">
+                          <HiPencil className="h-3 w-3" /> Edit
+                        </button>
                       </div>
-                      <LuChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0 mt-1" />
-                    </div>
-                  </button>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
@@ -472,8 +504,8 @@ const CitizenDashboard = () => {
                 : 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)',
             },
             {
-              label: 'CO2 Saved',
-              value: `${scrapStats.co2Saved || 0} kg`,
+              label: 'CO₂ Saved',
+              value: `${analytics.co2Saved} kg`,
               icon: HiRefresh,
               gradient: dark
                 ? 'linear-gradient(135deg, #0a7a79 0%, #1fa89a 100%)'
@@ -481,7 +513,7 @@ const CitizenDashboard = () => {
             },
             {
               label: 'Recycled',
-              value: `${scrapStats.totalWeight || 0} kg`,
+              value: `${analytics.recycledWeight} kg`,
               icon: MdRecycling,
               gradient: dark
                 ? 'linear-gradient(135deg, #178a3e 0%, #2db85a 100%)'
@@ -532,9 +564,16 @@ const CitizenDashboard = () => {
                           <p className="text-[10px] text-slate-500">{r.status} • {new Date(r.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</p>
                         </div>
                       </div>
-                      <button onClick={() => setViewReport(r)} className="p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-white/5">
-                        <HiEye className="h-4 w-4 text-gray-400" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        {canEdit(r) && (
+                          <button onClick={() => setEditReport(r)} className="p-2 rounded-lg hover:bg-white/5 transition-all">
+                            <HiPencil className="h-4 w-4 text-blue-500" />
+                          </button>
+                        )}
+                        <button onClick={() => setViewReport(r)} className="p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-white/5">
+                          <HiEye className="h-4 w-4 text-gray-400" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

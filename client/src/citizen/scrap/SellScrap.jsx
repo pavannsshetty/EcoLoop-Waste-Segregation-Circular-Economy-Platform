@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
-import * as L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { API } from '../../shared/constants';
 import {
   HiX, HiLocationMarker, HiCamera,
@@ -11,18 +8,9 @@ import {
 } from 'react-icons/hi';
 import { useTheme } from '../../shared/context/ThemeContext';
 import { useUser } from '../../shared/context/UserContext';
-import { getMapLayer } from '../../shared/utils/mapLayers';
-import MapLayerSwitcher from '../../shared/components/MapLayerSwitcher';
-
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
 
 const SCRAP_TYPES  = ['Paper', 'Plastic', 'Metal', 'E-Waste', 'Glass', 'Clothes', 'Furniture', 'Other'];
-const PICKUP_TIMES = ['Morning', 'Afternoon', 'Evening'];
+const PICKUP_TIMES = ['Morning', 'Afternoon', 'Evening', 'Any Time'];
 const QUANTITY_TYPES = [
   { value: 'kg', label: 'Kilograms (kg)' },
   { value: 'items', label: 'Number of Items' },
@@ -32,7 +20,6 @@ const QUANTITY_TYPES = [
 const SellScrap = () => {
   const navigate = useNavigate();
   const { dark } = useTheme();
-    const [mapLayer, setMapLayer] = useState('osm');
   const { user: ctxUser, updateUser } = useUser();
   const dk = (d, l) => (dark ? d : l);
 
@@ -40,7 +27,7 @@ const SellScrap = () => {
     scrapType: '',
     quantityType: 'kg',
     quantity: '',
-    pickupTime: '',
+    pickupTime: 'Any Time',
     description: ''
   });
   const [address, setAddress] = useState({
@@ -143,7 +130,7 @@ const SellScrap = () => {
       }
     }
     
-    if (!form.pickupTime) e.pickupTime = 'Please select a preferred pickup time.';
+
     
     // Address validation
     if (!address.village) e.address = 'Village information is required.';
@@ -198,13 +185,14 @@ const SellScrap = () => {
           image: imageFile ? `[image:${imageFile.name}]` : ''
         }),
       });
-      const data = await res.json();
-      if (res.ok) {
-        setSuccess(true);
-        setTimeout(() => navigate('/citizen/scrap-requests'), 2000);
-      } else {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
         setErrors({ submit: data.message || 'Failed to submit request.' });
+        return;
       }
+      const data = await res.json();
+      setSuccess(true);
+      setTimeout(() => navigate('/citizen/scrap-requests'), 2000);
     } catch {
       setErrors({ submit: 'Network error. Please try again later.' });
     } finally {
@@ -312,35 +300,6 @@ const SellScrap = () => {
               </div>
             )}
             {errors.address && <p className={errCls}>{errors.address}</p>}
-
-            {homeLat && homeLng && (
-              <div className="relative w-full h-36 rounded-none overflow-hidden border border-slate-200 dark:border-slate-700">
-                <MapContainer
-                  key={`scrap-home-${homeLat}-${homeLng}`}
-                  center={[homeLat, homeLng]}
-                  zoom={15}
-                  scrollWheelZoom={false}
-                  dragging={false}
-                  zoomControl={false}
-                  className="w-full h-full z-10"
-                >
-                  {(() => {
-                    const currentLayer = getMapLayer(mapLayer);
-                    return (
-                      <TileLayer
-                        key={`tile-${mapLayer}`}
-                        attribution={currentLayer.attribution}
-                        url={currentLayer.url}
-                        maxZoom={currentLayer.maxZoom}
-                        minZoom={currentLayer.minZoom}
-                      />
-                    );
-                  })()}
-                  <MapLayerSwitcher currentLayer={mapLayer} onLayerChange={setMapLayer} position="top-right" />
-                  <Marker position={[homeLat, homeLng]} />
-                </MapContainer>
-              </div>
-            )}
           </div>
 
           {/* Scrap Details */}
@@ -413,7 +372,6 @@ const SellScrap = () => {
                   </button>
                 ))}
               </div>
-              {errors.pickupTime && <p className={errCls}>{errors.pickupTime}</p>}
             </div>
 
             <div>

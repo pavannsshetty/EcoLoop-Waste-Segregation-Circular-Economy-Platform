@@ -6,6 +6,7 @@ import citizenRoutes from './citizen/routes/CitizenRoutes.jsx';
 import collectorRoutes from './collector/routes/CollectorRoutes.jsx';
 import greenRoutes from './greenChampion/routes/GreenRoutes.jsx';
 import adminRoutes from './admin/routes/AdminRoutes.jsx';
+import GlobalToast from './shared/components/GlobalToast';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         {greenRoutes}
         {adminRoutes}
       </Routes>
+      <GlobalToast />
     </BrowserRouter>
   );
 }

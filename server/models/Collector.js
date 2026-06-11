@@ -11,7 +11,7 @@ const collectorSchema = new mongoose.Schema({
     unique: true,
     match: [/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number starting with 9, 8, 7, or 6.']
   },
-  email:        { type: String, default: '', unique: true, sparse: true },
+  email:        { type: String, default: null, unique: true, sparse: true },
   city:         { type: String, default: '' },
   area:         { type: String, default: '' },
   village:      { type: String, default: '' },

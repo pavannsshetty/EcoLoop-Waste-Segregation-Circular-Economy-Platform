@@ -18,6 +18,9 @@ const approvalRequestSchema = new mongoose.Schema(
     currentEmail: { type: String, trim: true, lowercase: true, default: '' },
     requestedEmail: { type: String, trim: true, lowercase: true, default: '' },
     reason: { type: String, trim: true, default: '' },
+    deletionReason: { type: String, trim: true, default: '' },
+    customReason: { type: String, trim: true, default: '' },
+    userRole: { type: String, trim: true, default: '' },
     status: {
       type: String,
       enum: ['Pending', 'Approved', 'Rejected'],

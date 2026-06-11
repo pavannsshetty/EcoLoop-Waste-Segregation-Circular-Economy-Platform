@@ -13,6 +13,7 @@ import {
   HiCamera,
 } from 'react-icons/hi';
 import { useTheme } from '../context/ThemeContext';
+import ModalOverlay from '../components/ModalOverlay';
 import { useSocket } from '../context/SocketContext';
 
 const VILLAGES = [
@@ -165,7 +166,7 @@ const VillageMultiSelect = ({ selected, onChange, error, inp, dk, assignedMap, c
 };
 
 const ModalShell = ({ title, children, onClose, dk, width = 'max-w-3xl' }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+  <ModalOverlay onClose={onClose} className="flex items-center justify-center p-4">
     <div className={`w-full max-w-[95vw] ${width} max-h-[90vh] overflow-hidden rounded-lg border shadow-2xl ${dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200')}`}>
       <div className={`flex items-center justify-between px-5 py-4 border-b ${dk('border-slate-800', 'border-slate-100')}`}>
         <h2 className={`text-base font-semibold ${dk('text-slate-100', 'text-slate-800')}`}>{title}</h2>
@@ -175,7 +176,7 @@ const ModalShell = ({ title, children, onClose, dk, width = 'max-w-3xl' }) => (
       </div>
       <div className="max-h-[calc(90vh-65px)] overflow-y-auto p-5">{children}</div>
     </div>
-  </div>
+  </ModalOverlay>
 );
 
 const Detail = ({ label, value, dk }) => (
@@ -267,6 +268,12 @@ const ViewCollectors = () => {
     try {
       const token = localStorage.getItem('admin-token');
       const res = await fetch('/api/admin/dashboard', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to load collectors.');
       setCollectors(data.collectors || []);
@@ -281,6 +288,12 @@ const ViewCollectors = () => {
     try {
       const token = localStorage.getItem('admin-token');
       const res = await fetch('/api/admin/assigned-villages', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       if (res.ok) { const d = await res.json(); setAssignedVillages(d.assignedVillages || []); }
     } catch {}
   }, []);
@@ -377,6 +390,12 @@ const ViewCollectors = () => {
           headers: { Authorization: `Bearer ${token}` },
           body: fd,
         });
+        if (photoRes.status === 401) {
+          localStorage.removeItem('admin-token');
+          localStorage.removeItem('admin-user');
+          window.location.href = '/admin/login';
+          return;
+        }
         if (photoRes.ok) { const pd = await photoRes.json(); photoUrl = pd.photoUrl; }
         setUploadingPhoto(false);
       }
@@ -385,6 +404,12 @@ const ViewCollectors = () => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ...form, photo: photoUrl, forceReassign }),
       });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       const data = await res.json();
       if (!res.ok) {
         if (data.conflict) {
@@ -453,7 +478,7 @@ const ViewCollectors = () => {
       )}
 
       {viewing && (
-        <ModalShell title="Collector Details" onClose={() => setViewing(null)} dk={dk}>
+        <ModalShell title="Collector Details" onClose={() => setViewing(null)} dk={dk} width="max-w-lg">
           <div className="flex items-center gap-4 mb-5 pb-4 border-b">
             <div className={`h-20 w-20 rounded-lg overflow-hidden border-2 flex items-center justify-center shrink-0 ${dk('border-slate-700 bg-slate-800', 'border-slate-200 bg-slate-50')}`}>
               {viewing.photo ? (
@@ -495,7 +520,7 @@ const ViewCollectors = () => {
       )}
 
       {editing && (
-        <ModalShell title={`Edit ${editing.collectorId}`} onClose={() => setEditing(null)} dk={dk}>
+        <ModalShell title={`Edit ${editing.collectorId}`} onClose={() => setEditing(null)} dk={dk} width="max-w-lg">
           <form onSubmit={handleEditSubmit} noValidate className="space-y-4">
             <div className={section}>
               <p className={sectionTitle}>Profile Photo</p>

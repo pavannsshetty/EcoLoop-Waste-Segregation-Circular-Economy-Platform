@@ -8,7 +8,7 @@ const AccountRestrictionOverlay = ({ restriction, clearUser, dark }) => {
   const isPermanent = !isDeleted && restriction?.suspensionDuration === 'Permanent';
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-xl animate-in fade-in duration-500">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-500">
       <div className={`relative w-full max-w-md mx-4 rounded-2xl border shadow-2xl overflow-hidden ${dark ? 'bg-[#0d0d0d] border-white/[0.08]' : 'bg-white border-slate-200'}`}>
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
           style={{ backgroundImage: 'radial-gradient(circle, #22c55e 1px, transparent 1px)', backgroundSize: '20px 20px' }} />

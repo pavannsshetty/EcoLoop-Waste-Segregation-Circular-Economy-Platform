@@ -8,6 +8,7 @@ import { API } from '../constants';
 import { useUser } from '../context/UserContext';
 import MapPicker from './MapPicker';
 import Dropdown from './Dropdown';
+import Modal from './Modal';
 
 const WASTE_TYPES = [
   'Plastic Waste', 'Organic Waste', 'Food Waste', 'E-Waste', 
@@ -84,7 +85,7 @@ const readExifLocation = (file) =>
 
 const DuplicateModal = ({ report, onContinue, onClose, dark }) => (
   <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-    <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
     <div className={`relative z-10 w-full max-w-sm rounded-none shadow-2xl p-5 space-y-4 ${dark ? 'bg-slate-800' : 'bg-white'}`}>
       <div className="flex items-start gap-3">
         <HiExclamation className="h-6 w-6 text-yellow-500 shrink-0 mt-0.5" />
@@ -147,7 +148,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   const cameraRef = useRef(null);
    const [form, setForm] = useState({
     wasteType: '', severity: 'Medium', wasteSeenAt: 'Just Now', quantity: 'Medium Pile',
-    description: '', pickupDate: '', pickupTime: '',
+    description: '',
     houseNo: '', street: '', landmark: '', wardNumber: '',
   });
   const [locMethod,    setLocMethod]    = useState('map');
@@ -204,8 +205,6 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
     }
     if (!form.severity)           e.severity    = 'Select severity level.';
     if (!form.wasteSeenAt)        e.wasteSeenAt = 'Select when seen.';
-    if (!form.pickupDate)         e.pickupDate  = 'Select a pickup date.';
-    if (!form.pickupTime)         e.pickupTime  = 'Select a pickup time.';
     return e;
   };
 
@@ -273,7 +272,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
   };
 
   const handleClose = () => {
-    setForm({ wasteType: '', severity: 'Medium', wasteSeenAt: 'Just Now', quantity: 'Medium Pile', description: '', pickupDate: '', pickupTime: '', houseNo: '', street: '', landmark: '', wardNumber: '' });
+    setForm({ wasteType: '', severity: 'Medium', wasteSeenAt: 'Just Now', quantity: 'Medium Pile', description: '', houseNo: '', street: '', landmark: '', wardNumber: '' });
     setLocation(null); setImageFile(null); setPreview(''); setErrors({});
     setPhotoLoc(null); setPhotoWarning(false);
     setDupData(null); setShowDup(false); setLocMethod('map');
@@ -295,21 +294,8 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
       {showDup && <DuplicateModal report={dupData} dark={dark} onClose={() => setShowDup(false)} onContinue={() => { setShowDup(false); doSubmit(); }} />}
       {submittedId && <SuccessModal reportId={submittedId} dark={dark} onClose={handleClose} />}
 
-      <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center sm:p-4 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto" onClick={handleClose} />
-        <div className={`relative z-10 w-full max-w-md sm:max-w-2xl rounded-none sm:rounded-none shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[90vh] pointer-events-auto ${dark ? 'bg-black/90 border border-gray-800' : 'bg-white'}`}>
-
-          <div className={`flex items-center justify-between px-3 sm:px-6 py-3.5 border-b shrink-0 ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
-            <div className="flex items-center gap-2">
-              <HiClipboardList className="h-5 w-5 text-green-500" />
-              <span className={`font-bold text-lg sm:text-xl ${dark ? 'text-white' : 'text-slate-900'}`}>Report Waste</span>
-            </div>
-            <button type="button" onClick={handleClose} className={`rounded-none p-1.5 transition ${dark ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-400 hover:bg-slate-100'}`}>
-              <HiX className="h-5 w-5" />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} noValidate className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 space-y-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pointer-events-auto">
+      <Modal isOpen onClose={handleClose} title="Report Waste" icon={HiClipboardList} dark={dark} className="sm:max-w-2xl">
+        <form onSubmit={handleSubmit} noValidate className="space-y-5">
 
             <div className={card}>
               <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Waste Details</p>
@@ -446,20 +432,7 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
             </div>
 
             <div className={card}>
-              <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Pickup Schedule</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={lbl}>Pickup Date</label>
-                  <input type="date" value={form.pickupDate} onChange={e => set('pickupDate', e.target.value)}
-                    min={new Date().toISOString().split('T')[0]} className={`${inp} mt-1`} />
-                  {errors.pickupDate && <p className={errCls}>{errors.pickupDate}</p>}
-                </div>
-                <div>
-                  <label className={lbl}>Pickup Time</label>
-                  <input type="time" value={form.pickupTime} onChange={e => set('pickupTime', e.target.value)} className={`${inp} mt-1`} />
-                  {errors.pickupTime && <p className={errCls}>{errors.pickupTime}</p>}
-                </div>
-              </div>
+              <p className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Cleanup Timeline</p>
               {form.severity && (
                 <div className={`flex items-center gap-2 rounded-none px-3 py-2 text-xs ${dark ? 'bg-slate-700 text-slate-300' : 'bg-green-50 text-green-700'}`}>
                   <HiCheckCircle className="h-4 w-4 text-green-500 shrink-0" />
@@ -485,9 +458,8 @@ const ReportWasteModal = ({ isOpen, onClose, onSuccess, dark = false }) => {
                 {loading ? 'Submitting...' : regionValid === false ? 'Outside Service Area' : 'Submit Report'}
               </button>
             </div>
-          </form>
-        </div>
-      </div>
+        </form>
+      </Modal>
     </>
   );
 };

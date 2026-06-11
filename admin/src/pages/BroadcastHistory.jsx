@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HiEye, HiPencil, HiTrash, HiX, HiCalendar, HiLocationMarker, HiLink } from 'react-icons/hi';
 import { useTheme } from '../context/ThemeContext';
+import ModalOverlay from '../components/ModalOverlay';
 import { useSocket } from '../context/SocketContext';
 import Dropdown from '../components/Dropdown';
 
@@ -82,6 +83,7 @@ const BroadcastHistory = () => {
   const [filterStatus, setFilterStatus] = useState('All');
   const [selectedBroadcast, setSelectedBroadcast] = useState(null);
   const [editingBroadcast, setEditingBroadcast] = useState(null);
+  const loadBroadcastsRef = useRef(null);
   const [editValues, setEditValues] = useState({
     title: '',
     description: '',
@@ -139,12 +141,16 @@ const BroadcastHistory = () => {
   };
 
   useEffect(() => {
+    loadBroadcastsRef.current = loadBroadcasts;
+  });
+
+  useEffect(() => {
     loadBroadcasts();
   }, [search, filterCategory, filterAudience, filterStatus]);
 
   useEffect(() => {
     if (!socket) return;
-    const refresh = () => loadBroadcasts();
+    const refresh = () => { if (loadBroadcastsRef.current) loadBroadcastsRef.current(); };
     socket.on('notification_broadcast', refresh);
     socket.on('notification', refresh);
     return () => {
@@ -290,126 +296,114 @@ const BroadcastHistory = () => {
         </p>
       </div>
 
-      <div className={dk('bg-slate-950/70 border border-white/10', 'bg-white border border-slate-200') + ' rounded-xl p-5 space-y-4'}>
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by title or description"
-            className={dk(
-              'w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500',
-              'w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
-            )}
-          />
-          <Dropdown name="filterCategory" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className={inp}>
-            {['All', ...NOTIFICATION_TYPES].map((option) => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </Dropdown>
-          <Dropdown name="filterAudience" value={filterAudience} onChange={(e) => setFilterAudience(e.target.value)} className={inp}>
-            {['All', ...TARGET_AUDIENCES].map((option) => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </Dropdown>
-          <Dropdown name="filterStatus" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className={inp}>
-            {BROADCAST_STATUSES.map((option) => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </Dropdown>
-        </div>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by title or description"
+          className={dk(
+            'w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500',
+            'w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500'
+          )}
+        />
+        <Dropdown name="filterCategory" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className={inp}>
+          {['All', ...NOTIFICATION_TYPES].map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </Dropdown>
+        <Dropdown name="filterAudience" value={filterAudience} onChange={(e) => setFilterAudience(e.target.value)} className={inp}>
+          {['All', ...TARGET_AUDIENCES].map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </Dropdown>
+        <Dropdown name="filterStatus" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className={inp}>
+          {BROADCAST_STATUSES.map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </Dropdown>
+      </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-14">
-            <div className="h-10 w-10 rounded-full border-4 border-[#0BAF2A] border-t-transparent animate-spin" />
-          </div>
-        ) : error ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">{error}</div>
-        ) : filteredBroadcasts.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500">No broadcasts found. Adjust your filters or try another search term.</div>
-        ) : (
-          <div className="space-y-4">
-            {/* Desktop Table */}
-            <div className="hidden lg:block rounded-2xl border border-slate-200 bg-slate-50 shadow-sm overflow-hidden">
-              <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1.2fr_auto] gap-3 px-5 py-3 text-xs uppercase tracking-wider font-bold text-slate-500 bg-slate-100/80 dark:bg-black/20 dark:text-slate-400 rounded-t-xl border-b dark:border-slate-800">
-                <div className="truncate">Notification Title</div>
-                <div className="truncate">Category</div>
-                <div className="truncate">Priority</div>
-                <div className="truncate">Audience</div>
-                <div className="truncate">Sent</div>
-                <div className="text-right">Actions</div>
+      {loading ? (
+        <div className="flex items-center justify-center py-14">
+          <div className="h-10 w-10 rounded-full border-4 border-[#0BAF2A] border-t-transparent animate-spin" />
+        </div>
+      ) : error ? (
+        <div className={`rounded-xl border p-4 text-sm ${dk('border-red-700/40 bg-red-900/20 text-red-200', 'border-red-200 bg-red-50 text-red-700')}`}>{error}</div>
+      ) : filteredBroadcasts.length === 0 ? (
+        <div className={`rounded-xl border border-dashed p-10 text-center text-sm ${dk('border-slate-700 bg-slate-900/50 text-slate-400', 'border-slate-300 bg-slate-50 text-slate-500')}`}>No broadcasts found. Adjust your filters or try another search term.</div>
+      ) : (
+        <div className="space-y-4">
+          {/* Desktop Table */}
+          <div className={`hidden lg:block rounded-lg border overflow-hidden ${dk('border-slate-700 bg-slate-900/50', 'border-slate-200 bg-white')}`}>
+            <div className={`grid grid-cols-[2fr_1fr_1fr_1.5fr_0.8fr_auto] gap-3 px-4 py-2.5 text-xs uppercase tracking-wider font-semibold border-b ${dk('text-slate-400 bg-slate-800/50 border-slate-700', 'text-slate-500 bg-slate-100 border-slate-200')}`}>
+              <div className="truncate">Notification Title</div>
+              <div className="truncate">Category</div>
+              <div className="truncate">Audience</div>
+              <div className="truncate">Sent Date & Time</div>
+              <div className="truncate">Status</div>
+              <div className="text-center">Actions</div>
+            </div>
+            {filteredBroadcasts.map((broadcast) => (
+              <div key={broadcast._id} className={`grid grid-cols-[2fr_1fr_1fr_1.5fr_0.8fr_auto] gap-3 px-4 py-2.5 border-t items-center ${dk('border-slate-800 hover:bg-white/[0.02]', 'border-slate-200 hover:bg-slate-50')} transition`}>
+                <div className="min-w-0 truncate">
+                  <button type="button" onClick={() => openView(broadcast)} className={`text-left text-sm font-semibold truncate transition ${dk('text-slate-200 hover:text-green-400', 'text-slate-800 hover:text-green-600')}`}>
+                    {broadcast.title}
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className={`text-sm truncate ${dk('text-slate-300', 'text-slate-600')}`}>{broadcast.type}</span>
+                  {renderEventBadge(broadcast)}
+                </div>
+                <div className={`text-sm truncate ${dk('text-slate-300', 'text-slate-600')}`}>{broadcast.targetAudience}{broadcast.targetVillage ? ` (${broadcast.targetVillage})` : ''}</div>
+                <div className={`text-sm ${dk('text-slate-400', 'text-slate-500')}`}>{formatDateTime(broadcast.createdAt)}</div>
+                <div><span className={statusClasses(broadcast.status, dark)}>{mapStatusLabel[broadcast.status] || broadcast.status}</span></div>
+                <div className="flex items-center gap-2 justify-center">
+                  <button type="button" onClick={() => openView(broadcast)} title="View" className={`p-1.5 rounded-lg border ${dk('border-slate-700 text-slate-400 hover:bg-white/5', 'border-slate-200 text-slate-500 hover:bg-slate-100')}`}><HiEye className="h-3.5 w-3.5" /></button>
+                  <button type="button" onClick={() => openEdit(broadcast)} title="Edit" className={`p-1.5 rounded-lg border ${dk('border-blue-900/40 text-blue-400 hover:bg-blue-900/20', 'border-blue-200 text-blue-600 hover:bg-blue-50')}`}><HiPencil className="h-3.5 w-3.5" /></button>
+                  <button type="button" onClick={() => setDeleteTarget(broadcast)} title="Delete" className={`p-1.5 rounded-lg border ${dk('border-red-900/40 text-red-400 hover:bg-red-900/20', 'border-red-200 text-red-600 hover:bg-red-50')}`}><HiTrash className="h-3.5 w-3.5" /></button>
+                </div>
               </div>
-              {filteredBroadcasts.map((broadcast) => (
-                <div key={broadcast._id} className={`grid grid-cols-[2fr_1fr_1fr_1fr_1.2fr_auto] gap-3 px-5 py-3.5 border-t ${dk('border-slate-800', 'border-slate-200')} items-center hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition`}>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+            ))}
+          </div>
+
+          {/* Mobile/Tablet Cards */}
+          <div className="grid gap-3 lg:hidden">
+            {filteredBroadcasts.map((broadcast) => (
+              <div key={broadcast._id} className={`rounded-xl border p-3.5 ${dk('bg-slate-900/50 border-slate-700', 'bg-white border-slate-200')} shadow-sm`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <button type="button" onClick={() => openView(broadcast)} className={`text-left text-sm font-semibold truncate transition ${dk('text-slate-200 hover:text-green-400', 'text-slate-800 hover:text-green-600')}`}>
                         {broadcast.title}
                       </button>
                       {renderEventBadge(broadcast)}
                     </div>
-                    <p className={`mt-0.5 text-xs truncate ${dk('text-slate-500', 'text-slate-400')}`}>{broadcast.description}</p>
+                    <p className={`mt-0.5 text-xs ${dk('text-slate-400', 'text-slate-500')}`}>{broadcast.type} &bull; {broadcast.priority}</p>
                   </div>
-                  <div className={`text-sm truncate ${dk('text-slate-300', 'text-slate-600')}`}>{broadcast.type}</div>
-                  <div>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${
-                      broadcast.priority === 'Critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                      broadcast.priority === 'High' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
-                      broadcast.priority === 'Medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                      'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                    }`}>{broadcast.priority}</span>
-                  </div>
-                  <div className={`text-sm truncate ${dk('text-slate-300', 'text-slate-600')}`}>{broadcast.targetAudience}{broadcast.targetVillage ? ` (${broadcast.targetVillage})` : ''}</div>
-                  <div className={`text-sm ${dk('text-slate-400', 'text-slate-500')}`}>{formatDateTime(broadcast.createdAt)}</div>
-                  <div className="flex items-center gap-1.5 justify-end">
-                    <span className={`hidden xl:inline-flex ${statusClasses(broadcast.status, dark)}`}>{mapStatusLabel[broadcast.status] || broadcast.status}</span>
-                    <span className="xl:hidden">{mapStatusLabel[broadcast.status] || broadcast.status}</span>
-                    <button type="button" onClick={() => openView(broadcast)} title="View" className={`p-2.5 rounded-lg border ${dk('border-slate-700 text-slate-400 hover:bg-white/5', 'border-slate-200 text-slate-500 hover:bg-slate-100')}`}><HiEye className="h-4 w-4" /></button>
-                    <button type="button" onClick={() => openEdit(broadcast)} title="Edit" className={`p-2.5 rounded-lg border ${dk('border-blue-900/40 text-blue-400 hover:bg-blue-900/20', 'border-blue-200 text-blue-600 hover:bg-blue-50')}`}><HiPencil className="h-4 w-4" /></button>
-                    <button type="button" onClick={() => setDeleteTarget(broadcast)} title="Delete" className={`p-2.5 rounded-lg border ${dk('border-red-900/40 text-red-400 hover:bg-red-900/20', 'border-red-200 text-red-600 hover:bg-red-50')}`}><HiTrash className="h-4 w-4" /></button>
-                  </div>
+                  <span className={statusClasses(broadcast.status, dark)}>{mapStatusLabel[broadcast.status] || broadcast.status}</span>
                 </div>
-              ))}
-            </div>
-
-            {/* Mobile/Tablet Cards */}
-            <div className="grid gap-4 lg:hidden">
-              {filteredBroadcasts.map((broadcast) => (
-                <div key={broadcast._id} className={`rounded-2xl border p-4 ${dk('bg-slate-950 border-slate-800', 'bg-white border-slate-200')} shadow-sm`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <button type="button" onClick={() => openView(broadcast)} className="text-left text-sm font-semibold text-slate-900 hover:text-[#0BAF2A] transition truncate">
-                          {broadcast.title}
-                        </button>
-                        {renderEventBadge(broadcast)}
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500 truncate">{broadcast.type} &bull; {broadcast.priority}</p>
-                    </div>
-                    <span className={statusClasses(broadcast.status, dark)}>{mapStatusLabel[broadcast.status] || broadcast.status}</span>
-                  </div>
-                  <div className="mt-3 grid gap-2 text-sm text-slate-600">
-                    <div><span className="font-semibold text-slate-800">Audience:</span> {broadcast.targetAudience}{broadcast.targetVillage ? ` (${broadcast.targetVillage})` : ''}</div>
-                    <div><span className="font-semibold text-slate-800">Sent:</span> {formatDateTime(broadcast.createdAt)}</div>
-                    {broadcast.isEvent && broadcast.eventDetails?.date && (
-                      <div><span className="font-semibold text-slate-800">Event:</span> {formatDate(broadcast.eventDetails.date)}{broadcast.eventDetails?.venue ? ` at ${broadcast.eventDetails.venue}` : ''}</div>
-                    )}
-                  </div>
-                  <div className="mt-4 flex items-center gap-2">
-                    <button type="button" onClick={() => openView(broadcast)} title="View" className={`p-2.5 rounded-lg border ${dk('border-slate-700 text-slate-400 hover:bg-white/5', 'border-slate-200 text-slate-500 hover:bg-slate-100')}`}><HiEye className="h-4 w-4" /></button>
-                    <button type="button" onClick={() => openEdit(broadcast)} title="Edit" className={`p-2.5 rounded-lg border ${dk('border-blue-900/40 text-blue-400 hover:bg-blue-900/20', 'border-blue-200 text-blue-600 hover:bg-blue-50')}`}><HiPencil className="h-4 w-4" /></button>
-                    <button type="button" onClick={() => setDeleteTarget(broadcast)} title="Delete" className={`p-2.5 rounded-lg border ${dk('border-red-900/40 text-red-400 hover:bg-red-900/20', 'border-red-200 text-red-600 hover:bg-red-50')}`}><HiTrash className="h-4 w-4" /></button>
-                  </div>
+                <div className={`mt-2.5 grid gap-1.5 text-xs ${dk('text-slate-400', 'text-slate-500')}`}>
+                  <div><span className={`font-semibold ${dk('text-slate-200', 'text-slate-700')}`}>Audience:</span> {broadcast.targetAudience}{broadcast.targetVillage ? ` (${broadcast.targetVillage})` : ''}</div>
+                  <div><span className={`font-semibold ${dk('text-slate-200', 'text-slate-700')}`}>Sent:</span> {formatDateTime(broadcast.createdAt)}</div>
+                  {broadcast.isEvent && broadcast.eventDetails?.date && (
+                    <div><span className={`font-semibold ${dk('text-slate-200', 'text-slate-700')}`}>Event:</span> {formatDate(broadcast.eventDetails.date)}{broadcast.eventDetails?.venue ? ` at ${broadcast.eventDetails.venue}` : ''}</div>
+                  )}
                 </div>
-              ))}
-            </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <button type="button" onClick={() => openView(broadcast)} title="View" className={`p-1.5 rounded-lg border ${dk('border-slate-700 text-slate-400 hover:bg-white/5', 'border-slate-200 text-slate-500 hover:bg-slate-100')}`}><HiEye className="h-3.5 w-3.5" /></button>
+                  <button type="button" onClick={() => openEdit(broadcast)} title="Edit" className={`p-1.5 rounded-lg border ${dk('border-blue-900/40 text-blue-400 hover:bg-blue-900/20', 'border-blue-200 text-blue-600 hover:bg-blue-50')}`}><HiPencil className="h-3.5 w-3.5" /></button>
+                  <button type="button" onClick={() => setDeleteTarget(broadcast)} title="Delete" className={`p-1.5 rounded-lg border ${dk('border-red-900/40 text-red-400 hover:bg-red-900/20', 'border-red-200 text-red-600 hover:bg-red-50')}`}><HiTrash className="h-3.5 w-3.5" /></button>
+                </div>
+              </div>
+            ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* View Modal */}
       {selectedBroadcast && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 overflow-y-auto" onClick={() => setSelectedBroadcast(null)}>
+        <ModalOverlay onClose={() => setSelectedBroadcast(null)} className="flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
           <div className={`w-full max-w-[95vw] sm:max-w-3xl my-8 overflow-hidden rounded-2xl border shadow-2xl max-h-[90vh] ${dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200')}`} onClick={(e) => e.stopPropagation()}>
             <div className={`flex items-center justify-between px-5 py-4 border-b ${dk('border-slate-800', 'border-slate-100')}`}>
               <div className="min-w-0 flex-1 pr-4">
@@ -511,12 +505,12 @@ const BroadcastHistory = () => {
               </div>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* Edit Modal */}
       {editingBroadcast && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 overflow-y-auto" onClick={() => setEditingBroadcast(null)}>
+        <ModalOverlay onClose={() => setEditingBroadcast(null)} className="flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
           <div className={`w-full max-w-[95vw] sm:max-w-3xl my-8 overflow-hidden rounded-2xl border shadow-2xl max-h-[90vh] ${dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200')}`} onClick={(e) => e.stopPropagation()}>
             <div className={`flex items-center justify-between px-5 py-4 border-b ${dk('border-slate-800', 'border-slate-100')}`}>
               <div>
@@ -592,12 +586,12 @@ const BroadcastHistory = () => {
               </div>
             </form>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* Delete Confirmation Modal */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50">
+        <ModalOverlay onClose={() => setDeleteTarget(null)} className="flex items-center justify-center p-2 sm:p-4">
           <div className={`w-full max-w-[95vw] sm:max-w-md rounded-2xl border ${dk('border-slate-700 bg-slate-900', 'border-slate-200 bg-white')} p-5 shadow-2xl`}>
             <h3 className={`text-lg font-semibold ${dk('text-white', 'text-slate-900')}`}>Delete Broadcast</h3>
             <p className={`mt-2 text-sm ${dk('text-slate-400', 'text-slate-500')}`}>
@@ -612,7 +606,7 @@ const BroadcastHistory = () => {
               </button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

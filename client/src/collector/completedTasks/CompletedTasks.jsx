@@ -38,7 +38,7 @@ const DetailModal = ({ report, onClose, dk }) => {
   const rptType = report.reportType || 'public';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className={`rounded-lg border w-full max-w-lg p-5 space-y-4 shadow-xl overflow-y-auto max-h-[90vh] ${panel}`}>
         <div className="flex items-center justify-between">
           <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Completed Task Details</p>

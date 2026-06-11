@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HiRefresh, HiGlobe, HiChevronDown, HiChevronUp, HiCheckCircle, HiX, HiPencil, HiClock, HiTruck } from 'react-icons/hi';
+import { HiRefresh, HiGlobe, HiChevronDown, HiChevronUp, HiCheckCircle, HiX, HiPencil, HiTruck, HiFlag } from 'react-icons/hi';
 import { API } from '../../shared/constants';
 import { useTheme } from '../../shared/context/ThemeContext';
 import socket from '../../socket';
@@ -29,40 +29,7 @@ const collectorLabel = (c) => {
   return c.name;
 };
 
-const calcRemaining = (createdAt) => {
-  const elapsed = Date.now() - new Date(createdAt).getTime();
-  const left = 10 * 60 * 1000 - elapsed;
-  return left > 0 ? left : 0;
-};
-
-const fmtCountdown = (ms) => {
-  const m = Math.floor(ms / 60000);
-  const s = Math.floor((ms % 60000) / 1000);
-  return `${m}:${s.toString().padStart(2, '0')}`;
-};
-
-const EditTimer = ({ createdAt }) => {
-  const [remaining, setRemaining] = useState(calcRemaining(createdAt));
-  const timerRef = useRef(null);
-
-  useEffect(() => {
-    setRemaining(calcRemaining(createdAt));
-    timerRef.current = setInterval(() => {
-      const r = calcRemaining(createdAt);
-      setRemaining(r);
-      if (r <= 0) clearInterval(timerRef.current);
-    }, 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [createdAt]);
-
-  if (remaining <= 0) return null;
-  return (
-    <span className={`flex items-center gap-1 text-[10px] font-semibold ${remaining < 60000 ? 'text-red-500' : 'text-green-500'}`}>
-      <HiClock className="h-3 w-3" />
-      {fmtCountdown(remaining)}
-    </span>
-  );
-};
+const LOCKED_STATUSES = ['In Progress', 'Resolved', 'Delayed', 'Clarification Expired'];
 
 const PublicWasteReports = () => {
   const navigate = useNavigate();
@@ -90,7 +57,9 @@ const PublicWasteReports = () => {
   useEffect(() => { fetchReports(); }, []);
 
   useEffect(() => {
+    const currentUserId = JSON.parse(localStorage.getItem('user') || '{}')._id;
     const handler = (updated) => {
+      if (updated.userId !== currentUserId) return;
       setReports((rs) => {
         const filtered = rs.filter(r => r._id !== updated._id);
         if (!updated.reportType || updated.reportType === 'Public') filtered.push(updated);
@@ -109,8 +78,9 @@ const PublicWasteReports = () => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ verified }),
       });
+      if (!res.ok) return;
       const data = await res.json();
-      if (res.ok) setReports(rs => rs.map(r => r._id === id ? { ...r, ...data.report } : r));
+      setReports(rs => rs.map(r => r._id === id ? { ...r, ...data.report } : r));
     } catch {}
   };
 
@@ -164,8 +134,7 @@ const PublicWasteReports = () => {
         {reports.map((r) => {
           const st = STATUS[r.status] || STATUS.Submitted;
           const open = expanded[r._id];
-          const remaining = calcRemaining(r.createdAt);
-          const canEdit = r.status === 'Submitted' && remaining > 0;
+          const canEdit = !LOCKED_STATUSES.includes(r.status) && !r.assignedCollector && !r.collectorId;
 
           return (
             <div key={r._id}
@@ -184,9 +153,16 @@ const PublicWasteReports = () => {
                     <div className={`text-xs ${dk('text-slate-400', 'text-slate-500')}`}>
                       <span className={`font-medium ${dk('text-slate-300', 'text-slate-600')}`}>Reported on:</span> {fmt(r.createdAt)} at {fmtTime(r.createdAt)}
                     </div>
-                    {r.pickupTime && (
+                    {r.priorityLevel && (
                       <div className={`text-xs ${dk('text-slate-400', 'text-slate-500')}`}>
-                        <span className={`font-medium ${dk('text-slate-300', 'text-slate-600')}`}>Pickup:</span> {fmt(r.pickupTime)} at {fmtTime(r.pickupTime)}
+                        <span className={`font-medium ${dk('text-slate-300', 'text-slate-600')}`}>Priority:</span>{' '}
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          r.priorityLevel === 'Urgent'
+                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                        }`}>
+                          <HiFlag className="h-3 w-3" /> {r.priorityLevel}
+                        </span>
                       </div>
                     )}
                     {r.assignedCollector && (
@@ -238,10 +214,6 @@ const PublicWasteReports = () => {
                     <HiPencil className="h-3.5 w-3.5" /> Edit
                   </button>
                 )}
-                {r.status === 'Submitted' && remaining <= 0 && (
-                  <span className={`text-[10px] italic ${dk('text-slate-500', 'text-slate-400')}`}>This report can no longer be edited.</span>
-                )}
-                {canEdit && <EditTimer createdAt={r.createdAt} />}
                 {r.status === 'Clarification Requested' && (
                   <button onClick={() => setResubmitReport(r)}
                     className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-purple-600 text-white hover:bg-purple-500 transition">
@@ -278,9 +250,9 @@ const PublicWasteReports = () => {
                         <span className={`font-semibold ${dk('text-slate-300', 'text-slate-600')}`}>Near:</span> {r.landmarkType}{r.landmark ? ` — ${r.landmark}` : ''}
                       </div>
                     )}
-                    {r.collectorNotes && (
+                    {r.completionNotes && (
                       <div className={`text-xs ${dk('text-slate-500', 'text-slate-400')}`}>
-                        <span className={`font-semibold ${dk('text-slate-300', 'text-slate-600')}`}>Collector notes:</span> {r.collectorNotes}
+                        <span className={`font-semibold ${dk('text-slate-300', 'text-slate-600')}`}>Collector notes:</span> {r.completionNotes}
                       </div>
                     )}
                     {r.completionPhoto && (

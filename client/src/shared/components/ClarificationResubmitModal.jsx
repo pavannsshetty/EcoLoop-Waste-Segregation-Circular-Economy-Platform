@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { HiX, HiSave, HiPhotograph, HiClock, HiLocationMarker } from 'react-icons/hi';
+import { HiSave, HiPhotograph, HiLocationMarker, HiClock } from 'react-icons/hi';
 import { API } from '../constants';
 import { useTheme } from '../context/ThemeContext';
 import MapPicker from './MapPicker';
+import Modal from './Modal';
 
 const WASTE_TYPES = [
   'Plastic Waste', 'Organic Waste', 'Food Waste', 'E-Waste',
@@ -41,13 +42,10 @@ const ClarificationResubmitModal = ({ isOpen, onClose, report, onUpdated }) => {
 
   useEffect(() => {
     if (!isOpen || !report) return;
-    const d = report.pickupTime ? new Date(report.pickupTime) : new Date();
     setForm({
       wasteType: report.wasteType || '',
       description: report.description || '',
       quantity: report.quantity || '',
-      pickupDate: d.toISOString().split('T')[0],
-      pickupTime: d.toTimeString().slice(0, 5),
     });
     setImageFile(null);
     setImagePreview(null);
@@ -96,10 +94,6 @@ const ClarificationResubmitModal = ({ isOpen, onClose, report, onUpdated }) => {
 
     try {
       const token = localStorage.getItem('token');
-      const pickupTime = form.pickupDate && form.pickupTime
-        ? new Date(`${form.pickupDate}T${form.pickupTime}`).toISOString()
-        : undefined;
-
       let body;
       let headers = { Authorization: `Bearer ${token}` };
 
@@ -108,13 +102,11 @@ const ClarificationResubmitModal = ({ isOpen, onClose, report, onUpdated }) => {
         fd.append('wasteType', form.wasteType);
         fd.append('quantity', form.quantity);
         fd.append('description', form.description);
-        if (pickupTime) fd.append('pickupTime', pickupTime);
         fd.append('image', imageFile);
         if (location) fd.append('location', JSON.stringify(location));
         body = fd;
       } else {
         body = { wasteType: form.wasteType, quantity: form.quantity, description: form.description };
-        if (pickupTime) body.pickupTime = pickupTime;
         if (location) body.location = location;
         headers['Content-Type'] = 'application/json';
         body = JSON.stringify(body);
@@ -140,30 +132,20 @@ const ClarificationResubmitModal = ({ isOpen, onClose, report, onUpdated }) => {
   }`;
   const lbl = `text-xs font-medium mb-1 block ${dark ? 'text-slate-400' : 'text-slate-500'}`;
 
+  const headerExtra = !expired && remaining > 0 ? (
+    <span className={`flex items-center gap-1 text-xs font-semibold ${remaining < 86400000 ? 'text-red-500' : 'text-purple-500'}`}>
+      <HiClock className="h-3.5 w-3.5" />
+      {formatCountdown(remaining)}
+    </span>
+  ) : null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative z-10 w-full sm:max-w-lg rounded-lg shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] ${dark ? 'bg-[#0B0F13] border border-gray-700' : 'bg-white'}`}>
-
-        <div className={`flex items-center justify-between px-4 sm:px-6 py-3.5 border-b shrink-0 ${dark ? 'border-gray-700' : 'border-slate-100'}`}>
-          <div className="flex items-center gap-2">
-            <HiSave className="h-5 w-5 text-purple-500" />
-            <span className={`font-semibold text-sm sm:text-base ${dark ? 'text-white' : 'text-slate-900'}`}>Resubmit Report</span>
-          </div>
-          <div className="flex items-center gap-3">
-            {!expired && remaining > 0 && (
-              <span className={`flex items-center gap-1 text-xs font-semibold ${remaining < 86400000 ? 'text-red-500' : 'text-purple-500'}`}>
-                <HiClock className="h-3.5 w-3.5" />
-                {formatCountdown(remaining)}
-              </span>
-            )}
-            <button type="button" onClick={onClose} className={`rounded-lg p-1.5 transition ${dark ? 'text-slate-400 hover:bg-white/10' : 'text-slate-400 hover:bg-slate-100'}`}>
-              <HiX className="h-5 w-5" />
-            </button>
-          </div>
+    <Modal isOpen={isOpen} onClose={onClose} title="Resubmit Report" icon={HiSave} dark={dark} className="sm:max-w-lg">
+      {headerExtra && (
+        <div className="px-3 sm:px-6 -mt-3 pb-1">
+          {headerExtra}
         </div>
-
-        <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      )}
           {report.clarificationRequests?.length > 0 && (
             <div className={`mb-4 rounded-lg border p-3 space-y-1.5 ${dk('bg-purple-900/10 border-purple-500/30', 'bg-purple-50 border-purple-200')}`}>
               <span className={`text-xs font-semibold ${dk('text-purple-300', 'text-purple-700')}`}>Clarification Requested</span>
@@ -202,18 +184,6 @@ const ClarificationResubmitModal = ({ isOpen, onClose, report, onUpdated }) => {
                   <option value="">Select quantity</option>
                   {QUANTITY_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className={lbl}>Pickup Date</label>
-                  <input type="date" value={form.pickupDate} onChange={e => set('pickupDate', e.target.value)}
-                    min={new Date().toISOString().split('T')[0]} className={inp} />
-                </div>
-                <div>
-                  <label className={lbl}>Pickup Time</label>
-                  <input type="time" value={form.pickupTime} onChange={e => set('pickupTime', e.target.value)} className={inp} />
-                </div>
               </div>
 
               <div>
@@ -269,9 +239,7 @@ const ClarificationResubmitModal = ({ isOpen, onClose, report, onUpdated }) => {
               </div>
             </form>
           )}
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 };
 

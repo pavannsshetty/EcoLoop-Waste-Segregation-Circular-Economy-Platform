@@ -17,18 +17,30 @@ L.Icon.Default.mergeOptions({
 
 // Ray-casting algorithm for Point-in-Polygon check.
 // Implements strict geometric validation - location is valid ONLY if it's inside the polygon boundary.
-const isPointInPolygon = (lat, lng, polygonCoords) => {
-  if (!polygonCoords || !polygonCoords[0]) return false;
-  let x = lng, y = lat;
+// Supports Polygon and MultiPolygon types.
+const pointInRing = (x, y, ring) => {
   let inside = false;
-  const vs = polygonCoords[0];
-  for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-    let xi = vs[i][0], yi = vs[i][1];
-    let xj = vs[j][0], yj = vs[j][1];
-    let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
     if (intersect) inside = !inside;
   }
   return inside;
+};
+
+const isPointInPolygon = (lat, lng, polygon) => {
+  if (!polygon || !polygon.coordinates) return false;
+  const x = lng, y = lat;
+
+  if (polygon.type === 'MultiPolygon') {
+    for (const polyCoords of polygon.coordinates) {
+      if (pointInRing(x, y, polyCoords[0])) return true;
+    }
+    return false;
+  }
+
+  return pointInRing(x, y, polygon.coordinates[0]);
 };
 
 const normalizeVillageName = (value) => {
@@ -96,7 +108,9 @@ const MapEvents = ({ onClick }) => {
 const ChangeView = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, zoom);
+    if (center?.length === 2 && typeof center[0] === 'number' && typeof center[1] === 'number') {
+      map.setView(center, zoom);
+    }
   }, [center, zoom, map]);
   return null;
 };
@@ -145,7 +159,7 @@ const MapPicker = ({ onLocationSelect, villageName, dark = false }) => {
           if (!active) return;
           if (data) {
             setVillageData(data);
-            if (data.center) {
+            if (data.center && typeof data.center.lat === 'number' && typeof data.center.lng === 'number') {
               setMapCenter({ lat: data.center.lat, lng: data.center.lng, zoom: 14 });
             }
             // Log polygon boundary data for debugging
@@ -167,52 +181,7 @@ const MapPicker = ({ onLocationSelect, villageName, dark = false }) => {
     return () => { active = false; };
   }, [villageName]);
 
-  // If API did not provide a polygon boundary, attempt to fetch GeoJSON from Nominatim
-  useEffect(() => {
-    let active = true;
-    const tryFetchNominatim = async (village) => {
-      try {
-        const q = encodeURIComponent(`${village}, Kundapura, India`);
-        const url = `https://nominatim.openstreetmap.org/search.php?q=${q}&polygon_geojson=1&format=jsonv2&limit=3`;
-        const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
-        const data = await res.json();
-        if (!active || !data || !data.length) return;
-        const hit = data.find(d => d.geojson && (d.geojson.type === 'Polygon' || d.geojson.type === 'MultiPolygon')) || data[0];
-        if (hit && hit.geojson && (hit.geojson.coordinates?.length > 0)) {
-          const geo = hit.geojson;
-          let boundary = null;
-          if (geo.type === 'Polygon') {
-            boundary = { type: 'Polygon', coordinates: geo.coordinates };
-          } else if (geo.type === 'MultiPolygon') {
-            boundary = { type: 'Polygon', coordinates: geo.coordinates[0] };
-          }
-          if (boundary) {
-            console.debug('[MapPicker] Nominatim polygon loaded', { village: village, coords: boundary.coordinates[0].length });
-            setVillageData(prev => ({ ...(prev || {}), boundary }));
-          }
-        }
-      } catch (err) {
-        console.debug('[MapPicker] nominatim polygon fetch failed', { village, error: err });
-      }
-    };
 
-    const isRectangleBoundary = (b) => {
-      try {
-        if (!b || !b.coordinates || !b.coordinates[0]) return false;
-        const coords = b.coordinates[0];
-        if (coords.length !== 5) return false;
-        const lats = [...new Set(coords.map(c => c[1]))];
-        const lngs = [...new Set(coords.map(c => c[0]))];
-        return lats.length === 2 && lngs.length === 2;
-      } catch (e) { return false; }
-    };
-
-    if (villageName && (!villageData || !villageData.boundary || !villageData.boundary.coordinates || villageData.boundary.coordinates[0].length < 5 || isRectangleBoundary(villageData.boundary))) {
-      tryFetchNominatim(villageName);
-    }
-
-    return () => { active = false; };
-  }, [villageName, villageData]);
 
   const applyLocation = useCallback(async (lat, lng, data, source = 'map') => {
     const requestId = ++requestSeq.current;
@@ -233,13 +202,22 @@ const MapPicker = ({ onLocationSelect, villageName, dark = false }) => {
     let pointValid = false;
     
     // DEBUG: Log village and polygon info
+    const polyType = villageData?.boundary?.type || 'none';
+    const polyLoaded = !!(villageData?.boundary?.coordinates?.length > 0);
     console.debug('[MapPicker] village validation start', { 
       villageName, 
-      polygonLoaded: !!(villageData?.boundary?.coordinates?.length > 0),
-      polygonCoordinates: villageData?.boundary?.coordinates?.[0]?.length || 0
+      polyType,
+      polygonLoaded: polyLoaded,
+      polygonCoordinates: polyLoaded ? (polyType === 'MultiPolygon' ? villageData.boundary.coordinates[0][0]?.length || 0 : villageData.boundary.coordinates[0]?.length || 0) : 0
     });
 
-    if (!villageData?.boundary?.coordinates?.[0] || villageData.boundary.coordinates[0].length < 3) {
+    const hasValidBoundary = (b) => {
+      if (!b?.coordinates || !b.type) return false;
+      if (b.type === 'MultiPolygon') return b.coordinates.some(p => p[0]?.length >= 3);
+      return b.coordinates[0]?.length >= 3;
+    };
+
+    if (!hasValidBoundary(villageData?.boundary)) {
       // No valid polygon - MUST REJECT
       console.debug('[MapPicker] NO POLYGON AVAILABLE - location INVALID', { villageName, lat, lng });
       const message = `Village boundary not configured. Please contact support for ${villageName} village.`;
@@ -371,16 +349,30 @@ const MapPicker = ({ onLocationSelect, villageName, dark = false }) => {
   };
 
   // Convert GeoJSON coordinates for react-leaflet Polygon [lat, lng]
+  // Supports both Polygon and MultiPolygon types
   const polygonPositions = useMemo(() => {
-    if (!villageData?.boundary?.coordinates?.[0]) return [];
-    return villageData.boundary.coordinates[0].map(coord => [coord[1], coord[0]]);
+    if (!villageData?.boundary?.coordinates) return [];
+    const coords = villageData.boundary;
+    if (coords.type === 'MultiPolygon') {
+      return coords.coordinates.map(poly => poly[0].map(c => [c[1], c[0]]));
+    }
+    // Polygon
+    if (coords.coordinates[0]) {
+      return [coords.coordinates[0].map(c => [c[1], c[0]])];
+    }
+    return [];
   }, [villageData]);
 
-  // Calculate polygon bounds for map fitting
+  // Calculate combined polygon bounds for map fitting
   const polygonBounds = useMemo(() => {
     if (polygonPositions.length === 0) return null;
     try {
-      return L.latLngBounds(polygonPositions);
+      const allBounds = polygonPositions.reduce((bounds, positions) => {
+        const b = L.latLngBounds(positions);
+        if (bounds) return bounds.extend(b);
+        return b;
+      }, null);
+      return allBounds;
     } catch (err) {
       console.error('[MapPicker] error calculating polygon bounds', err);
       return null;
@@ -512,12 +504,13 @@ const MapPicker = ({ onLocationSelect, villageName, dark = false }) => {
               maxZoom={currentLayer.maxZoom}
               minZoom={currentLayer.minZoom}
             />
-            {polygonPositions.length > 0 && (
+            {polygonPositions.length > 0 && polygonPositions.map((positions, idx) => (
               <Polygon 
-                positions={polygonPositions} 
+                key={idx}
+                positions={positions} 
                 pathOptions={{ fillColor: '#0AAF29', color: '#0AAF29', weight: 2, fillOpacity: 0.1 }} 
               />
-            )}
+            ))}
             {locInfo && locInfo.lat != null && locInfo.lng != null && (
               <Marker position={[locInfo.lat, locInfo.lng]} />
             )}

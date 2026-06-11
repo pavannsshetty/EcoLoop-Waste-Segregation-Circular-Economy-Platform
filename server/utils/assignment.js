@@ -1,13 +1,21 @@
 const WasteReport = require('../models/WasteReport');
+const Order = require('../models/Order');
 const Collector = require('../models/Collector');
 
 const MAX_ACTIVE_TASKS = 10;
 
 const countCollectorActiveTasks = async (collectorId) => {
-  return WasteReport.countDocuments({
-    assignedCollector: collectorId,
-    status: { $in: ['Assigned', 'In Progress'] },
-  });
+  const [wasteCount, deliveryCount] = await Promise.all([
+    WasteReport.countDocuments({
+      assignedCollector: collectorId,
+      status: { $in: ['Assigned', 'In Progress'] },
+    }),
+    Order.countDocuments({
+      assignedCollector: collectorId,
+      deliveryStatus: { $in: ['Assigned', 'Out for Delivery'] },
+    }),
+  ]);
+  return wasteCount + deliveryCount;
 };
 
 const findBestCollector = async (village, location) => {
@@ -20,9 +28,11 @@ const findBestCollector = async (village, location) => {
 
   const normalizedVillage = (village || '').trim().toLowerCase();
   if (normalizedVillage) {
-    const villageMatched = eligibleCollectors.filter((collector) =>
-      Array.isArray(collector.villages) && collector.villages.some((v) => (v || '').trim().toLowerCase() === normalizedVillage)
-    );
+    const villageMatched = eligibleCollectors.filter((collector) => {
+      const inVillages = Array.isArray(collector.villages) && collector.villages.some((v) => (v || '').trim().toLowerCase() === normalizedVillage);
+      if (inVillages) return true;
+      return (collector.village || '').trim().toLowerCase() === normalizedVillage;
+    });
     if (villageMatched.length) {
       const counts = villageMatched.map((c) => activeCounts[collectors.indexOf(c)]);
       return villageMatched[counts.indexOf(Math.min(...counts))];

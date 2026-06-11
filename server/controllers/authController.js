@@ -21,6 +21,9 @@ const register = async (req, res) => {
       return res.status(403).json({ message: `${role} accounts are issued by the administrator.` });
     }
 
+    if (!email || !phone) {
+      return res.status(400).json({ message: 'Email and phone are required.' });
+    }
     const searchEmail = email.toLowerCase().trim();
     const searchPhone = phone.trim();
 

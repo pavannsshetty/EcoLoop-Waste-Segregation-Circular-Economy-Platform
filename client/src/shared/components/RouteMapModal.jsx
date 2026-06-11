@@ -224,7 +224,8 @@ const RouteMapModal = ({ report, onClose, dk, onArrived }) => {
     return () => {
       if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [destLat, destLng, fetchRoute, token]);
 
   const handleRecenter = useCallback(() => {
     if (collectorPos) {
@@ -285,7 +286,7 @@ const RouteMapModal = ({ report, onClose, dk, onArrived }) => {
   const spinnerCls = dk('bg-slate-900', 'bg-white');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
       <div className={`w-full sm:max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col sm:rounded-xl border shadow-2xl overflow-hidden ${panel}`}>
 
         <div className="flex items-start sm:items-center justify-between gap-3 px-4 sm:px-6 py-3 border-b shrink-0">

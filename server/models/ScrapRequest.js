@@ -28,7 +28,7 @@ const scrapRequestSchema = new mongoose.Schema({
   },
   latitude:         { type: Number },
   longitude:        { type: Number },
-  pickupTime:       { type: String, enum: ['Morning', 'Afternoon', 'Evening'], required: true },
+  pickupTime:       { type: String, enum: ['Morning', 'Afternoon', 'Evening', 'Any Time'], default: 'Any Time' },
   description:      { type: String, default: '' },
   status:           { 
     type: String, 

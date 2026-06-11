@@ -25,7 +25,7 @@ const DetailModal = ({ pickup, onClose, dk }) => {
   const value = dk('text-slate-100', 'text-slate-800');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className={`rounded-lg border w-full max-w-lg p-5 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto ${panel}`}>
         <div className="flex items-center justify-between">
           <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Pickup Details</p>

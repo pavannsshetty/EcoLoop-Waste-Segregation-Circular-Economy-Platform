@@ -11,6 +11,7 @@ const Notification = require('../models/Notification');
 const bcrypt      = require('bcryptjs');
 const upload     = require('../middleware/uploadMiddleware');
 const { getCanonicalVillageName } = require('../data/kundapuraVillages');
+const { getTotalAnalytics, getAnalyticsByUserId } = require('../services/analyticsService');
 
 const canonicalizeVillageList = (values = []) =>
   values.map(v => getCanonicalVillageName(v)).filter(Boolean);
@@ -20,15 +21,19 @@ const ADMIN_PASSWORD = 'Pk@7022302564';
 const ADMIN_SECRET   = process.env.JWT_SECRET + '_admin';
 
 const adminLogin = (req, res) => {
-  const { username, password } = req.body;
-  const cleanUser = username?.trim();
-  const cleanPass = password?.trim();
+  try {
+    const { username, password } = req.body;
+    const cleanUser = username?.trim();
+    const cleanPass = password?.trim();
 
-  if (cleanUser !== ADMIN_USERNAME || cleanPass !== ADMIN_PASSWORD) {
-    return res.status(401).json({ message: 'Invalid admin credentials.' });
+    if (cleanUser !== ADMIN_USERNAME || cleanPass !== ADMIN_PASSWORD) {
+      return res.status(401).json({ message: 'Invalid admin credentials.' });
+    }
+    const token = jwt.sign({ role: 'admin', username }, ADMIN_SECRET, { expiresIn: '8h' });
+    res.json({ token, username });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error during login.' });
   }
-  const token = jwt.sign({ role: 'admin', username }, ADMIN_SECRET, { expiresIn: '8h' });
-  res.json({ token, username });
 };
 
 const generateCollectorId = async () => {
@@ -288,6 +293,8 @@ const getDashboardStats = async (req, res) => {
       })),
     ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 8);
 
+    const analytics = await getTotalAnalytics();
+
     res.json({ 
       totalCollectors, 
       activeCollectors, 
@@ -305,6 +312,8 @@ const getDashboardStats = async (req, res) => {
       pendingRequests: pendingGcRequests + pendingApprovalRequests,
       scrapRequests: scrapRequests.length,
       totalGreenChampions,
+      totalRecycledWeight: analytics.totalRecycledWeight,
+      totalCo2Saved: analytics.totalCo2Saved,
       collectors, 
       recentReports: reportsPopulated.slice(0, 10),
       recentActivity,
@@ -514,6 +523,76 @@ const reverifyReport = async (req, res) => {
   }
 };
 
+const getWasteIntelligenceReports = async (req, res) => {
+  try {
+    const { startDate, endDate, village, type, status, collectorId, priority } = req.query;
+    const query = {};
+
+    if (type && ['Public', 'Home Pickup'].includes(type)) query.reportType = type;
+    if (village) query.village = { $regex: village.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+    if (status) query.status = status;
+    if (collectorId) query.assignedCollector = collectorId;
+    if (priority && ['Normal', 'Urgent'].includes(priority)) query.priorityLevel = priority;
+
+    // Date filtering
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) {
+        const e = new Date(endDate);
+        e.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = e;
+      }
+    }
+
+    const reports = await WasteReport.find(query)
+      .populate('userId', 'name phone email')
+      .populate('assignedCollector', 'name phone email role collectorId')
+      .populate('verifiedBy', 'name')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Build stats from filtered results
+    const total = reports.length;
+    const publicReports = reports.filter(r => r.reportType === 'Public').length;
+    const homePickup = reports.filter(r => r.reportType === 'Home Pickup').length;
+    const pending = reports.filter(r => ['Submitted', 'Verified', 'Under Re-Verification', 'Clarification Requested', 'Resubmitted'].includes(r.status)).length;
+    const assigned = reports.filter(r => r.status === 'Assigned').length;
+    const inProgress = reports.filter(r => r.status === 'In Progress').length;
+    const completed = reports.filter(r => r.status === 'Resolved').length;
+    const rejected = reports.filter(r => r.status === 'Rejected').length;
+
+    // Date-based counts
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const reportsToday = reports.filter(r => new Date(r.createdAt) >= startOfToday).length;
+    const reportsThisWeek = reports.filter(r => new Date(r.createdAt) >= startOfWeek).length;
+    const reportsThisMonth = reports.filter(r => new Date(r.createdAt) >= startOfMonth).length;
+
+    // Village report counts
+    const villageCounts = {};
+    reports.forEach(r => {
+      const v = r.village || 'Unknown';
+      villageCounts[v] = (villageCounts[v] || 0) + 1;
+    });
+    const mostReportedVillage = Object.entries(villageCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
+
+    res.json({
+      reports,
+      stats: {
+        total, publicReports, homePickup, pending, assigned, inProgress, completed, rejected,
+        reportsToday, reportsThisWeek, reportsThisMonth, mostReportedVillage,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
 const getAssignedVillages = async (req, res) => {
   try {
     const collectors = await Collector.find({ status: 'Active' }).select('name collectorId villages');
@@ -656,7 +735,12 @@ const assignGCTask = async (req, res) => {
 
 const getApprovalRequests = async (req, res) => {
   try {
-    const requests = await ApprovalRequest.find()
+    const { role } = req.query;
+    let query = {};
+    if (role && ['citizen', 'green_champion', 'collector'].includes(role)) {
+      query.userRole = role;
+    }
+    const requests = await ApprovalRequest.find(query)
       .populate('citizen', 'name phone email village')
       .sort({ createdAt: -1 })
       .lean();
@@ -734,9 +818,22 @@ const updateApprovalRequest = async (req, res) => {
 
 const getCitizens = async (req, res) => {
   try {
-    const { search, status } = req.query;
+    const { search, status, village } = req.query;
     let query = { role: 'citizen' };
-    if (status && status !== 'All') query.accountStatus = status;
+
+    // Status filter
+    if (status && status !== 'All') {
+      if (status === 'Active') query.accountStatus = 'Active';
+      else if (status === 'Inactive') query.accountStatus = { $in: ['Inactive', 'Suspended', 'Deleted'] };
+      else if (status === 'Verified') query.isVerified = true;
+      else if (status === 'Unverified') query.isVerified = false;
+    }
+
+    // Village filter
+    if (village && village !== 'All') {
+      query.village = village;
+    }
+
     if (search) {
       const esc = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
@@ -747,7 +844,29 @@ const getCitizens = async (req, res) => {
       ];
     }
     const citizens = await User.find(query).sort({ createdAt: -1 }).lean();
-    res.json({ citizens });
+
+    // Enrich with report counts and eco data
+    const userIds = citizens.map(c => c._id);
+    const reportCounts = await WasteReport.aggregate([
+      { $match: { userId: { $in: userIds } } },
+      { $group: {
+        _id: '$userId',
+        total: { $sum: 1 },
+        pending: { $sum: { $cond: [{ $in: ['$status', ['Submitted', 'Verified', 'Assigned', 'In Progress']] }, 1, 0] } },
+        resolved: { $sum: { $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] } },
+      }},
+    ]);
+    const reportMap = {};
+    reportCounts.forEach(r => { reportMap[r._id.toString()] = r; });
+
+    const enriched = citizens.map(c => ({
+      ...c,
+      reportsSubmitted: reportMap[c._id.toString()]?.total || 0,
+      pendingReports: reportMap[c._id.toString()]?.pending || 0,
+      resolvedReports: reportMap[c._id.toString()]?.resolved || 0,
+    }));
+
+    res.json({ citizens: enriched });
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }
@@ -759,11 +878,48 @@ const getCitizenDetails = async (req, res) => {
     if (!citizen || citizen.role !== 'citizen') {
       return res.status(404).json({ message: 'Citizen not found.' });
     }
-    const reportCount = await WasteReport.countDocuments({ userId: req.params.id });
-    const scrapCount = await ScrapRequest.countDocuments({ userId: req.params.id });
+
+    const reports = await WasteReport.find({ userId: req.params.id })
+      .sort({ createdAt: -1 }).lean();
+
+    const scrapRequests = await ScrapRequest.find({ userId: req.params.id })
+      .sort({ createdAt: -1 }).lean();
+
     const notifications = await Notification.find({ userId: req.params.id })
       .sort({ createdAt: -1 }).limit(10).lean();
-    res.json({ citizen, stats: { reportCount, scrapCount }, notifications });
+
+    const totalReports = reports.length;
+    const pendingReports = reports.filter(r =>
+      ['Submitted', 'Verified', 'Assigned', 'In Progress'].includes(r.status)
+    ).length;
+    const resolvedReports = reports.filter(r => r.status === 'Resolved').length;
+
+    const ecoPoints = citizen.ecoPoints || citizen.rewards?.points || 0;
+    const totalEarned = citizen.rewards?.totalEarned || 0;
+
+    const analytics = await getAnalyticsByUserId(req.params.id);
+    const co2Saved = analytics.totalCo2Saved;
+    const recycledWaste = analytics.totalRecycledWeight;
+
+    res.json({
+      citizen: {
+        ...citizen,
+        stats: {
+          totalReports,
+          pendingReports,
+          resolvedReports,
+          ecoPoints,
+          totalEarned,
+          streakCount: citizen.streakCount || 0,
+          highestStreak: citizen.highestStreak || 0,
+          co2Saved: parseFloat(co2Saved),
+          recycledWaste: Math.round(recycledWaste * 10) / 10,
+        },
+        recentReports: reports.slice(0, 10),
+        scrapRequests: scrapRequests.slice(0, 5),
+        notifications,
+      }
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }
@@ -903,6 +1059,62 @@ const unsuspendCitizen = async (req, res) => {
   }
 };
 
+const updateCitizen = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phone, village, homeAddress, houseNo, streetArea, addressType, landmark, accountStatus } = req.body;
+
+    const citizen = await User.findById(id);
+    if (!citizen || citizen.role !== 'citizen') {
+      return res.status(404).json({ message: 'Citizen not found.' });
+    }
+
+    if (name) citizen.name = name;
+    if (email) citizen.email = email;
+    if (phone) citizen.phone = phone;
+    if (village) citizen.village = village;
+    if (homeAddress !== undefined) citizen.homeAddress = homeAddress;
+    if (houseNo !== undefined) citizen.houseNo = houseNo;
+    if (streetArea !== undefined) citizen.streetArea = streetArea;
+    if (addressType !== undefined) citizen.addressType = addressType;
+    if (landmark !== undefined) citizen.landmark = landmark;
+    if (accountStatus) citizen.accountStatus = accountStatus;
+    if (accountStatus === 'Active') citizen.isActive = true;
+    if (accountStatus === 'Inactive') citizen.isActive = false;
+
+    await citizen.save();
+
+    const { emitToAll } = require('../socket');
+    emitToAll('citizen_updated', { action: 'updated', citizenId: id });
+
+    res.json({ message: 'Citizen updated successfully.', citizen: citizen.toJSON() });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+const toggleCitizenStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const citizen = await User.findById(id);
+    if (!citizen || citizen.role !== 'citizen') {
+      return res.status(404).json({ message: 'Citizen not found.' });
+    }
+
+    const newStatus = citizen.accountStatus === 'Active' ? 'Inactive' : 'Active';
+    citizen.accountStatus = newStatus;
+    citizen.isActive = newStatus === 'Active';
+    await citizen.save();
+
+    const { emitToAll } = require('../socket');
+    emitToAll('citizen_updated', { action: 'status_changed', citizenId: id, status: newStatus });
+
+    res.json({ message: `Citizen ${newStatus.toLowerCase()} successfully.`, citizen: citizen.toJSON() });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
 const deleteCitizen = async (req, res) => {
   try {
     const { reason } = req.body;
@@ -917,10 +1129,11 @@ const deleteCitizen = async (req, res) => {
     citizen.isActive = false;
     await citizen.save();
 
-    const { emitToUser } = require('../socket');
+    const { emitToUser, emitToAll } = require('../socket');
     emitToUser(citizen._id.toString(), 'account_deleted', {
       deletionReason: reason,
     });
+    emitToAll('citizen_updated', { action: 'deleted', citizenId: id });
 
     res.json({ message: 'Citizen deleted.', citizen: citizen.toJSON() });
   } catch (err) {
@@ -938,6 +1151,7 @@ module.exports = {
   getAllReports,
   reverifyReport,
   getAssignedVillages,
+  getWasteIntelligenceReports,
   getGreenChampions,
   updateGreenChampion,
   deleteGreenChampion,
@@ -949,6 +1163,8 @@ module.exports = {
   getCollector,
   getCitizens,
   getCitizenDetails,
+  updateCitizen,
+  toggleCitizenStatus,
   sendCitizenNotification,
   suspendCitizen,
   unsuspendCitizen,

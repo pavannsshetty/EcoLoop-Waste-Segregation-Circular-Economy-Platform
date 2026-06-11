@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { 
-  HiPlus, HiPencil, HiTrash, HiEye, HiEyeOff, HiStar,
+  HiPlus, HiMinus, HiPencil, HiTrash, HiEye, HiEyeOff,
   HiPhotograph, HiSearch, HiX, HiRefresh, HiChartBar,
   HiCube, HiExclamation, HiCheckCircle, HiShoppingCart,
   HiBookOpen,
@@ -10,6 +10,7 @@ import {
   MdCheckroom, MdToys, MdHome, MdFolder, MdDevices 
 } from 'react-icons/md';
 import { useTheme } from '../context/ThemeContext';
+import ModalOverlay from '../components/ModalOverlay';
 import socket from '../socket';
 import Dropdown from '../components/Dropdown';
 
@@ -113,9 +114,8 @@ const ItemModal = ({ item, dark, onClose, onSaved }) => {
   const lbl = `block text-xs font-semibold mb-1 ${dark ? 'text-[#8b95a7]' : 'text-slate-700'}`;
 
   return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative z-10 w-full max-w-[95vw] sm:max-w-lg rounded-lg shadow-2xl flex flex-col max-h-[90vh] ${dark ? 'bg-[#11151c] border border-white/10' : 'bg-white'}`}>
+        <ModalOverlay onClose={onClose} className="flex items-center justify-center p-2 sm:p-4">
+      <div className={`w-full max-w-[95vw] sm:max-w-lg rounded-lg shadow-2xl flex flex-col max-h-[90vh] ${dark ? 'bg-[#11151c] border border-white/10' : 'bg-white'}`}>
         <div className={`flex items-center justify-between px-6 py-4 border-b ${dark ? 'border-white/10' : 'border-slate-100'}`}>
           <div className="flex items-center gap-2">
             <HiShoppingCart className="h-5 w-5 text-green-500" />
@@ -238,8 +238,8 @@ const ItemModal = ({ item, dark, onClose, onSaved }) => {
             {loading ? 'Saving...' : isEdit ? 'Update Item' : 'Add Item'}
           </button>
         </div>
-      </div>
-    </div>
+        </div>
+        </ModalOverlay>
   );
 };
 
@@ -277,6 +277,12 @@ const EcoShopping = () => {
       if (catFilter !== 'all') params.set('category', catFilter);
       if (search) params.set('search', search);
       const res  = await fetch(`${API_BASE}?${params}`, { headers: { Authorization: `Bearer ${ADMIN_TOKEN()}` } });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       const data = await res.json();
       setItems(data.items || []);
     } catch { } finally { setLoading(false); }
@@ -285,6 +291,12 @@ const EcoShopping = () => {
   const fetchAnalytics = async () => {
     try {
       const res  = await fetch(`${API_BASE}/analytics`, { headers: { Authorization: `Bearer ${ADMIN_TOKEN()}` } });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       const data = await res.json();
       setAnalytics(data);
     } catch { }
@@ -336,7 +348,13 @@ const EcoShopping = () => {
 
   const handleDelete = async (id) => {
     try {
-      await fetch(`${API_BASE}/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${ADMIN_TOKEN()}` } });
+      const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${ADMIN_TOKEN()}` } });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       setItems(prev => prev.filter(i => i._id !== id));
       // Analytics updated by socket
       showToast('Item deleted.');
@@ -349,6 +367,12 @@ const EcoShopping = () => {
     try {
       const fd = new FormData(); fd.append('status', newStatus);
       const res  = await fetch(`${API_BASE}/${item._id}`, { method: 'PUT', headers: { Authorization: `Bearer ${ADMIN_TOKEN()}` }, body: fd });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       const data = await res.json();
       setItems(prev => prev.map(i => i._id === item._id ? data.item : i));
       showToast(`Item marked ${newStatus}`);
@@ -380,6 +404,12 @@ const EcoShopping = () => {
         headers: { Authorization: `Bearer ${ADMIN_TOKEN()}` },
         body: fd
       });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       const data = await res.json();
       if (!res.ok) throw new Error();
       // Server will emit socket event, but we already updated optimistically.
@@ -411,9 +441,8 @@ const EcoShopping = () => {
 
       {/* Delete Confirm */}
       {deleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteId(null)} />
-          <div className={`relative z-10 w-full max-w-sm rounded-lg shadow-2xl p-6 space-y-4 ${dark ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
+        <ModalOverlay onClose={() => setDeleteId(null)} className="flex items-center justify-center p-4">
+          <div className={`w-full max-w-sm rounded-lg shadow-2xl p-6 space-y-4 ${dark ? 'bg-slate-900 border border-slate-700' : 'bg-white'}`}>
             <div className="flex items-start gap-3">
               <HiTrash className="h-6 w-6 text-red-500 shrink-0 mt-0.5" />
               <div>
@@ -425,8 +454,8 @@ const EcoShopping = () => {
               <button onClick={() => setDeleteId(null)} className={`flex-1 rounded-lg border py-2.5 text-sm ${dk('border-slate-600 text-slate-300 hover:bg-slate-800', 'border-slate-300 text-slate-600 hover:bg-slate-50')} transition`}>Cancel</button>
               <button onClick={() => handleDelete(deleteId)} className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm text-white hover:bg-red-500 font-bold transition">Delete</button>
             </div>
-          </div>
         </div>
+        </ModalOverlay>
       )}
 
       {/* Item Modal */}
@@ -472,7 +501,7 @@ const EcoShopping = () => {
       </div>
 
       {/* Filters */}
-      <div className={`${card} p-4 flex flex-wrap gap-3`}>
+      <div className="flex flex-wrap gap-3 items-center">
         <div className={`flex items-center gap-2.5 px-4 h-11 rounded-lg border transition-all duration-200 focus-within:ring-2 focus-within:ring-green-500/20 group flex-1 min-w-0 sm:min-w-[240px] ${
           dark ? 'bg-slate-800 border-slate-600 focus-within:border-green-500' : 'bg-white border-slate-200 focus-within:border-green-500 shadow-sm'
         }`}>
@@ -491,10 +520,6 @@ const EcoShopping = () => {
           <option value="all">All Categories</option>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </Dropdown>
-        <button onClick={() => { setSearch(''); setCatFilter('all'); fetchItems(); }}
-          className={`h-11 flex items-center justify-center gap-1.5 px-4 rounded-lg border text-sm font-semibold transition shadow-sm ${dk('border-slate-600 bg-slate-800 text-slate-300', 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50')}`}>
-          <HiRefresh className="h-4 w-4" /> Reset
-        </button>
       </div>
 
       {/* Items Grid */}
@@ -508,12 +533,10 @@ const EcoShopping = () => {
           {items.map(item => (
             <div key={item._id} className={`${card} rounded-lg overflow-hidden flex flex-col`}>
               {/* Image */}
-              <div className="relative aspect-[4/3] overflow-hidden">
+              <div className="relative h-40 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-700">
                 {item.image
-                  ? <img src={item.image} alt={item.itemName} className="w-full h-full object-cover" />
-                  : <div className={`w-full h-full flex items-center justify-center ${dk('bg-slate-700', 'bg-slate-100')}`}>
-                      <span className="text-green-500 text-3xl">{CAT_ICONS[item.category] || <MdFolder />}</span>
-                    </div>
+                  ? <img src={item.image} alt={item.itemName} className="w-full h-full object-contain p-3" />
+                  : <span className="text-green-500 text-3xl">{CAT_ICONS[item.category] || <MdFolder />}</span>
                 }
                 {/* Badges */}
                 <div className="absolute top-2 left-2 flex flex-col gap-1">
@@ -525,12 +548,6 @@ const EcoShopping = () => {
                         : 'bg-gray-500 text-white'
                   }`}>
                     {item.status === 'Available' ? '● AVAILABLE' : item.status === 'Out of Stock' ? '● OUT OF STOCK' : '● UNAVAILABLE'}
-                  </span>
-                </div>
-                {/* Recycled tag */}
-                <div className="absolute top-2 right-2">
-                  <span className="text-[10px] font-bold bg-green-500 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <HiRefresh className="h-2.5 w-2.5" /> Recycled
                   </span>
                 </div>
               </div>
@@ -563,21 +580,22 @@ const EcoShopping = () => {
                     <div className={`flex items-center rounded-lg p-1 border ${dk('bg-slate-700 border-slate-600', 'bg-slate-100 border-slate-200')}`}>
                       <button 
                         onClick={(e) => { e.stopPropagation(); adjustStock(item, -1); }}
-                        className={`p-1 rounded-lg transition ${item.stock === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                        className={`p-1.5 rounded-lg transition ${item.stock === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-200 dark:hover:bg-slate-600'}`}
+                        title="Decrease stock"
                       >
-                        <HiPlus className="h-4 w-4 rotate-45 text-red-500" />
+                        <HiMinus className="h-4 w-4 text-red-500" />
                       </button>
                       <button 
                         onClick={(e) => { e.stopPropagation(); adjustStock(item, 1); }}
-                        className="p-1 rounded-lg transition"
+                        className="p-1.5 rounded-lg transition hover:bg-slate-200 dark:hover:bg-slate-600"
+                        title="Increase stock"
                       >
                         <HiPlus className="h-4 w-4 text-green-500" />
                       </button>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`text-xs ${textMuted}`}>👁 {item.views}</span>
-                    <span className={`text-xs ${textMuted}`}>🛒 {item.requests} buys</span>
+                    <span className={`text-xs ${textMuted}`}>🛒 {item.requests} {item.requests === 1 ? 'Purchase' : 'Purchases'}</span>
                   </div>
                 </div>
               </div>
@@ -585,13 +603,13 @@ const EcoShopping = () => {
               {/* Actions */}
               <div className={`flex gap-1 p-3 border-t ${dk('border-gray-700', 'border-slate-100')}`}>
                 <button onClick={() => setEditItem(item)} title="Edit"
-                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-medium text-white transition"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-semibold text-white transition"
                   style={{ backgroundColor: '#0BAF2A' }}>
-                  <HiPencil className="h-3.5 w-3.5" /> Edit
+                  <HiPencil className="h-4 w-4" /> Edit
                 </button>
                 <button onClick={() => toggleStatus(item)} title="Toggle Status"
                   disabled={item.stock === 0 && item.status === 'Out of Stock'}
-                  className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-medium transition ${
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-semibold transition ${
                     item.stock === 0 && item.status === 'Out of Stock' ? 'opacity-30 cursor-not-allowed' :
                     item.status === 'Available'
                       ? dk('text-yellow-400', 'text-yellow-600')

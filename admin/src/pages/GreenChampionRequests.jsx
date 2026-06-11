@@ -6,6 +6,7 @@ import {
   HiChevronRight, HiEye, HiCheckCircle, HiArrowLeft, HiTrash, HiPause
 } from 'react-icons/hi';
 import { useTheme } from '../context/ThemeContext';
+import ModalOverlay from '../components/ModalOverlay';
 import { useToast, ToastContainer } from '../components/Toast';
 import Dropdown from '../components/Dropdown';
 
@@ -252,9 +253,8 @@ const GreenChampionRequests = () => {
 
       {/* Details Modal */}
       {selectedReq && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedReq(null)} />
-          <div className={`relative z-10 w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-4xl max-h-[90vh] overflow-hidden rounded-lg border flex flex-col ${dk('bg-black border-gray-800', 'bg-white border-gray-100 shadow-2xl')}`}>
+        <ModalOverlay onClose={() => setSelectedReq(null)} className="flex items-center justify-center p-4">
+          <div className={`w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-4xl max-h-[90vh] overflow-hidden rounded-lg border flex flex-col ${dk('bg-black border-gray-800', 'bg-white border-gray-100 shadow-2xl')}`}>
              
              {/* Header */}
               <div className="px-4 sm:px-6 py-4 border-b dark:border-gray-800 flex items-center justify-between">
@@ -383,9 +383,8 @@ const GreenChampionRequests = () => {
 
           {/* Confirm Sub-Modal */}
           {reviewAction && (
-             <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-                <div className="absolute inset-0 bg-black/60" onClick={() => setReviewAction(null)} />
-                 <div className={`relative z-10 w-full max-w-[95vw] sm:max-w-sm p-4 sm:p-6 rounded-lg border ${dk('bg-black border-gray-800', 'bg-white border-gray-100 shadow-2xl')}`}>
+             <ModalOverlay onClose={() => setReviewAction(null)} className="flex items-center justify-center p-4">
+                 <div className={`w-full max-w-[95vw] sm:max-w-sm p-4 sm:p-6 rounded-lg border ${dk('bg-black border-gray-800', 'bg-white border-gray-100 shadow-2xl')}`}>
                    <p className={`text-lg font-bold mb-2 ${dk('text-white', 'text-slate-800')}`}>{reviewAction === 'APPROVE' ? 'Confirm Approval' : reviewAction === 'REJECT' ? 'Confirm Rejection' : 'Confirm Suspension'}</p>
                    <p className="text-sm text-slate-500 mb-4">Are you sure you want to {reviewAction.toLowerCase()} this applicant?</p>
                    
@@ -430,10 +429,10 @@ const GreenChampionRequests = () => {
                          {submitting ? 'Processing...' : 'Confirm'}
                       </button>
                    </div>
-                </div>
-             </div>
-          )}
-        </div>
+                 </div>
+              </ModalOverlay>
+           )}
+         </ModalOverlay>
       )}
     </div>
   );

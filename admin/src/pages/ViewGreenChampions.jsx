@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { HiPencil, HiTrash, HiEye, HiX, HiExclamation, HiSearch } from 'react-icons/hi';
 import { useTheme } from '../context/ThemeContext';
+import ModalOverlay from '../components/ModalOverlay';
 import Dropdown from '../components/Dropdown';
 
 const VILLAGES = [
@@ -21,8 +21,8 @@ const VILLAGES = [
 ].sort((a, b) => a.localeCompare(b));
 
 const ModalWrapper = ({ children, onClose, title, dk }) => {
-  return createPortal(
-    <div className="fixed inset-0 z-[9999] flex p-4 sm:p-6 bg-black/60 overflow-y-auto" onClick={(e) => { if(e.target === e.currentTarget) onClose(); }}>
+  return (
+    <ModalOverlay onClose={onClose} className="flex p-4 sm:p-6 overflow-y-auto">
         <div className={`relative m-auto w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-2xl max-h-full rounded-lg border flex flex-col shadow-2xl ${dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200')}`}>
         <div className={`px-4 sm:px-6 py-4 border-b flex justify-between items-center sticky top-0 z-10 rounded-t-lg ${dk('border-slate-800 bg-slate-900', 'border-slate-100 bg-white')}`}>
           <h2 className={`text-lg font-bold truncate ${dk('text-slate-200', 'text-slate-800')}`}>{title}</h2>
@@ -34,8 +34,7 @@ const ModalWrapper = ({ children, onClose, title, dk }) => {
           {children}
         </div>
       </div>
-    </div>,
-    document.body
+    </ModalOverlay>
   );
 };
 
@@ -75,6 +74,12 @@ const ViewGreenChampions = () => {
     try {
       const token = localStorage.getItem('admin-token');
       const res = await fetch('/api/admin/green-champions', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       if (res.ok) {
         const d = await res.json();
         setChampions(d.champions);
@@ -110,6 +115,12 @@ const ViewGreenChampions = () => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ...form, phone: form.mobile })
       });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       if (res.ok) {
         setEditModal(null);
         fetchChampions();
@@ -132,6 +143,12 @@ const ViewGreenChampions = () => {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (res.status === 401) {
+        localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
+        window.location.href = '/admin/login';
+        return;
+      }
       if (res.ok) {
         setDeleteModal(null);
         fetchChampions();
@@ -286,8 +303,8 @@ const ViewGreenChampions = () => {
       </div>
 
       {/* Delete Modal */}
-      {deleteModal && createPortal(
-        <div className="fixed inset-0 z-[9999] flex p-4 sm:p-6 bg-black/60 overflow-y-auto" onClick={(e) => { if(e.target === e.currentTarget) setDeleteModal(null); }}>
+      {deleteModal && (
+        <ModalOverlay onClose={() => setDeleteModal(null)} className="flex p-4 sm:p-6 overflow-y-auto">
           <div className={`relative m-auto w-full max-w-[95vw] sm:max-w-md rounded-lg border p-4 sm:p-6 space-y-4 shadow-2xl ${dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200')}`}>
             <div className="flex items-start gap-4">
                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
@@ -305,8 +322,7 @@ const ViewGreenChampions = () => {
               </button>
             </div>
           </div>
-        </div>,
-        document.body
+        </ModalOverlay>
       )}
 
       {/* Edit Modal */}

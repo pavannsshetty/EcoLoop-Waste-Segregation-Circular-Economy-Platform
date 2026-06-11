@@ -33,7 +33,8 @@ const citizenRoutes = (
      <Route path="nearby-issues" element={<NearbyIssues />} />
      <Route path="leaderboard" element={<Leaderboard />} />
      <Route path="notifications" element={<Notifications />} />
-     <Route path="profile" element={<CitizenProfile />} />
+      <Route path="profile" element={<CitizenProfile />} />
+      <Route path="complete-profile" element={<CompleteProfile />} />
      <Route path="settings" element={<Settings />} />
      <Route path="help-support" element={<HelpSupport />} />
      <Route path="sell-scrap" element={<SellScrap />} />

@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createPortal } from 'react-dom';
 import { HiEye, HiX, HiExclamationCircle, HiLocationMarker, HiSearch } from 'react-icons/hi';
 import { useTheme } from '../context/ThemeContext';
+import ModalOverlay from '../components/ModalOverlay';
 
 const ModalWrapper = ({ children, onClose, title, dk }) => {
-  return createPortal(
-    <div className="fixed inset-0 z-[9999] flex p-4 sm:p-6 bg-black/60 overflow-y-auto" onClick={(e) => { if(e.target === e.currentTarget) onClose(); }}>
-        <div className={`relative m-auto w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-4xl max-h-full flex flex-col rounded-lg border shadow-2xl ${dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200')}`}>
+  return (
+    <ModalOverlay onClose={onClose} className="flex p-4 sm:p-6 overflow-y-auto">
+      <div className={`relative m-auto w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-4xl max-h-full flex flex-col rounded-lg border shadow-2xl ${dk('bg-slate-900 border-slate-700', 'bg-white border-slate-200')}`}>
         <div className={`px-4 sm:px-6 py-4 border-b flex justify-between items-center shrink-0 rounded-t-lg sticky top-0 z-10 ${dk('border-slate-800 bg-slate-900', 'border-slate-100 bg-white')}`}>
           <h2 className={`text-lg font-bold truncate ${dk('text-slate-200', 'text-slate-800')}`}>{title}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg transition shrink-0 ${dk('text-slate-400 hover:bg-slate-800 hover:text-white', 'text-slate-500 hover:bg-slate-100 hover:text-slate-800')}`}>
@@ -18,8 +18,7 @@ const ModalWrapper = ({ children, onClose, title, dk }) => {
           {children}
         </div>
       </div>
-    </div>,
-    document.body
+    </ModalOverlay>
   );
 };
 
@@ -50,6 +49,7 @@ const Reports = () => {
       const res = await fetch('/api/admin/reports', { headers: { Authorization: `Bearer ${token}` } });
       if (res.status === 401) {
         localStorage.removeItem('admin-token');
+        localStorage.removeItem('admin-user');
         navigate('/admin/login');
         return;
       }
@@ -76,7 +76,7 @@ const Reports = () => {
       case 'Submitted': return dk('bg-blue-900/50 text-blue-400', 'bg-blue-100 text-blue-800');
       case 'Assigned': return dk('bg-purple-900/50 text-purple-400', 'bg-purple-100 text-purple-800');
       case 'In Progress': return dk('bg-amber-900/50 text-amber-500', 'bg-amber-100 text-amber-800');
-      case 'Resolved': return dk('bg-green-500/50 text-green-500', 'bg-green-500 text-green-500');
+      case 'Resolved': return dk('bg-green-500/50 text-green-500', 'bg-green-100 text-green-800');
       case 'Cancelled': return dk('bg-slate-800 text-slate-400', 'bg-slate-200 text-slate-700');
       default: return dk('bg-gray-800 text-gray-400', 'bg-gray-100 text-gray-800');
     }

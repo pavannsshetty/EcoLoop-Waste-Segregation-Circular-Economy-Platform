@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API } from '../../shared/constants';
 import { HiClipboardList, HiCheckCircle, HiExclamation, HiRefresh, HiChevronRight, HiCollection, HiMap, HiInbox, HiLocationMarker, HiHome, HiClock } from 'react-icons/hi';
+import { MdRecycling, MdCloudQueue } from 'react-icons/md';
 import { useTheme } from '../../shared/context/ThemeContext';
-import { useUser } from '../../shared/context/UserContext';
+import { useUser, parseStoredUser } from '../../shared/context/UserContext';
 import StatCard, { StatCardSkeleton } from '../../shared/components/StatCard';
+import socket from '../../socket';
 
 const AVAIL_OPTIONS = ['Available', 'Busy', 'Offline'];
 const AVAIL_DOT = { Available: 'bg-green-500', Busy: 'bg-yellow-500', Offline: 'bg-slate-500' };
@@ -56,7 +58,7 @@ const CollectorDashboard = () => {
 
   const [stats, setStats] = useState({
     pendingSubmitted: 0, assigned: 0, inProgress: 0,
-    completedToday: 0, total: 0, collector: null,
+    completedToday: 0, total: 0, recycledWeight: 0, co2Saved: 0, collector: null,
     publicWasteDetails: { pendingSubmitted: 0, assigned: 0, inProgress: 0, completedToday: 0, total: 0 },
     homePickupDetails: { assigned: 0, inProgress: 0, completedToday: 0, total: 0 },
   });
@@ -96,6 +98,12 @@ const CollectorDashboard = () => {
     fetchVillageReports();
   }, [userLoading, ctxUser]);
 
+  useEffect(() => {
+    const handler = () => { fetchStats(); };
+    socket.on('analytics_updated', handler);
+    return () => socket.off('analytics_updated', handler);
+  }, [fetchStats]);
+
   const updateAvailability = async (val) => {
     setAvail(val);
     try {
@@ -114,6 +122,8 @@ const CollectorDashboard = () => {
     { label: "Today's Home Pickups", value: hp.assigned ?? 0, Icon: HiHome, path: '/collector/home-pickup' },
     { label: 'Completed Today', value: stats.completedToday, Icon: HiCheckCircle, path: '/collector/completed' },
     { label: 'Pending Tasks', value: (pw.pendingSubmitted ?? 0) + (stats.pendingSubmitted ?? 0), Icon: HiInbox, path: '/collector/public-waste' },
+    { label: 'Recycled Waste', value: `${stats?.recycledWeight ?? 0} kg`, Icon: MdRecycling, path: null },
+    { label: 'CO₂ Saved', value: `${stats?.co2Saved ?? 0} kg`, Icon: MdCloudQueue, path: null },
   ];
 
   const quickActions = [
@@ -217,7 +227,7 @@ const CollectorDashboard = () => {
           {/* ===== STATS GRID ===== */}
           <section className="mx-5">
             <div className="grid grid-cols-2 gap-3">
-              {loading ? [1,2,3,4].map(i => <StatCardSkeleton key={i} />) : statCards.map(card => (
+              {loading ? [1,2,3,4,5,6].map(i => <StatCardSkeleton key={i} />) : statCards.map(card => (
                 <StatCard
                   key={card.label}
                   label={card.label}
@@ -363,8 +373,8 @@ const CollectorDashboard = () => {
         </section>
 
         {/* Stats Grid */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
-          {loading ? [1,2,3,4,5].map(i => (
+        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+          {loading ? [1,2,3,4,5,6].map(i => (
             <StatCardSkeleton key={i} />
           )) : statCards.map(card => (
             <StatCard
@@ -469,10 +479,6 @@ const CollectorDashboard = () => {
             <h2 className={`text-sm font-semibold uppercase tracking-widest ${dk('text-white', 'text-slate-900')}`}>Shortcuts</h2>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => navigate('/collector/performance')}
-              className="h-11 px-6 rounded-lg bg-[#0AAF29] text-white text-sm font-semibold hover:bg-[#0AAF29]/90 transition-all flex items-center gap-2 group">
-              View Performance <HiChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </button>
           </div>
         </div>
 

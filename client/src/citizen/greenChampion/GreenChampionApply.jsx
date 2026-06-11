@@ -102,8 +102,11 @@ const GreenChampionApply = () => {
       formData.append('profilePhoto', fields.profilePhoto);
       formData.append('idProof', fields.idProof);
       const res = await fetch(apiUrl('/api/green-champion/apply'), { method: 'POST', body: formData });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.message || 'Application failed.'); return;
+      }
       const data = await res.json();
-      if (!res.ok) { toast.error(data.message || 'Application failed.'); return; }
       setSubmitted(true);
       setRequestId(data.requestId);
       toast.success('Application submitted successfully! Save your Request ID.');

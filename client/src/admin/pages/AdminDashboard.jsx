@@ -22,6 +22,8 @@ const INITIAL = {
   ecoShopOrders: 0,
   pendingRequests: 0,
   totalGreenChampions: 0,
+  totalRecycledWeight: 0,
+  totalCo2Saved: 0,
   collectors: [],
   recentActivity: [],
   topCollectors: [],
@@ -175,6 +177,14 @@ const AdminDashboard = () => {
       gradient: dark ? 'linear-gradient(135deg, #157a50 0%, #22a06b 100%)' : 'linear-gradient(135deg, #22C55E 0%, #4ADE80 100%)',
     },
     {
+      label: 'Recycled Waste', value: `${stats.totalRecycledWeight ?? 0} kg`, icon: HiCheckCircle,
+      gradient: dark ? 'linear-gradient(135deg, #0a7a79 0%, #1fa89a 100%)' : 'linear-gradient(135deg, #14B8A6 0%, #2DD4BF 100%)',
+    },
+    {
+      label: 'CO₂ Saved', value: `${stats.totalCo2Saved ?? 0} kg`, icon: HiExclamation,
+      gradient: dark ? 'linear-gradient(135deg, #157a50 0%, #22a06b 100%)' : 'linear-gradient(135deg, #22C55E 0%, #4ADE80 100%)',
+    },
+    {
       label: 'Pending', value: stats.pendingReports, icon: HiExclamation,
       gradient: dark ? 'linear-gradient(135deg, #b87208 0%, #d4960e 100%)' : 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)',
     },
@@ -284,7 +294,7 @@ const AdminDashboard = () => {
 
       {/* Desktop-Only Design */}
       <div className="hidden md:block">
-        <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+        <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
 
         {/* Modern Hero Card */}
         <section
@@ -379,7 +389,7 @@ const AdminDashboard = () => {
         )}
 
         {/* Stats Cards */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {loading
             ? [1,2,3,4,5,6].map(i => <StatCardSkeleton key={i} />)
             : statCards.map(card => <StatCard key={card.label} {...card} />)

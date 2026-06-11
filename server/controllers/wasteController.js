@@ -108,7 +108,7 @@ const validateWasteImage = async (req, res) => {
 const createReport = async (req, res) => {
   try {
     let { wasteType, severity, wasteSeenAt, description, quantity, image, location,
-            landmark, landmarkType, photoLocation, accuracy, pickupDate, pickupTime,
+            landmark, landmarkType, photoLocation, accuracy, priorityLevel,
             additionalInstructions, isBulk, village, houseNo, street, wardNumber, reportType } = req.body;
     const userId = req.user.id;
 
@@ -120,18 +120,9 @@ const createReport = async (req, res) => {
       try { photoLocation = JSON.parse(photoLocation); } catch (e) { photoLocation = null; }
     }
 
-    // Combine pickupDate and pickupTime securely
+    // For Public reports, use the deadline as pickupTime
     let finalPickupTime = null;
-    if (pickupDate && pickupTime) {
-      const dateObj = new Date(`${pickupDate}T${pickupTime}`);
-      if (!isNaN(dateObj.getTime())) finalPickupTime = dateObj;
-    } else if (pickupTime) {
-      const dateObj = new Date(pickupTime);
-      if (!isNaN(dateObj.getTime())) finalPickupTime = dateObj;
-    }
-
-    // For Public reports without a set pickup time, use the deadline as pickupTime
-    if (reportType !== 'Home Pickup' && !finalPickupTime) {
+    if (reportType !== 'Home Pickup') {
       finalPickupTime = new Date(Date.now() + expectedHours(severity || 'Medium') * 60 * 60 * 1000);
     }
 
@@ -150,8 +141,7 @@ const createReport = async (req, res) => {
     };
 
     if (reportType === 'Home Pickup') {
-      requiredFields.pickupDate = pickupDate;
-      requiredFields.pickupTime = pickupTime;
+      requiredFields.priorityLevel = priorityLevel;
     } else {
       requiredFields.severity = severity || 'Medium';
       requiredFields.wasteSeenAt = wasteSeenAt || 'Just Now';
@@ -178,19 +168,29 @@ const createReport = async (req, res) => {
 
     // Backend Village Boundary Validation - STRICT POLYGON-ONLY
     if (user.village) {
-      const villageData = await Village.findOne({ name: user.village });
+      const villageData = await Village.findOne({
+        name: { $regex: new RegExp(`^${user.village.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+      });
       
       // DEBUG: Log validation start
+      const polyType = villageData?.boundary?.type || 'none';
+      const polyLoaded = !!(villageData?.boundary?.coordinates?.length > 0);
       console.debug('[wasteController] village boundary validation start', {
         user: user._id,
         village: user.village,
         coordinates: { lat: location.lat, lng: location.lng },
-        polygonLoaded: !!(villageData?.boundary?.coordinates?.length > 0),
-        polygonCoordinates: villageData?.boundary?.coordinates?.[0]?.length || 0
+        polyType,
+        polygonLoaded: polyLoaded,
+        polygonCoordinates: polyLoaded ? (polyType === 'MultiPolygon' ? villageData.boundary.coordinates[0][0]?.length || 0 : villageData.boundary.coordinates[0]?.length || 0) : 0
       });
 
       // STRICT: Boundary must exist
-      if (!villageData || !villageData.boundary || !villageData.boundary.coordinates || villageData.boundary.coordinates[0]?.length < 3) {
+      const hasValidBoundary = (b) => {
+        if (!b?.coordinates || !b.type) return false;
+        if (b.type === 'MultiPolygon') return b.coordinates.some(p => p[0]?.length >= 3);
+        return b.coordinates[0]?.length >= 3;
+      };
+      if (!hasValidBoundary(villageData?.boundary)) {
         console.debug('[wasteController] NO POLYGON AVAILABLE - location REJECTED', {
           user: user._id,
           village: user.village
@@ -202,13 +202,16 @@ const createReport = async (req, res) => {
 
       // Perform Point-in-Polygon validation ONLY
       const isInside = isPointInPolygon(parseFloat(location.lat), parseFloat(location.lng), villageData.boundary);
+      const polyCoordCount = polyType === 'MultiPolygon'
+        ? (villageData.boundary.coordinates[0]?.[0]?.length || 0)
+        : (villageData.boundary.coordinates[0]?.length || 0);
       console.debug('[wasteController] point-in-polygon result', {
         user: user._id,
         village: user.village,
         lat: location.lat,
         lng: location.lng,
         isInside,
-        polygonCoordinates: villageData.boundary.coordinates[0].length
+        polygonCoordinates: polyCoordCount
       });
 
       if (!isInside) {
@@ -317,6 +320,7 @@ const createReport = async (req, res) => {
       },
       houseNo, street, landmark, landmarkType, wardNumber,
       additionalInstructions: additionalInstructions || '',
+      priorityLevel: priorityLevel || 'Normal',
       isBulk: !!isBulk,
       photoLocation: photoLocation || { lat: null, lng: null },
       accuracy: accuracy || null,
@@ -331,46 +335,47 @@ const createReport = async (req, res) => {
       ...aiResults
     });
 
+    // ─── Real-time Notifications & Post-Save (fire-and-forget) ──────────────
+    (async () => {
+      try {
+        if (aiResults.aiStatus === 'REJECTED') {
+          notifyNearbyUsers(user.village, report, 'rejected_report');
+        } else if (aiResults.aiStatus === 'SUSPICIOUS') {
+          notifyNearbyUsers(user.village, report, 'suspicious_report');
+        } else if (aiResults.aiStatus === 'PENDING_VERIFICATION' && imagePath) {
+          notifyNearbyUsers(user.village, report, 'verification_required');
+        }
+
+        createNotification(userId, 'Report Submitted',
+          `Your ${wasteType} waste report has been submitted and is awaiting verification.`,
+          'report', report._id);
+
+        const nearbyCollectors = await User.find({
+          village: { $regex: new RegExp(user.village, 'i') },
+          role: 'collector'
+        });
+        for (const coll of nearbyCollectors) {
+          createNotification(coll._id, 'New Report for Verification',
+            `A new ${wasteType} waste report in ${user.village} needs verification.`,
+            'report', report._id);
+        }
+
+        const { emitToAll } = require('../socket');
+        emitToAll('report_created', report);
+        if (reportStatus !== 'Cancelled') {
+          await awardPoints(userId, 5, 'Report Submitted', report._id);
+        } else {
+          try { broadcastLeaderboardUpdate(); } catch {}
+        }
+      } catch (notifErr) {
+        console.error('[createReport Post-Save Error]:', notifErr);
+      }
+    })();
+
     res.status(201).json({ 
       message: aiResults.aiStatus === 'REJECTED' ? 'Report rejected by AI.' : 'Report submitted successfully.', 
       report 
     });
-
-    // ─── Real-time Notifications for AI results ──────────────────────────────
-    if (aiResults.aiStatus === 'REJECTED') {
-      notifyNearbyUsers(user.village, report, 'rejected_report');
-    } else if (aiResults.aiStatus === 'SUSPICIOUS') {
-      notifyNearbyUsers(user.village, report, 'suspicious_report');
-    } else if (aiResults.aiStatus === 'PENDING_VERIFICATION' && imagePath) {
-      notifyNearbyUsers(user.village, report, 'verification_required');
-    }
-
-    try {
-      createNotification(userId, 'Report Submitted',
-        `Your ${wasteType} waste report has been submitted and is awaiting verification.`,
-        'report', report._id);
-
-      // Notify collectors in the village about new report for verification
-      const nearbyCollectors = await User.find({
-        village: { $regex: new RegExp(user.village, 'i') },
-        role: 'collector'
-      });
-      for (const coll of nearbyCollectors) {
-        createNotification(coll._id, 'New Report for Verification',
-          `A new ${wasteType} waste report in ${user.village} needs verification.`,
-          'report', report._id);
-      }
-
-      const { emitToAll } = require('../socket');
-      emitToAll('report_created', report);
-      if (reportStatus !== 'Cancelled') {
-        await awardPoints(userId, 5, 'Report Submitted', report._id);
-      } else {
-        try { broadcastLeaderboardUpdate(); } catch {}
-      }
-    } catch (notifErr) {
-      console.error('[createReport Notification/Socket/Points Error]:', notifErr);
-    }
   } catch (err) {
     console.error('[createReport General Error]:', err);
     res.status(500).json({ message: 'Server error.', error: err.message });
@@ -410,12 +415,18 @@ const upvoteReport = async (req, res) => {
     else                 report.severity = 'Low';
     await report.save();
     res.json({ upvotes: count, upvoted: !alreadyUpvoted, severity: report.severity });
-    if (!alreadyUpvoted) {
-      awardPoints(userId, 2, 'Supported a Report', id);
-      if (report.userId.toString() !== userId) {
-        createNotification(report.userId, 'Report Supported', `Someone supported your ${report.wasteType} waste report!`, 'support', report._id);
+    (async () => {
+      try {
+        if (!alreadyUpvoted) {
+          await awardPoints(userId, 2, 'Supported a Report', id);
+          if (report.userId.toString() !== userId) {
+            createNotification(report.userId, 'Report Supported', `Someone supported your ${report.wasteType} waste report!`, 'support', report._id);
+          }
+        }
+      } catch (notifErr) {
+        console.error('[upvoteReport Post-Save Error]:', notifErr);
       }
-    }
+    })();
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }
@@ -428,21 +439,35 @@ const updateReport = async (req, res) => {
     const report = await WasteReport.findById(id);
     if (!report) return res.status(404).json({ message: 'Report not found.' });
     if (report.userId.toString() !== userId) return res.status(403).json({ message: 'Not authorized.' });
-    if (report.status !== 'Submitted') return res.status(400).json({ message: 'Report cannot be edited after processing started.' });
-
-    const elapsed = Date.now() - new Date(report.createdAt).getTime();
-    const TEN_MIN = 10 * 60 * 1000;
-    if (elapsed > TEN_MIN) {
+    const lockStatuses = ['In Progress', 'Resolved', 'Completed', 'Closed', 'Rejected', 'Delayed', 'Clarification Expired'];
+    if (lockStatuses.includes(report.status)) {
       return res.status(400).json({ message: 'This report can no longer be edited.' });
     }
+    if (report.assignedCollector || report.collectorId) {
+      return res.status(400).json({ message: 'A collector has already accepted this report. Editing is no longer available.' });
+    }
 
-    const { wasteType, quantity, description, pickupTime, image } = req.body;
-    if (wasteType)              report.wasteType   = wasteType;
-    if (quantity !== undefined) report.quantity    = quantity;
+    const { wasteType, quantity, description, image, severity, priorityLevel, wasteSeenAt, landmark, landmarkType, location: bodyLocation } = req.body;
+    if (wasteType)                report.wasteType   = wasteType;
+    if (quantity !== undefined)   report.quantity    = quantity;
     if (description !== undefined) report.description = description;
-    if (pickupTime)             report.pickupTime  = new Date(pickupTime);
-    if (req.file)               report.image       = req.file.path;
-    else if (image !== undefined) report.image     = image;
+    if (severity)                 report.severity    = severity;
+    if (priorityLevel)            report.priorityLevel = priorityLevel;
+    if (wasteSeenAt)              report.wasteSeenAt = wasteSeenAt;
+    if (landmark !== undefined)   report.landmark    = landmark;
+    if (landmarkType !== undefined) report.landmarkType = landmarkType;
+    if (req.file)                 report.image       = req.file.path;
+    else if (image !== undefined) report.image       = image;
+    if (bodyLocation) {
+      try {
+        const loc = typeof bodyLocation === 'string' ? JSON.parse(bodyLocation) : bodyLocation;
+        if (loc.address)        report.location.address = loc.address;
+        if (loc.displayAddress) report.location.displayAddress = loc.displayAddress;
+        if (loc.lat)            report.location.lat = loc.lat;
+        if (loc.lng)            report.location.lng = loc.lng;
+        if (loc.coordinates)    report.location.coordinates = loc.coordinates;
+      } catch {}
+    }
     report.isEdited  = true;
     await report.save();
 

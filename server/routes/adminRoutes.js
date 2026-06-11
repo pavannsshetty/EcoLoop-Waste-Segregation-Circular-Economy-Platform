@@ -7,8 +7,10 @@ const {
   getApprovalRequests, updateApprovalRequest, checkDuplicates,
   uploadCollectorPhoto, getCollector,
   reverifyReport,
-  getCitizens, getCitizenDetails, sendCitizenNotification,
+  getCitizens, getCitizenDetails, updateCitizen, toggleCitizenStatus,
+  sendCitizenNotification,
   suspendCitizen, unsuspendCitizen, deleteCitizen,
+  getWasteIntelligenceReports,
 } = require('../controllers/adminController');
 const {
   getOrdersForAdmin,
@@ -30,6 +32,7 @@ router.get('/reports',          adminProtect, getAllReports);
 router.get('/reports/public',   adminProtect, (req, res, next) => { req.query.type = 'Public'; next(); }, getAllReports);
 router.get('/reports/home-pickup', adminProtect, (req, res, next) => { req.query.type = 'Home Pickup'; next(); }, getAllReports);
 router.put('/report/:id/reverify', adminProtect, reverifyReport);
+router.get('/waste-intelligence', adminProtect, getWasteIntelligenceReports);
 router.get('/assigned-villages', adminProtect, getAssignedVillages);
 router.post('/check-duplicates', adminProtect, checkDuplicates);
 router.post('/collector/photo', adminProtect, upload.single('photo'), uploadCollectorPhoto);
@@ -53,6 +56,8 @@ router.post('/green-champion/assign-task', adminProtect, assignGCTask);
 // Citizen Management
 router.get('/citizens',              adminProtect, getCitizens);
 router.get('/citizen/:id',           adminProtect, getCitizenDetails);
+router.put('/citizen/:id',           adminProtect, updateCitizen);
+router.patch('/citizen/:id/status',  adminProtect, toggleCitizenStatus);
 router.post('/citizen/:id/notify',   adminProtect, sendCitizenNotification);
 router.put('/citizen/:id/suspend',   adminProtect, suspendCitizen);
 router.put('/citizen/:id/unsuspend', adminProtect, unsuspendCitizen);

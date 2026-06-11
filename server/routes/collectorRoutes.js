@@ -2,6 +2,7 @@ const express    = require('express');
 const router     = express.Router();
 const WasteReport = require('../models/WasteReport');
 const Collector   = require('../models/Collector');
+const RecycleItem = require('../models/RecycleItem');
 const { protect } = require('../middleware/auth');
 const { createNotification } = require('../controllers/notificationController');
 const upload = require('../middleware/uploadMiddleware');
@@ -251,9 +252,10 @@ router.put('/report/:id/status', protect, collectorAuth, upload.single('completi
     
     // Socket broadcast
     try {
-      const { emitToUser, emitToAll } = require('../socket');
+      const { emitToUser, emitToAll, emitAnalyticsUpdate } = require('../socket');
       if (populated.userId?._id) emitToUser(populated.userId._id.toString(), 'report_updated', populated);
       emitToAll('report_updated', populated);
+      if (status === 'Resolved') emitAnalyticsUpdate('all');
     } catch (e) { /* socket non-critical */ }
 
     res.json({ message: 'Status updated.', report: populated });
@@ -429,6 +431,7 @@ router.put('/profile', protect, collectorAuth, upload.single('photo'), async (re
 
 const ScrapRequest   = require('../models/ScrapRequest');
 const Order          = require('../models/Order');
+const { getAnalyticsByVillages } = require('../services/analyticsService');
 
 router.get('/stats', protect, collectorAuth, async (req, res) => {
   try {
@@ -441,11 +444,14 @@ router.get('/stats', protect, collectorAuth, async (req, res) => {
 
     const villageFilter = villages.length ? { village: { $in: villages } } : {};
 
+    const deliveryVillageFilter = villages.length ? { deliveryVillage: { $in: villages } } : {};
+
     const [
       pendingSubmitted, assigned, inProgress, completedToday, total,
       pendingScrap, assignedScrap, inProgressScrap, completedScrapToday, totalScrap,
       publicPending, publicAssigned, publicInProgress, publicCompletedToday, publicTotal,
-      homePending, homeAssigned, homeInProgress, homeCompletedToday, homeTotal
+      homePending, homeAssigned, homeInProgress, homeCompletedToday, homeTotal,
+      pendingDelivery, assignedDelivery, outForDelivery, deliveredTodayDelivery, totalDelivery
     ] = await Promise.all([
       WasteReport.countDocuments({ status: { $in: ['Submitted', 'Verified', 'Resubmitted', 'Clarification Expired'] }, assignedCollector: null, ...villageFilter }),
       WasteReport.countDocuments({ assignedCollector: cid, status: 'Assigned' }),
@@ -469,9 +475,17 @@ router.get('/stats', protect, collectorAuth, async (req, res) => {
       WasteReport.countDocuments({ assignedCollector: cid, status: 'In Progress', reportType: 'Home Pickup' }),
       WasteReport.countDocuments({ assignedCollector: cid, status: 'Resolved', reportType: 'Home Pickup', completedAt: { $gte: today } }),
       WasteReport.countDocuments({ assignedCollector: cid, reportType: 'Home Pickup' }),
+
+      Order.countDocuments({ assignedCollector: null, deliveryStatus: 'Pending', ...deliveryVillageFilter }),
+      Order.countDocuments({ assignedCollector: cid, deliveryStatus: 'Assigned' }),
+      Order.countDocuments({ assignedCollector: cid, deliveryStatus: 'Out for Delivery' }),
+      Order.countDocuments({ assignedCollector: cid, deliveryStatus: 'Delivered', updatedAt: { $gte: today } }),
+      Order.countDocuments({ assignedCollector: cid }),
     ]);
 
     const collectorDoc = await Collector.findById(req.user.id).select('name collectorId city area village villages availability completedTasks');
+
+    const analytics = villages.length ? await getAnalyticsByVillages(villages) : { totalRecycledWeight: 0, totalCo2Saved: 0 };
 
     res.json({
       pendingSubmitted: pendingSubmitted + pendingScrap,
@@ -479,11 +493,14 @@ router.get('/stats', protect, collectorAuth, async (req, res) => {
       inProgress: inProgress + inProgressScrap,
       completedToday: completedToday + completedScrapToday,
       total: total + totalScrap,
+      recycledWeight: analytics.totalRecycledWeight || 0,
+      co2Saved: analytics.totalCo2Saved || 0,
       collector: collectorDoc,
       wasteDetails: { pendingSubmitted, assigned, inProgress, completedToday, total },
       scrapDetails: { pendingScrap, assignedScrap, inProgressScrap, completedScrapToday, totalScrap },
       publicWasteDetails: { pendingSubmitted: publicPending, assigned: publicAssigned, inProgress: publicInProgress, completedToday: publicCompletedToday, total: publicTotal },
-      homePickupDetails: { assigned: homeAssigned, inProgress: homeInProgress, completedToday: homeCompletedToday, total: homeTotal }
+      homePickupDetails: { assigned: homeAssigned, inProgress: homeInProgress, completedToday: homeCompletedToday, total: homeTotal },
+      deliveryDetails: { pending: pendingDelivery, assigned: assignedDelivery, outForDelivery, deliveredToday: deliveredTodayDelivery, total: totalDelivery }
     });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
@@ -530,12 +547,26 @@ router.get('/deliveries', protect, collectorAuth, async (req, res) => {
   try {
     const { filter } = req.query;
     const cid = req.user.id;
+    const collector = req.collector;
+    const villages = Array.isArray(collector.villages) && collector.villages.length
+      ? collector.villages
+      : collector.village ? [collector.village] : [];
 
-    let query = { assignedCollector: cid };
-    if (filter && ['Assigned', 'Out for Delivery', 'Delivered'].includes(filter)) {
-      query.deliveryStatus = filter;
+    let query;
+    const myDeliveries = { assignedCollector: cid };
+    if (!filter || filter === 'all') {
+      query = {
+        $or: [
+          myDeliveries,
+          { assignedCollector: null, deliveryStatus: 'Pending', deliveryVillage: { $in: villages } },
+        ],
+      };
+    } else if (filter === 'Pending') {
+      query = { assignedCollector: null, deliveryStatus: 'Pending', deliveryVillage: { $in: villages } };
+    } else if (['Assigned', 'Out for Delivery', 'Delivered'].includes(filter)) {
+      query = { assignedCollector: cid, deliveryStatus: filter };
     } else {
-      query.deliveryStatus = { $in: ['Assigned', 'Out for Delivery', 'Delivered'] };
+      query = myDeliveries;
     }
 
     const orders = await Order.find(query)
@@ -544,6 +575,42 @@ router.get('/deliveries', protect, collectorAuth, async (req, res) => {
       .sort({ updatedAt: -1 })
       .lean();
     res.json(orders);
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+router.put('/delivery/:id/accept', protect, collectorAuth, async (req, res) => {
+  try {
+    const cid = req.user.id;
+    const collector = req.collector;
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found.' });
+    if (order.deliveryStatus !== 'Pending') return res.status(400).json({ message: 'Order is not pending.' });
+    if (order.assignedCollector) return res.status(400).json({ message: 'Order already has an assigned collector.' });
+
+    order.assignedCollector = cid;
+    order.deliveryStatus = 'Assigned';
+    await order.save();
+
+    if (order.userId) {
+      createNotification(order.userId, 'Delivery Assigned',
+        `Your eco shopping order has been assigned to ${collector.name}.`, 'order', order._id);
+    }
+    createNotification(cid, 'Delivery Accepted',
+      `You accepted delivery order #${order._id.toString().slice(-6)}.`, 'assignment', order._id);
+
+    try {
+      const { emitToUser, emitToAll } = require('../socket');
+      const populated = await Order.findById(order._id)
+        .populate('userId', 'name phone email')
+        .populate('itemId', 'itemName image price category')
+        .lean();
+      if (order.userId) emitToUser(order.userId.toString(), 'order_updated', populated);
+      emitToAll('ECO_SHOPPING_ORDER_UPDATED', { orderId: order._id });
+      emitToUser(cid.toString(), 'new_delivery', populated);
+    } catch (e) { /* socket non-critical */ }
+
+    res.json({ message: 'Delivery accepted.', order });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
@@ -568,7 +635,72 @@ router.put('/delivery/:id/status', protect, collectorAuth, async (req, res) => {
       createNotification(order.userId, 'Delivery Update',
         `Your eco shopping order is now "${status}".`, 'status', order._id);
     }
+
+    try {
+      const { emitToUser, emitToAll } = require('../socket');
+      const populated = await Order.findById(order._id)
+        .populate('userId', 'name phone email')
+        .populate('itemId', 'itemName image price category')
+        .lean();
+      if (order.userId) emitToUser(order.userId.toString(), 'order_updated', populated);
+      emitToAll('ECO_SHOPPING_ORDER_UPDATED', { orderId: order._id });
+    } catch (e) { /* socket non-critical */ }
+
     res.json({ message: `Delivery status updated to ${status}.`, order });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+/* ─── Collector Eco Products (Read-Only) ─── */
+router.get('/eco-products', protect, collectorAuth, async (req, res) => {
+  try {
+    const { search, category } = req.query;
+    const query = {};
+    if (category && category !== 'all') query.category = category;
+    if (search) query.itemName = { $regex: search, $options: 'i' };
+
+    const items = await RecycleItem.find(query)
+      .select('itemName category description price stock requests views image status')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ items });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+/* ─── Collector Eco Buyers (Village-Filtered) ─── */
+router.get('/eco-buyers', protect, collectorAuth, async (req, res) => {
+  try {
+    const collector = req.collector;
+    const villages = Array.isArray(collector.villages) && collector.villages.length
+      ? collector.villages
+      : collector.village ? [collector.village] : [];
+
+    if (!villages.length) return res.json({ orders: [] });
+
+    const { status, search } = req.query;
+    const query = { deliveryVillage: { $in: villages } };
+    if (status && ['Pending', 'Assigned', 'Out for Delivery', 'Delivered'].includes(status)) {
+      query.deliveryStatus = status;
+    }
+
+    let orders = await Order.find(query)
+      .populate('userId', 'name phone email')
+      .populate('itemId', 'itemName image price category')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (search && search.trim()) {
+      const regex = new RegExp(search.trim(), 'i');
+      orders = orders.filter((o) =>
+        regex.test(o.userId?.name || '') ||
+        regex.test(o.userId?.phone || '') ||
+        regex.test(o._id.toString()) ||
+        regex.test(o.deliveryAddress || '') ||
+        regex.test(o.deliveryVillage || '')
+      );
+    }
+
+    res.json({ orders });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 

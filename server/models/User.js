@@ -26,6 +26,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       unique: true,
+      sparse: true,
       match: [/^\d{10}$/, 'Phone number must contain exactly 10 digits.'],
     },
     role: {
@@ -87,7 +88,7 @@ const userSchema = new mongoose.Schema(
     pickupRequests: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'PickupRequest',
+        ref: 'ScrapRequest',
       },
     ],
     collectorId: {

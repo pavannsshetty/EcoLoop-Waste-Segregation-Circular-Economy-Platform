@@ -54,21 +54,26 @@ const CompleteModal = ({ report, onClose, onDone, dk }) => {
       const api = report.taskType === 'scrap' 
         ? `${API}/api/scrap/update-status/${report._id}`
 : `${API}/api/collector/report/${report._id}/status`;
-      
-      const payload = report.taskType === 'scrap'
-        ? { status: 'Collected' }
-        : { status: 'Resolved', completionPhoto: photo, completionNotes: notes };
+
+      const fd = new FormData();
+      if (report.taskType !== 'scrap') {
+        const file = fileRef.current?.files?.[0];
+        if (file) fd.append('completionPhoto', file);
+        fd.append('completionNotes', notes);
+      }
+      fd.append('status', report.taskType === 'scrap' ? 'Collected' : 'Resolved');
 
       const res = await fetch(api, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload),
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
       });
-      const data = await res.json();
       if (!res.ok) {
-        setError(data.message);
+        const errData = await res.json().catch(() => ({}));
+        setError(errData.message);
         return;
       }
+      const data = await res.json();
       onDone(data.request || data.report);
       onClose();
     } catch {
@@ -88,7 +93,7 @@ const CompleteModal = ({ report, onClose, onDone, dk }) => {
   const btnGhost = dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-700 hover:bg-slate-50');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className={`rounded-lg border w-full max-w-md p-5 space-y-4 shadow-xl ${panel}`}>
         <div className="flex items-center justify-between">
           <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Mark as Completed</p>
@@ -157,13 +162,11 @@ const DelayModal = ({ report, onClose, onDone, dk }) => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: 'Delayed', delayReason: reason }),
       });
+      if (!res.ok) return;
       const data = await res.json();
-      if (res.ok) {
-        onDone(data.report);
-        onClose();
-      }
+      onDone(data.report);
+      onClose();
     } catch {
-      
     } finally {
       setLoading(false);
     }
@@ -178,7 +181,7 @@ const DelayModal = ({ report, onClose, onDone, dk }) => {
   const btnGhost = dk('border-slate-700 text-slate-300 hover:bg-slate-800', 'border-slate-200 text-slate-700 hover:bg-slate-50');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className={`rounded-lg border w-full max-w-sm p-5 space-y-4 shadow-xl ${panel}`}>
         <div className="flex items-center justify-between">
           <p className={`text-sm font-semibold ${dk('text-white', 'text-slate-800')}`}>Report Delay</p>
@@ -269,13 +272,11 @@ const AssignedReports = () => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
       });
+      if (!res.ok) return;
       const data = await res.json();
-      if (res.ok) {
-        const updated = data.request || data.report;
-        setReports((rs) => rs.map((r) => (r._id === item._id ? { ...updated, taskType: item.taskType } : r)));
-      }
+      const updated = data.request || data.report;
+      setReports((rs) => rs.map((r) => (r._id === item._id ? { ...updated, taskType: item.taskType } : r)));
     } catch {
-      
     }
   };
 
